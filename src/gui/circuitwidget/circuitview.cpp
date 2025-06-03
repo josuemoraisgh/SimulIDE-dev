@@ -143,25 +143,30 @@ void CircuitView::mousePressEvent( QMouseEvent* event )
 {
     m_waitForDragStart = false;
 
-    if( event->button()   == Qt::LeftButton
-     && event->modifiers() & Qt::ControlModifier
-     && event->modifiers() & Qt::ShiftModifier
-     && !m_circuit->is_constarted() )                   // Prepare Copy by drag
+    if( event->button()   == Qt::LeftButton )
     {
-        QGraphicsItem* item = itemAt( event->pos() );
-        if( item ){                                                 // Check if item exists before start drag:
-            while ( item->parentItem() ) item = item->parentItem(); // Make sure the item deselected is the top graphic item.
+        if( event->modifiers() & Qt::ControlModifier
+            && event->modifiers() & Qt::ShiftModifier
+            && !m_circuit->is_constarted() )                   // Prepare Copy by drag
+        {
+            QGraphicsItem* item = itemAt( event->pos() );
+            if( item ){                                                 // Check if item exists before start drag:
+                while ( item->parentItem() ) item = item->parentItem(); // Make sure the item deselected is the top graphic item.
 
-            if( !item->isSelected() ) m_circuit->clearSelection();  // If the comp is not selected when drag starts, clear all the selections.
-            else                      item->setSelected( false );
-            m_mousePressPos = event->pos();
-            m_waitForDragStart = true;
+                if( !item->isSelected() ) m_circuit->clearSelection();  // If the comp is not selected when drag starts, clear all the selections.
+                else                      item->setSelected( false );
+                m_mousePressPos = event->pos();
+                m_waitForDragStart = true;
+            }
+        }
+        else if( event->modifiers() & Qt::ShiftModifier
+            && !(event->modifiers() & Qt::ControlModifier) )
+        {
+            event->accept();
+            setDragMode( QGraphicsView::ScrollHandDrag );
         }
     }
-    if( event->button() == Qt::MidButton
-     /*|| ( event->button() == Qt::LeftButton
-        && event->modifiers() & Qt::ShiftModifier
-        && !(event->modifiers() & Qt::ControlModifier) )*/ )
+    else if( event->button() == Qt::MidButton )
     {
         event->accept();
         setDragMode( QGraphicsView::ScrollHandDrag );

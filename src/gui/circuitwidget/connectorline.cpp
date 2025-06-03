@@ -169,56 +169,22 @@ void ConnectorLine::remove()
     Circuit::self()->removeItems();
 }
 
-void ConnectorLine::mousePressEvent( QGraphicsSceneMouseEvent* event )
-{
-    if( event->button() == Qt::MidButton )                      // Move Line
-    {
-        event->accept();
-
-        if     ( dy() == 0 ) CircuitView::self()->viewport()->setCursor( Qt::SplitVCursor );
-        else if( dx() == 0 ) CircuitView::self()->viewport()->setCursor( Qt::SplitHCursor );
-        else                 CircuitView::self()->viewport()->setCursor( Qt::SizeAllCursor );
-    }
-    else if( event->button() == Qt::LeftButton )
-    {
-        if( event->modifiers() == Qt::ControlModifier ) setSelected( !isSelected() ); // Select - Deselect
-        
-        else if( event->modifiers() & Qt::ShiftModifier ) // Move Corner
-        {
-            QPoint evPoint = toGrid( event->scenePos() ).toPoint();
-            
-            if     ( evPoint==p1() ) m_moveP1 = true;
-            else if( evPoint==p2() ) m_moveP2 = true;
-        }
-        else{                                         // Connecting a wire here
-           if( Circuit::self()->is_constarted() )     // Wire started at Pin is connecting here
-           {
-               Connector* con = Circuit::self()->getNewConnector();
-               if( con == this->connector() ) return;
-               if( con->isBus() != m_isBus ) { event->ignore(); return; } // Avoid connect Bus with no-Bus
-           }
-           QPoint point1 = toGrid( event->scenePos() ).toPoint();
-
-           if( connectToWire( point1 ) ) event->accept();
-           else                          event->ignore();
-}   }   }
-
 bool ConnectorLine::connectToWire( QPoint point1 )
 {
     int index;
     int myindex = m_pConnector->lineList()->indexOf( this );
 
     if((( dy() == 0 && fabs( point1.x()-m_p2X ) < 8 ) // point near the p2 corner
-     || ( dx() == 0 && fabs( point1.y()-m_p2Y ) < 8 ) )
-     && ( myindex != m_pConnector->lineList()->size()-1 ) )
+         || ( dx() == 0 && fabs( point1.y()-m_p2Y ) < 8 ) )
+        && ( myindex != m_pConnector->lineList()->size()-1 ) )
     {
         if( myindex == m_pConnector->lineList()->size()-1 ) return false;
         point1 = p2();
         index = myindex+1;
     }
     else if((( dy() == 0 && fabs( point1.x()-m_p1X ) < 8 ) // point near the p1 corner
-          || ( dx() == 0 && fabs( point1.y()-m_p1Y ) < 8 ) )
-          && ( myindex != 0 ) )
+              || ( dx() == 0 && fabs( point1.y()-m_p1Y ) < 8 ) )
+             && ( myindex != 0 ) )
     {
         if( myindex == 0 ) return false;
         point1 = p1();
@@ -256,6 +222,47 @@ bool ConnectorLine::connectToWire( QPoint point1 )
     return true;
 }
 
+void ConnectorLine::mousePressEvent( QGraphicsSceneMouseEvent* event )
+{
+    if( event->button() == Qt::MidButton )                      // Move Line
+    {
+        event->accept();
+
+        if     ( dy() == 0 ) CircuitView::self()->viewport()->setCursor( Qt::SplitVCursor );
+        else if( dx() == 0 ) CircuitView::self()->viewport()->setCursor( Qt::SplitHCursor );
+        else                 CircuitView::self()->viewport()->setCursor( Qt::SizeAllCursor );
+    }
+    else if( event->button() == Qt::LeftButton )
+    {
+        if( event->modifiers() == Qt::ControlModifier ) setSelected( !isSelected() ); // Select - Deselect
+        
+        else if( event->modifiers() & Qt::ShiftModifier ) // Move Corner
+        {
+            QPoint evPoint = toGrid( event->scenePos() ).toPoint();
+            
+            if     ( evPoint==p1() ) m_moveP1 = true;
+            else if( evPoint==p2() ) m_moveP2 = true;
+            else{                                          // Move Line
+                event->accept();
+
+                if     ( dy() == 0 ) CircuitView::self()->viewport()->setCursor( Qt::SplitVCursor );
+                else if( dx() == 0 ) CircuitView::self()->viewport()->setCursor( Qt::SplitHCursor );
+                else                 CircuitView::self()->viewport()->setCursor( Qt::SizeAllCursor );
+            }
+        }
+        else{                                         // Connecting a wire here
+           if( Circuit::self()->is_constarted() )     // Wire started at Pin is connecting here
+           {
+               Connector* con = Circuit::self()->getNewConnector();
+               if( con == this->connector() ) return;
+               if( con->isBus() != m_isBus ) { event->ignore(); return; } // Avoid connect Bus with no-Bus
+           }
+           QPoint point1 = toGrid( event->scenePos() ).toPoint();
+
+           if( connectToWire( point1 ) ) event->accept();
+           else                          event->ignore();
+}   }   }
+
 void ConnectorLine::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
 {
     event->accept();
@@ -268,7 +275,8 @@ void ConnectorLine::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
         m_moving = true;
     }
 
-    if( event->modifiers() & Qt::ShiftModifier )          // Move Corner
+    if( event->modifiers() & Qt::ShiftModifier           // Move Corner
+        && (m_moveP1 || m_moveP2))
     {
         if     ( m_moveP1 ) setP1( p1()+delta );
         else if( m_moveP2 ) setP2( p2()+delta );
