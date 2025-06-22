@@ -3,7 +3,8 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#pragma once
+#ifndef MCS65CPU_H
+#define MCS65CPU_H
 
 #include "mcs65interface.h"
 #include "iopin.h"
@@ -81,6 +82,9 @@ class Mcs65Cpu : public Mcs65Interface
         bool m_nextClock;
         bool m_halt;
 
+        bool m_nmiState;
+        int8_t m_isrSource;
+
         //uint64_t m_psStep;
         int m_cycle;
 
@@ -116,8 +120,7 @@ class Mcs65Cpu : public Mcs65Interface
         cpuState_t m_state;
         cpuState_t m_nextState;
 
-        uint8_t m_IsrH; // Interrupt vector
-        uint8_t m_IsrL;
+        uint16_t m_Isr; // Interrupt vector
 
         addrMode_t m_aMode;
         uint8_t m_aFlags;
@@ -194,3 +197,4 @@ class Mcs65Cpu : public Mcs65Interface
         inline void TYA();
         inline void BXX();
 };
+#endif
