@@ -37,7 +37,8 @@ Mcs65Cpu::Mcs65Cpu( eMcu* mcu )
     // Control Pins
     m_ctrlPort = mcu->getIoPort("CPORT0");
     m_phi0Pin = mcu->getIoPin("P0");
-    m_phi1Pin = mcu->getIoPin("P1");   m_phi1Pin->setPinMode( output );
+    m_phi1Pin = mcu->getIoPin("P1");   //m_phi1Pin->setPinMode( output );
+    m_phi1Pin->setUnused( true );
     m_phi2Pin = mcu->getIoPin("P2");   m_phi2Pin->setPinMode( output );
     m_syncPin = mcu->getIoPin("SYNC"); m_syncPin->setPinMode( output );
 
@@ -101,7 +102,7 @@ void Mcs65Cpu::stamp()
     m_rwPin->setPinMode( output );
     m_rwPin->setOutState( true );
 
-    m_phi1Pin->setPinMode( output );
+    //m_phi1Pin->setPinMode( output );
     m_phi2Pin->setPinMode( output );
     m_syncPin->setPinMode( output );
 
@@ -323,33 +324,33 @@ void Mcs65Cpu::decode()
         }else{
             switch( Ocode ){
                 case 0: break;
-                case 1: m_EXEC = &Mcs65Cpu::BIT;; break;
+                case 1: m_EXEC = &Mcs65Cpu::BIT; break;
                 case 2:                   //JMP;
                 case 3: m_EXEC = &Mcs65Cpu::JMP; break;
                 case 4: m_EXEC = &Mcs65Cpu::STY; break;
-                case 5: m_EXEC = &Mcs65Cpu::LDY;; break;
-                case 6: m_EXEC = &Mcs65Cpu::CPY;; break;
-                case 7: m_EXEC = &Mcs65Cpu::CPX;; break;
+                case 5: m_EXEC = &Mcs65Cpu::LDY; break;
+                case 6: m_EXEC = &Mcs65Cpu::CPY; break;
+                case 7: m_EXEC = &Mcs65Cpu::CPX; break;
         } } } break;
         case 1:{ switch( Ocode ){
-                case 0: m_EXEC = &Mcs65Cpu::ORA;; break;
-                case 1: m_EXEC = &Mcs65Cpu::AND;; break;
-                case 2: m_EXEC = &Mcs65Cpu::EOR;; break;
-                case 3: m_EXEC = &Mcs65Cpu::ADC;; break;
+                case 0: m_EXEC = &Mcs65Cpu::ORA; break;
+                case 1: m_EXEC = &Mcs65Cpu::AND; break;
+                case 2: m_EXEC = &Mcs65Cpu::EOR; break;
+                case 3: m_EXEC = &Mcs65Cpu::ADC; break;
                 case 4: m_EXEC = &Mcs65Cpu::STA; break;
-                case 5: m_EXEC = &Mcs65Cpu::LDA;; break;
-                case 6: m_EXEC = &Mcs65Cpu::CMP;; break;
-                case 7: m_EXEC = &Mcs65Cpu::SBC;; break;
+                case 5: m_EXEC = &Mcs65Cpu::LDA; break;
+                case 6: m_EXEC = &Mcs65Cpu::CMP; break;
+                case 7: m_EXEC = &Mcs65Cpu::SBC; break;
         } }break;
         case 2:{ switch( Ocode ){
-                case 0: m_EXEC = &Mcs65Cpu::ASL;; break;
-                case 1: m_EXEC = &Mcs65Cpu::ROL;; break;
-                case 2: m_EXEC = &Mcs65Cpu::LSR;; break;
-                case 3: m_EXEC = &Mcs65Cpu::ROR;; break;
+                case 0: m_EXEC = &Mcs65Cpu::ASL; break;
+                case 1: m_EXEC = &Mcs65Cpu::ROL; break;
+                case 2: m_EXEC = &Mcs65Cpu::LSR; break;
+                case 3: m_EXEC = &Mcs65Cpu::ROR; break;
                 case 4: m_EXEC = &Mcs65Cpu::STX; break;
-                case 5: m_EXEC = &Mcs65Cpu::LDX;; break;
-                case 6: m_EXEC = &Mcs65Cpu::DEC;; break;
-                case 7: m_EXEC = &Mcs65Cpu::INC;; break;
+                case 5: m_EXEC = &Mcs65Cpu::LDX; break;
+                case 6: m_EXEC = &Mcs65Cpu::DEC; break;
+                case 7: m_EXEC = &Mcs65Cpu::INC; break;
         } }break;
         case 3: { break; }  /// Not valid (by now)
     }
@@ -667,6 +668,7 @@ void Mcs65Cpu::RTI() // Return from Interrupt ////
         case 4: popStack8(); m_op0 = readDataBus();                        break;
         case 5: m_PC = (readDataBus() << 8) | m_op0; m_aMode = aIMME; // Avoid PC decrement at cFETCH case
             SET_INTERRUPT( 0 );
+            m_mcu->interrupts()->retI();
 }   }
 
 void Mcs65Cpu::RTS() // Return from Subroutine
