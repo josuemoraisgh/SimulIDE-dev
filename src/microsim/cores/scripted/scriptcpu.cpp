@@ -164,6 +164,10 @@ ScriptCpu::ScriptCpu( eMcu* mcu )
                                    , asMETHODPR( ScriptCpu, INTERRUPT, (uint32_t), void)
                                    , asCALL_THISCALL );
 
+    m_aEngine->RegisterObjectMethod("ScriptCpu", "void RETI()"
+                                    , asMETHODPR( ScriptCpu, RETI, (), void)
+                                    , asCALL_THISCALL );
+
     memberList << "getPropStr( int index, const string name )";
     m_aEngine->RegisterObjectMethod("ScriptCpu", "string getPropStr( int index, const string p )"
                                    , asMETHODPR( ScriptCpu, getPropStr, (int,const string), string)
@@ -338,6 +342,11 @@ void ScriptCpu::INTERRUPT( uint vector )
     execute();
 }
 
+void ScriptCpu::RETI()
+{
+    m_mcu->interrupts()->retI();
+}
+
 void ScriptCpu::runStep()
 {
     if( !m_runStep ) return;
@@ -366,6 +375,8 @@ void ScriptCpu::extClock( bool clkState )
     prepare( m_extClock );
     m_context->SetArgByte( 0, clkState );
     execute();
+
+    if( clkState ) m_mcu->interrupts()->runInterrupts();
 }
 
 void ScriptCpu::command( QString c )
