@@ -57,6 +57,8 @@ class McuPin : public IoPin
  static QStringList registerScript( asIScriptEngine* engine );
 
     protected:
+        void contextMenuEvent( QGraphicsSceneContextMenuEvent* event ) override {;} // Disable IoPin::contextMenuEvent
+
         QString m_id;
 
         McuPort*   m_port;
