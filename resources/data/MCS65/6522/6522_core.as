@@ -1,16 +1,18 @@
 
 McuPort@ PortA   = component.getMcuPort("PORTA");
 McuPort@ PortB   = component.getMcuPort("PORTB");
+
 IoPort@ csPort   = component.getPort("PORTC");
+IoPort@ ctrlPort = component.getPort("PORTE");
 IoPort@ dataPort = component.getPort("PORTD");
 IoPort@ addrPort = component.getPort("PORTR");
 
-McuPin@ ca1Pin  = component.getMcuPin("CA1");
-McuPin@ ca2Pin  = component.getMcuPin("CA2");
-McuPin@ cb1Pin  = component.getMcuPin("CB1");
-McuPin@ cb2Pin  = component.getMcuPin("CB2");
-IoPin@  irqPin  = component.getPin("IRQ");
-IoPin@  rwPin   = component.getPin("RW");
+IoPin@ ca1Pin  = component.getPin("CA1");
+IoPin@ ca2Pin  = component.getPin("CA2");
+IoPin@ cb1Pin  = component.getPin("CB1");
+IoPin@ cb2Pin  = component.getPin("CB2");
+IoPin@ irqPin  = component.getPin("IRQ");
+IoPin@ rwPin   = component.getPin("RW");
 
 enum pinModes{
     undef_mode=0, 
@@ -35,34 +37,56 @@ uint T2CH;
 uint SR;
 uint ACR;    // AuxiliaryControl Register
 uint PCR;    // Peripheral Control Register
+uint IFR;
+uint IER;
+
+
 uint IRB;
 uint IRA;
 
 enum acrBits{
-    PA   = 1,
-    PB   = 2,
-    SRC0 = 4,
-    SRC1 = 8,
-    SRC2 = 16,
-    T2C  = 32,
-    T1C0 = 64,
-    T1C1 = 128
+    PA   = 1<<0,
+    PB   = 1<<1,
+    SRC0 = 1<<2,
+    SRC1 = 1<<3,
+    SRC2 = 1<<4,
+    T2C  = 1<<5,
+    T1C0 = 1<<6,
+    T1C1 = 1<<7
 }
 enum pcrBits{
-    CA1c = 1,
-    CA20 = 2,
-    CA21 = 4,
-    CA22 = 8,
-    CB1c = 16,
-    CB20 = 32,
-    CB21 = 64,
-    CB22 = 128
+    CA1c = 1<<0,
+    CA20 = 1<<1,
+    CA21 = 1<<2,
+    CA22 = 1<<3,
+    CB1c = 1<<4,
+    CB20 = 1<<5,
+    CB21 = 1<<6,
+    CB22 = 1<<7
 }
+enum ifrBits{
+    CA2IF = 1<<0,
+    CA1IF = 1<<1,
+    SRIF  = 1<<2,
+    CB2IF = 1<<3,
+    CB1IF = 1<<4,
+    T2IF  = 1<<5,
+    T1IF  = 1<<6,
+    IRQIF = 1<<7
+}
+enum ctrlBits{
+    CA1bit = 1<<0,
+    CA2bit = 1<<1,
+    CB1bit = 1<<2,
+    CB2bit = 1<<3
+}
+
 
 uint m_addr;
 
 bool m_nextClock;  // Clock State
 bool m_read;
+bool m_CS;
 
 bool m_latchA;
 bool m_latchB;
@@ -71,6 +95,8 @@ bool m_pulseCB2;
 
 int m_CA2ctrl;
 int m_CB2ctrl;
+uint m_ctrlState;
+uint m_ctrlFlags;
 
 bool m_T2ctrl;
 bool m_T1cont;
@@ -78,8 +104,6 @@ bool m_T1pb7;
 
 void setup() // Executed at setScript()
 {
-    irqPin.setPinMode( openCo );
-    
     print("6522 setup() OK"); 
 }
 
@@ -87,12 +111,19 @@ void reset() // Executed at Simulation start
 { 
     print("6522 reset()");
     
+    irqPin.setPinMode( openCo );
     irqPin.setOutState( true );
     dataPort.setPinMode( input );
     
-    ca2Pin.setPortState( true );
-    
+    ca2Pin.setOutState( true );
+    csPort.changeCallBack( element, true );
+    ctrlPort.changeCallBack( element, true );
+    rwPin.changeCallBack( element, true );
+
     m_nextClock = true; // Wait for first rising edge
+    
+    m_read = false;
+    m_CS = false;
     
     m_pulseCA2 = false;
     m_pulseCB2 = false;
@@ -102,6 +133,8 @@ void reset() // Executed at Simulation start
     
     m_CA2ctrl = -1;
     m_CB2ctrl = -1;
+    m_ctrlState = 0;
+    m_ctrlFlags = 0;
     
     ORB  = 0;
     ORA  = 0;
@@ -116,13 +149,41 @@ void reset() // Executed at Simulation start
     SR   = 0;
     ACR  = 0;
     PCR  = 0;
+    IFR  = 0;
+    IER  = 1<<7;
+}
+
+void voltChanged()
+{
+    m_CS = csPort.getInpState() == 1;
+    m_read = rwPin.getInpState();
+    
+    bool clkHigh = !m_nextClock;
+    bool dataOut = m_CS && m_read && clkHigh;
+    
+    if( dataOut ) dataPort.setPinMode( output );
+    else          dataPort.setPinMode( input );
+    
+    uint ctrlState = ctrlPort.getInpState();
+    if( m_ctrlState != ctrlState )
+    {
+        uint changed = m_ctrlState ^ ctrlState;
+        m_ctrlState = ctrlState;
+        if( changed == 0 ) return;
+        
+        for( int i=0; i<4; i++ )
+        {
+            uint chgBit = changed & 1<<i;
+            if( chgBit != 0 ) extInt( chgBit );
+        }
+    }
 }
 
 void extClock( bool clkState )  // Function called al clockPin change
 {
     if( m_nextClock != clkState ) return;
     
-    if( csPort.getInpState() == 1 ) // Chip Selected
+    if( m_CS ) // Chip Selected
     {
         if( m_nextClock ) risingEdge();
         else              fallingEdge();
@@ -171,26 +232,28 @@ uint readREG()
             if( m_latchB ) data |= IRB & ~DDRB; // latched at CB1 change
             else           data |= PortB.getInpState() & ~DDRB;// In  Pin: bit from Pin
             IRA = data;
+            writeIFR( 0b00011000 ); // clear CB1/2 flags by writing 1
         }break;
         case 1:{
             if( m_latchA ) data = IRA;          // Latched at CA1 change
             else           data = PortA.getInpState();
             IRA = data;
+            writeIFR( 0b00000011 ); // clear CA1/2 flags by writing 1
         }break;
         case 2: data = DDRB; break;
         case 3: data = DDRA; break;
-        case 4:{
-            data = T1CL; break;
-            // T1 interrupt flag IFR6 is reset.
-            } break;
+        case 4: data = T1CL; writeIFR( 0b01000000 ); break; // T1 interrupt flag IFR6 is reset.
         case 5: data = T1CH; break;
         case 6: data = T1LL; break;
         case 7: data = T1LH; break;
         case 8: break; 
         case 9: break;
-        case 10: data = SR; break;
+        case 10: data = SR; writeIFR( 0b00000100 ); break; // SR interrupt flag clear
         case 11: data = ACR; break;
         case 12: data = PCR; break;
+        case 13: data = IFR; break;
+        case 14: data = IER; break;
+        default: data = component.readRAM( m_addr );
     }
     return data;
 }
@@ -198,8 +261,8 @@ uint readREG()
 void writeREG( uint data )
 {
     switch( m_addr ){
-        case 0: ORB  = data; break;
-        case 1: ORA  = data; break;
+        case 0: ORB  = data; writeIFR( 0b00011000 ); break; // clear CB1/2 flags by writing 1
+        case 1: ORA  = data; writeIFR( 0b00000011 ); break; // clear CA1/2 flags by writing 1
         case 2: DDRB = data; break;
         case 3: DDRA = data; break;
         case 4: T1LL = data; break; // T1CL Load data into latch Low
@@ -208,29 +271,22 @@ void writeREG( uint data )
             T1CH = T1LH;
             T1CL = T1LL;
             // initiates countdown
-            // T1 interrupt flag IFR6 is reset.
+            // T1 interrupt flag IFR6 is reset. ?????????
         } break;
         case 6: T1LL = data; break; 
-        case 7:{ 
-            T1LH = data; break; // T1CH load data into latch High
-            // T1 interrupt flag IFR6 is reset.
-        } break;
+        case 7: T1LH = data; writeIFR( 0b01000000 ); break; // T1CH load data into latch High // T1 interrupt flag IFR6 is reset.
         case 8: break; 
         case 9: break; 
-        case 10: SR = data; break; 
-        case 11:{ // ACR
-            ACR = data;
-            writeACR();
-        } break;
-        case 12:{ // PCR
-            PCR = data;
-            writePCR();
-        } break;
+        case 10: SR = data; writeIFR( 0b00000100 ); break; // SR interrupt flag clear
+        case 11: writeACR( data ); break; // ACR
+        case 12: writePCR( data ); break; // PCR
+        case 13: writeIFR( data ); return; // IFR
+        case 14: writeIER( data ); return; // IER
     }
     component.writeRAM( m_addr, data ); // Mcu Mon, Dir changed, Int en/dis, etc.
 }
 
-void writeACR()
+void writeACR( uint v )
 {
     m_latchA = (ACR & PA) > 0;
     m_latchB = (ACR & PB) > 0;
@@ -243,39 +299,71 @@ void writeACR()
     m_T1pb7  = (ACR & T1C1) > 0;
 }
 
-void writePCR()
+void writePCR( uint v )
 {
-    if( (PCR & CA1c) > 0 ) ca1Pin.setExtInt( 3 ); // Interrupt at CA1 Rising edge
-    else                   ca1Pin.setExtInt( 2 ); // Interrupt at CA1 Falling edge
+    PCR = v;
+    
+    if( (PCR & CA1c) > 0 ) m_ctrlFlags |=  CA1bit; // Interrupt at CA1 Rising edge
+    else                   m_ctrlFlags &= ~CA1bit; // Interrupt at CA1 Falling edge
     
     if( (PCR & CA22) > 0 ) // CA2 Control
     {
         m_CA2ctrl = -1;
-        if( (PCR & CA21) > 0 ) ca2Pin.setPortState( (PCR & CA20) > 0 ); // Manual Output
+        if( (PCR & CA21) > 0 ) ca2Pin.setOutState( (PCR & CA20) > 0 ); // Manual Output
         else                   m_CA2ctrl = PCR & CA20;// Handshake/Pulse Output
     }else{
-        if( (PCR & CA21) > 0 ) ca2Pin.setExtInt( 3 ); // Interrupt at CA1 Rising edge
-        else                   ca2Pin.setExtInt( 2 ); // Interrupt at CA1 Falling edge
+        if( (PCR & CA21) > 0 ) m_ctrlFlags |=  CA2bit; // Interrupt at CA2 Rising edge
+        else                   m_ctrlFlags &= ~CA2bit; // Interrupt at CA2 Falling edge
         /// if( (PCR & CA20) > 0 ) ;//Independent interrupt
     }
     
-    if( (PCR & CB1c) > 0 ) cb1Pin.setExtInt( 3 ); // Interrupt at CA1 Rising edge
-    else                   cb1Pin.setExtInt( 2 ); // Interrupt at CA1 Falling edge
+    if( (PCR & CB1c) > 0 ) m_ctrlFlags |=  CB1bit; // Interrupt at CA1 Rising edge
+    else                   m_ctrlFlags &= ~CB1bit; // Interrupt at CA1 Falling edge
     
     if( (PCR & CA22) > 0 ) // CB2 Control
     {
         m_CB2ctrl = -1;
-        if( (PCR & CB21) > 0 ) cb2Pin.setPortState( (PCR & CB20) > 0 ); // Manual Output
+        if( (PCR & CB21) > 0 ) cb2Pin.setOutState( (PCR & CB20) > 0 ); // Manual Output
         else                   m_CB2ctrl = PCR & CB20;// Handshake/Pulse Output
     }else{
-        if( (PCR & CB21) > 0 ) cb2Pin.setExtInt( 3 ); // Interrupt at CA1 Rising edge
-        else                   cb2Pin.setExtInt( 2 ); // Interrupt at CA1 Falling edge
+        if( (PCR & CB21) > 0 ) m_ctrlFlags |=  CB2bit; // Interrupt at CA1 Rising edge
+        else                   m_ctrlFlags &= ~CB2bit; // Interrupt at CA1 Falling edge
         /// if( (PCR & CB20) > 0 ) ;//Independent interrupt
     }
 }
 
-void INTERRUPT( uint vector )  // Called to execute an interrupt
+void writeIER( uint v )
 {
-    print("6522 INTERRUPT() "+vector); 
+    int set = v & 1<<7;
+    v &= 0b01111111;
+    if( set == 0 ) IER &= ~v ; // Clear flags
+    else           IER |=  v ; // Set flags
+    
+    component.writeRAM( 14, IER );
+}
+
+void writeIFR( uint v )
+{
+    v &= 0b01111111;
+    IFR &= ~v;
+    if( IFR == 0 ) irqPin.setOutState( true );
+    else           IFR |= 0b10000000;
+    
+    component.writeRAM( 13, IFR );
+}
+
+void extInt( uint chgBit )
+{
+    if( (m_ctrlState & chgBit) == m_ctrlFlags ) // Interrput
+    {
+        switch( chgBit )
+        {
+            case CA1bit: IFR |= CA1IF; break;
+            case CA2bit: IFR |= CA2IF; break;
+            case CB1bit: IFR |= CB1IF; break;
+            case CB2bit: IFR |= CB2IF; break;
+        }
+        irqPin.setOutState( false );
+    }
 }
 

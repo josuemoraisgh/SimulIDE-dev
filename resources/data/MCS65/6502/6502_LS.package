@@ -28,15 +28,15 @@
     <pin type=""    xpos="48"   ypos="184"  angle="0"   length="8"  id="PD5"  label="D5"  />
     <pin type=""    xpos="48"   ypos="192"  angle="0"   length="8"  id="PD6"  label="D6"  />
     <pin type=""    xpos="48"   ypos="200"  angle="0"   length="8"  id="PD7"  label="D7"  />
-    <pin type="cp"  xpos="-8"   ypos="8"    angle="180" length="8"  id="NMI"  label="!NMI"/>
-    <pin type="cp"  xpos="-8"   ypos="24"   angle="180" length="8"  id="IRQ"  label="!IRQ"/>
-    <pin type="cp"  xpos="-8"   ypos="40"   angle="180" length="8"  id="RDY"  label="RDY" />
-    <pin type="CP"  xpos="-8"   ypos="64"   angle="180" length="8"  id="RW"   label="R/!W"/>
-    <pin type="cp"  xpos="-8"   ypos="88"   angle="180" length="8"  id="P2"   label="Φ2"  />
-    <pin type="cp"  xpos="-8"   ypos="104"  angle="180" length="8"  id="P1"   label="Φ1"  />
-    <pin type="cp"  xpos="-8"   ypos="120"  angle="180" length="8"  id="SYNC" label="SYNC"/>
+    <pin type=""    xpos="-8"   ypos="8"    angle="180" length="8"  id="NMI"  label="!NMI"/>
+    <pin type=""    xpos="-8"   ypos="24"   angle="180" length="8"  id="IRQ"  label="!IRQ"/>
+    <pin type=""    xpos="-8"   ypos="40"   angle="180" length="8"  id="RDY"  label="RDY" />
+    <pin type=""    xpos="-8"   ypos="64"   angle="180" length="8"  id="RW"   label="R/!W"/>
+    <pin type=""    xpos="-8"   ypos="88"   angle="180" length="8"  id="P2"   label="Φ2"  />
+    <pin type=""    xpos="-8"   ypos="104"  angle="180" length="8"  id="P1"   label="Φ1"  />
+    <pin type=""    xpos="-8"   ypos="120"  angle="180" length="8"  id="SYNC" label="SYNC"/>
     <pin type="rst" xpos="-8"   ypos="144"  angle="180" length="8"  id="RST"  label="Rst" />
-    <pin type="cp"  xpos="-8"   ypos="168"  angle="180" length="8"  id="P0"   label="Φ0"  />
-    <pin type="cp"  xpos="-8"   ypos="192"  angle="180" length="8"  id="SO"   label="SO"  />
+    <pin type=""    xpos="-8"   ypos="168"  angle="180" length="8"  id="P0"   label="Φ0"  />
+    <pin type=""    xpos="-8"   ypos="192"  angle="180" length="8"  id="SO"   label="SO"  />
     
 </packageB>
