@@ -22,7 +22,7 @@ CompBase::~CompBase()
     {
         m_propDialog->setParent( nullptr );
         m_propDialog->close();
-        delete m_propDialog;
+        m_propDialog->deleteLater();
     }
 }
 
