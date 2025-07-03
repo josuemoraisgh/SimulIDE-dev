@@ -103,12 +103,14 @@ void ComponentList::loadTest( QString userDir )
         QString icon = getIcon( "test", compName );
         QString compFile;
         QString type;
+        QString simPath = path+".sim2";
+        if( !compSetDir.exists( simPath ) ) simPath = path+".sim1";
 
-        if( compSetDir.exists( path+".sim1") )
+        if( compSetDir.exists( simPath ) )
         {
             if( icon.isEmpty() ) icon = ":/subc.png";
             type = "Subcircuit";
-            compFile = compSetDir.absoluteFilePath( path+".sim1" );
+            compFile = compSetDir.absoluteFilePath( simPath );
         }
         else if( compSetDir.exists( path+".mcu") )
         {
@@ -119,7 +121,7 @@ void ComponentList::loadTest( QString userDir )
         {
             addItem( compName, catItem, icon, type );
             m_dirFileList[ compName ] = compSetDir.absoluteFilePath( compName );
-            if( !compFile.isEmpty() ) m_dataFileList[ compName ] = compFile;   // Save sim1 File used to create this item
+            if( !compFile.isEmpty() ) m_dataFileList[ compName ] = compFile;   // Save sim File used to create this item
         }
     }
 }
@@ -242,7 +244,11 @@ void ComponentList::loadXml( QString xmlFile )
                         if( type == "Subcircuit" )
                         {
                             QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
-                            if( !QFile::exists( compFolder+"/"+name+".sim1" ) ) compFolder = compFolder+"/"+name;
+                            QString nameFolder = compFolder+"/"+name;
+
+                            if( !QFile::exists( nameFolder+".sim2" )
+                             || !QFile::exists( nameFolder+".sim1" ) ) compFolder = nameFolder;
+
                             m_dirFileList[ name ] = compFolder;
                         }
                         m_dataFileList[ name ] = xmlFile;   // Save xml File used to create this item

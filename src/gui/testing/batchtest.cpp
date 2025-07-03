@@ -35,7 +35,7 @@ void BatchTest::doBatchTest( QString folder )
 
 void BatchTest::prepareTest( QDir baseDir )
 {
-    QStringList circList = baseDir.entryList( {"*.sim1"}, QDir::Files );
+    QStringList circList = baseDir.entryList( {"*.sim2","*.sim1"}, QDir::Files );
 
     for( QString file : circList )
         m_circFiles.append( baseDir.absoluteFilePath( file ) );

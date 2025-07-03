@@ -86,7 +86,7 @@ int main( int argc, char *argv[] )
                 QTimer::singleShot( 300, [arg](){ BatchTest::doBatchTest( arg ); } );
             }
         }
-        else if( arg.endsWith(".sim1") )
+        else if( arg.endsWith(".sim2") || arg.endsWith(".sim1"))
         {
             QString file = "file://";
             if( arg.startsWith( file ) ) arg.replace( file, "" ).replace("\r\n", "" ).replace("%20", " ");

@@ -62,7 +62,8 @@ void FileBrowser::open()
     
     if( m_fileSystemModel->isDir( currentIndex() ) ) setPath( path );
     else{
-        if( path.endsWith(".sim1") ) CircuitWidget::self()->loadCirc( path );
+        if( path.endsWith(".sim2")
+         || path.endsWith(".sim1") ) CircuitWidget::self()->loadCirc( path );
         else                         EditorWindow::self()->loadFile( path );
     }
 }

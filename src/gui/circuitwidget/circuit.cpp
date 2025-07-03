@@ -67,7 +67,7 @@ Circuit::Circuit( int width, int height, CircuitView* parent )
     m_undoIndex = -1;
 
     m_circRev    = MainWindow::self()->revision();
-    m_backupPath = MainWindow::self()->getConfigPath("backup.sim1");
+    m_backupPath = MainWindow::self()->getConfigPath("backup.sim2");
     m_hideGrid   = MainWindow::self()->settings()->value("Circuit/hideGrid" ).toBool();
     m_maxUndoSteps = MainWindow::self()->settings()->value("Circuit/undoSteps" ).toInt();
     if( m_maxUndoSteps == 0 ) m_maxUndoSteps = 100;
@@ -485,7 +485,7 @@ bool Circuit::saveCircuit( QString filePath )
     QString oldFilePath = m_filePath;
     m_filePath = filePath;
 
-    if( m_circRev < 240000 ) // Older circuit: Save backup copy
+    /*if( m_circRev < 240000 ) // Older circuit: Save backup copy
     {
         QString circCopy = oldFilePath;
         circCopy = circCopy.replace(".sim1", "_copy.sim1");
@@ -497,7 +497,7 @@ bool Circuit::saveCircuit( QString filePath )
         {
             qDebug() << "Copy Error" << oldFilePath << circCopy;
         }
-    }
+    }*/
 
     bool saved = saveString( filePath, circuitToString() );
 
@@ -518,9 +518,9 @@ void Circuit::importCircuit()
     m_deltaMove = QPointF( 0, 0 );
 
     QString filePath = QFileDialog::getOpenFileName( 0l, tr("Import Circuit"), m_filePath,
-                                          tr("Circuits (*.sim1);;All files (*.*)"));
+                                          tr("Circuits (*.sim2);;All files (*.*)"));
 
-    if( !filePath.endsWith(".sim1") ) return;
+    if( !filePath.endsWith(".sim2") || !filePath.endsWith(".sim1")) return;
 
     QString doc = fileToString( filePath, "Circuit::importCirc" );
     QApplication::clipboard()->setText( doc );
@@ -1155,6 +1155,7 @@ void Circuit::dropEvent( QGraphicsSceneDragDropEvent* event )
         Component* image = createComponent("Image", "", cPos );
         if( image ) image->setBackground( file );
     }
+    else if( file.endsWith(".sim2") ) CircuitWidget::self()->loadCirc( file );
     else if( file.endsWith(".sim1") ) CircuitWidget::self()->loadCirc( file );
     else if( file.endsWith(".package") )
     {

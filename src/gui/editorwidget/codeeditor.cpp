@@ -457,6 +457,7 @@ void CodeEditor::setFile( QString filePath )
          ||  extension == ".html"
          ||  extension == ".package"
          ||  extension == ".mcu"
+         ||  extension == ".sim2"
          ||  extension == ".sim1"
          ||  extension == ".simu" )
     {

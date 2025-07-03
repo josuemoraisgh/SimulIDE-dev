@@ -93,7 +93,7 @@ MainWindow::MainWindow()
     m_circuitW->newCircuit();
     readSettings();
 
-    QString backPath = getConfigPath( "backup.sim1" );
+    QString backPath = getConfigPath( "backup.sim2" );
     if( QFile::exists( backPath ) )
     {
         QMessageBox msgBox;
