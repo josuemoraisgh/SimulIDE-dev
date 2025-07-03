@@ -127,23 +127,20 @@ void Ili9341::voltChanged()
                 {
                     m_inByte = 0;
 
-                    uint blue,green,red,B1,B2,B3;
+                    uint r,g,b;
                     if( m_dataBytes == 2 ) // 16 bits format: RRRRRGGGGGGBBBBB
                     {
-                        B1 = (m_data & 0b1111100000000000)<<8;
-                        B2 = (m_data & 0b0000011111100000)<<5;
-                        B3 = (m_data & 0b0000000000011111)<<3;
+                        r = (m_data & 0b1111100000000000)<<8;
+                        g = (m_data & 0b0000011111100000)<<5;
+                        b = (m_data & 0b0000000000011111)<<3;
                     }
                     else // 18 bits format: RRRRRR00GGGGGG00BBBBBB00
                     {
-                        B1 = (m_data & 0b111111000000000000000000);
-                        B2 = (m_data & 0b000000001111110000000000);
-                        B3 = (m_data & 0b000000000000000011111100);
+                        r = (m_data & 0b111111000000000000000000);
+                        g = (m_data & 0b000000001111110000000000);
+                        b = (m_data & 0b000000000000000011111100);
                     }
-                    //if( m_RGB ) { red  = B1; green = B2; blue = B3; }
-                    //else        { blue = B1; green = B2; red  = B3; }
-                    red  = B1; green = B2; blue = B3;
-                    m_aDispRam[m_addrX][m_addrY] = red+green+blue;
+                    m_aDispRam[m_addrX][m_addrY] = r+g+b;
                     incrementPointer();
                     m_data = 0;
                 }
@@ -223,15 +220,13 @@ void Ili9341::getParameter()
                 m_dataBytes = mode ? 2 : 3;
             }break;
             case 0x36:   // Memory Access Control
-            {                                    /// TODO: this doesn't work this way
-                //m_dirY = (m_rxReg & (1<<7)) ? -1 : 1;
-                //m_dirX = (m_rxReg & (1<<6)) ? -1 : 1;
+            {
+                m_dirY = m_rxReg & (1<<7);
+                m_dirX = m_rxReg & (1<<6);
 
-                //uint8_t MV = m_rxReg & (1<<5);
-                //m_maxX = MV ? 319 : 239;
-                //m_maxY = MV ? 239 : 319;
+                m_rowCol = m_rxReg & (1<<5);
 
-                //m_RGB = (m_rxReg & (1<<3)) ? false :true;
+                m_RGB = (m_rxReg & (1<<3)) ? false :true;
             }break;
         }
         m_readBytes--;
@@ -348,43 +343,29 @@ void Ili9341::clearDDRAM()
 
 void Ili9341::incrementPointer() 
 {
-    if( m_dirX > 0 )
-    {
-        m_addrX++;
-        if( m_addrX > m_endX ){
-            m_addrX = m_startX;
-            incrementY();
-        }
-    }else{
-        m_addrX--;
-        if( m_addrX < m_startX ){
-            m_addrX = m_endX;
-            incrementY();
-}   }   }
-
-void Ili9341::incrementY()
-{
-    if( m_dirY > 0 ){
+    m_addrX++;
+    if( m_addrX > m_endX ){
+        m_addrX = m_startX;
         m_addrY++;
         if( m_addrY > m_endY ) m_addrY = m_startY;
-    }else{
-        m_addrY--;
-        if( m_addrY < m_startY ) m_addrY = m_endY;
-}   }
+    }
+}
 
 void Ili9341::reset() 
 {
-    m_dirX = 1;
+    m_dirX = 0;
     m_addrX  = 0;
     m_startX = 0;
     m_endX   = 239;
     m_maxX   = 239;
 
-    m_dirY = 1;
+    m_dirY = 0;
     m_addrY  = 0;
     m_startY = 0;
     m_endY   = 319;
     m_maxY   = 319;
+
+    m_rowCol = 0;
 
     m_inBit  = 0;
     m_inByte = 0;
@@ -411,6 +392,29 @@ void Ili9341::reset()
     m_lastCommand = 0;
 
     //m_reset = true;
+}
+
+uint Ili9341::getPixel( int row, int col )
+{
+    if( m_dirY ) row = 319-row;
+    if( !m_dirX ) col = 239-col; // ???????????????????????
+    if( m_rowCol )
+    {
+        int r = row;
+        row = col;
+        col = r;
+    }
+    uint pixel = m_aDispRam[col][row];
+    if( m_RGB )
+    {
+        uint r,g,b;
+
+        r = (m_data & 0b111111110000000000000000);
+        g = (m_data & 0b000000001111111100000000);
+        b = (m_data & 0b000000000000000011111111);
+        pixel = (b<<16) + g + (r>>16);
+    }
+    return pixel;
 }
 
 void Ili9341::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
@@ -443,8 +447,12 @@ void Ili9341::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
                     //else if( yRAM < 0   ) yRAM += 320;
                 }
             }
+            if( m_rowCol && yRAM > 239 ) continue;
             for( int col=0; col<240; ++col )
-                painter.fillRect( col*2, y, 2, 2, QColor( m_aDispRam[col][yRAM] ).rgb() );
+            {
+                uint pixel = getPixel( row, col );
+                painter.fillRect( col*2, y, 2, 2, QColor(pixel).rgb() );
+            }
         }
 
         painter.end();
