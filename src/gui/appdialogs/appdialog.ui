@@ -70,7 +70,7 @@
         <locale language="C" country="AnyCountry"/>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <property name="usesScrollButtons">
         <bool>false</bool>
@@ -407,7 +407,7 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <property name="spacing">
-          <number>9</number>
+          <number>6</number>
          </property>
          <property name="leftMargin">
           <number>9</number>
@@ -490,9 +490,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="animate">
+          <widget class="QCheckBox" name="animate_pins">
            <property name="text">
-            <string>Animate</string>
+            <string>Animate Pins</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="animate_curr">
+           <property name="text">
+            <string>Animate Currents</string>
            </property>
           </widget>
          </item>

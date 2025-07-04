@@ -6,15 +6,21 @@
 #pragma once
 
 #include "compbase.h"
+#include "updatable.h"
 
 class ConnectorLine;
 class Pin;
 
-class Connector : public CompBase
+class Connector : public CompBase, public Updatable
 {
+    friend class Node;
+    friend class ConnectorLine;
+
     public:
         Connector( QString type, QString id, Pin* startpin, Pin* endpin = nullptr );
         ~Connector();
+
+        void updateStep() override;
 
         QString pListStr() { return m_pointList.join(","); }
         QStringList pointList() { refreshPointList(); return m_pointList; }
@@ -45,6 +51,7 @@ class Connector : public CompBase
         void splitCon( int index, Pin* pin0, Pin* pin2 );
 
         void updateLines();
+        void animate( bool an );
 
         void setVisib(  bool vis );
         void setSelected( bool selected );
@@ -60,6 +67,8 @@ class Connector : public CompBase
 
         bool m_freeLine;
 
+        double getCurrent();
+
     private:
         void remConLine( ConnectorLine* line  );
         void updateCon();
@@ -70,6 +79,7 @@ class Connector : public CompBase
         int m_lastindex;
         
         bool m_isBus;
+        bool m_animate;
 
         Pin*    m_startPin;
         Pin*    m_endPin;

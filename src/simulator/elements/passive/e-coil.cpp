@@ -74,8 +74,8 @@ void eCoil::stampCurrent( double current )
 
 void eCoil::addIductor( eCoil* coil, double g )
 {
-    int n0 = coil->getEpin( 0 )->getEnode()->getNodeNumber();
-    int n1 = coil->getEpin( 1 )->getEnode()->getNodeNumber();
+    eNode* n0 = coil->getEpin( 0 )->getEnode();
+    eNode* n1 = coil->getEpin( 1 )->getEnode();
 
     m_ePin[0]->addSingAdm( n0,-g );
     m_ePin[0]->addSingAdm( n1, g );

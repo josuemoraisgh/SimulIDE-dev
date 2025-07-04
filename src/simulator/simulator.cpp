@@ -144,7 +144,7 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     if( m_state == SIM_RUNNING ) // Run Circuit in a parallel thread
         m_CircuitFuture = QtConcurrent::run( this, &Simulator::runCircuit );
 
-    if( Circuit::self()->animate() ) // Moved here to be in parallel with runCircuit thread
+    if( Circuit::self()->animatePins() ) // Moved here to be in parallel with runCircuit thread
     {
         if( (m_timerTime-m_updtTime) >= 2e8 ){ // Animate at 5 FPS
             //Circuit::self()->updateConnectors();
@@ -152,6 +152,11 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
             m_updtTime = m_timerTime;
         }
     }
+    if( Circuit::self()->animateCurr() )  // TODO:  optimize
+    {
+        for( eNode* node : m_eNodeList) node->updateCurrents();
+    }
+
     // Calculate Real Simulation Speed
     m_refTime  = m_RefTimer.nsecsElapsed();
     uint64_t deltaRefTime = m_refTime-m_lastRefT;

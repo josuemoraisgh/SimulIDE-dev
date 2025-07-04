@@ -3,7 +3,10 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+#include <math.h>
+
 #include "e-node.h"
+#include "node.h"
 #include "pin.h"
 #include "e-pin.h"
 #include "connector.h"
@@ -67,9 +70,9 @@ void eNode::initialize()
     m_nodeList.clear();
 }
 
-void eNode::addConnection( ePin* epin, int node )
+void eNode::addConnection( ePin* epin, eNode* node )
 {
-    if( node == m_nodeNum ) return;// Be sure msg doesn't come from this node
+    if( node == this ) return;// Be sure msg doesn't come from this node
 
     Connection* first = m_firstAdmit; // Create list of connections
     while( first ){
@@ -89,7 +92,7 @@ void eNode::addConnection( ePin* epin, int node )
     conn->next = m_nodeAdmit;  // Prepend
     m_nodeAdmit = conn;
 
-    if( !m_nodeList.contains( node ) ) m_nodeList.append( node ); // Used by CircMatrix
+    if( !m_nodeList.contains( conn->nodeNum ) ) m_nodeList.append( conn->nodeNum ); // Used by CircMatrix
 }
 
 void eNode::stampAdmitance( ePin* epin, double admit ) // Be sure msg doesn't come from this node
@@ -103,7 +106,7 @@ void eNode::stampAdmitance( ePin* epin, double admit ) // Be sure msg doesn't co
     changed();
 }
 
-void eNode::addSingAdm( ePin* epin, int node, double admit )
+void eNode::addSingAdm( ePin* epin, eNode* node, double admit )
 {
     Connection* conn = new Connection( epin, node );
     conn->next = m_firstSingAdm;  // Prepend
@@ -121,7 +124,7 @@ void eNode::addSingAdm( ePin* epin, int node, double admit )
         conn->next = m_nodeAdmit;  // Prepend
         m_nodeAdmit = conn;
     }
-    if( !m_nodeList.contains( node ) ) m_nodeList.append( node ); // Used by CircMatrix
+    if( !m_nodeList.contains( conn->nodeNum ) ) m_nodeList.append( conn->nodeNum ); // Used by CircMatrix
     m_admitChanged = true;
     changed();
 }
@@ -187,12 +190,12 @@ void eNode::stampMatrix()
             Connection* conn = m_firstAdmit; // Full Admitances
             while( conn ){
                 double adm = conn->value;
-                int  enode = conn->node;
+                int  enode = conn->nodeNum;
 
                 if( enode >= 0 ){        // Calculate admitances to nodes
                     na = m_nodeAdmit;
                     while( na ){
-                        if( na->node == enode ){ na->value += adm; break; }
+                        if( na->nodeNum == enode ){ na->value += adm; break; }
                         na = na->next;
                     }
                 }
@@ -204,12 +207,12 @@ void eNode::stampMatrix()
             conn = m_firstSingAdm;      // Single admitance values
             while( conn ){
                 double adm = conn->value;
-                int  enode = conn->node;
+                int  enode = conn->nodeNum;
 
                 if( enode >= 0 ){        // Add sinle admitance to node
                     na = m_nodeAdmit;
                     while( na ){
-                        if( na->node == enode ){ na->value += adm; break; }
+                        if( na->nodeNum == enode ){ na->value += adm; break; }
                         na = na->next;
                     }
                 }
@@ -217,7 +220,7 @@ void eNode::stampMatrix()
             }
             na = m_nodeAdmit;
             while( na ){                  // Stamp non diagonal
-                int    enode = na->node;
+                int    enode = na->nodeNum;
                 double admit = na->value;
                 if( enode >= 0 ) CircMatrix::self()->stampMatrix( m_nodeNum, enode, -admit );
                 na = na->next;
@@ -286,7 +289,9 @@ void eNode::clear()
     for( ePin* epin : m_ePinList ){
         epin->setEnode( nullptr );
         epin->setEnodeComp( nullptr );
-}   }
+    }
+    m_nodeCompList.clear();
+}
 
 QList<int> eNode::getConnections()
 { return m_nodeList; }
@@ -337,6 +342,11 @@ void eNode::addToNoLinList( eElement* el )
     //qDebug() <<m_id<< el->getId();
 }
 
+void eNode::addNodeComp( Node* n )
+{
+    if( !m_nodeCompList.contains( n ) ) m_nodeCompList.append( n );
+}
+
 void eNode::updateConnectors()
 {
     if( !m_voltChanged ) return;
@@ -348,6 +358,33 @@ void eNode::updateConnectors()
             Connector* conn = pin->connector();
             if( conn ) conn->updateLines();
         }
+    }
+}
+
+void eNode::updateCurrents()
+{
+    for( ePin* epin : m_ePinList ) epin->m_hasCurrent = false;
+    Connection* conn = m_firstAdmit;
+    while( conn )
+    {
+        double admit = conn->value;
+        double volt1 = conn->node->getVolt();
+        double current = (volt1-m_volt)*admit;
+        if( fabs(current) < 1e-6 ) current = 0;
+        conn->epin->m_current = current;
+        conn->epin->m_hasCurrent = true;
+
+        conn = conn->next;
+    }
+    QList<Node*> nodeCompList = m_nodeCompList;
+    int counter = 0;
+    while( !nodeCompList.isEmpty() )
+    {
+        for( Node* node : nodeCompList )
+            if( node->hasCurrents() )
+                nodeCompList.removeOne( node );
+        counter++;
+        if( counter > 100 ) break;
     }
 }
 

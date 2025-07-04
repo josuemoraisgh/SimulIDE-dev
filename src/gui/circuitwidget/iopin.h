@@ -86,6 +86,9 @@ class IoPin : public Pin, public eElement
         void setRiseTime( double time ) { m_timeRis = time; }
         void setFallTime( double time ) { m_timeFal = time; }
 
+        double getCurrent() override;
+        bool hasCurrent() override { return false; }
+
  static QStringList registerScript( asIScriptEngine* engine );
 
     protected:

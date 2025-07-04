@@ -42,7 +42,7 @@ Pin::Pin( int angle, const QPoint pos, QString id, int index, Component* parent,
     m_Hflip = 1;
     m_Vflip = 1;
     m_overScore = -1;
-    
+
     m_color[undef_state] = Qt::black;
     m_color[driven_low ] = QColor( 100, 100, 250 );
     m_color[open_low   ] = QColor( 0, 0, 180 );;

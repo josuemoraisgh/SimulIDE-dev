@@ -13,6 +13,8 @@ ePin::ePin( QString id, int index )
     m_enode = nullptr;
     m_enodeComp = nullptr;
     m_inverted = false;
+
+    m_current = 0;
 }
 ePin::~ePin()
 {
@@ -33,10 +35,10 @@ void ePin::setEnodeComp( eNode* enode )
 {
     m_enodeComp = enode;
     if( m_enode && m_enodeComp )
-        m_enode->addConnection( this, enode->getNodeNumber() );
+        m_enode->addConnection( this, enode );
 }
 
-void ePin::addSingAdm( int node, double admit )
+void ePin::addSingAdm( eNode* node, double admit )
 {
     if( m_enode ) m_enode->addSingAdm( this, node, admit );
 }

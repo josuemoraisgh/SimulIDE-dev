@@ -33,7 +33,8 @@ AppDialog::AppDialog( QWidget* parent )
     // Circuit Settings
     drawGrid->setChecked( Circuit::self()->drawGrid() );
     showScroll->setChecked( CircuitView::self()->showScroll() );
-    animate->setChecked( Circuit::self()->animate() );
+    animate_pins->setChecked( Circuit::self()->animatePins() );
+    animate_curr->setChecked( Circuit::self()->animateCurr() );
     canvasWidth->setValue( Circuit::self()->sceneWidth() );
     canvasHeight->setValue( Circuit::self()->sceneHeight() );
     fps->setValue( Simulator::self()->fps() );
@@ -159,9 +160,14 @@ void AppDialog::on_showScroll_toggled( bool show )
     CircuitView::self()->setShowScroll( show );
 }
 
-void AppDialog::on_animate_toggled( bool ani )
+void AppDialog::on_animate_pins_toggled( bool ani )
 {
-    Circuit::self()->setAnimate( ani );
+    Circuit::self()->setAnimatePins( ani );
+}
+
+void AppDialog::on_animate_curr_toggled( bool ani )
+{
+    Circuit::self()->setAnimateCurr( ani );
 }
 
 void AppDialog::on_canvasWidth_editingFinished()

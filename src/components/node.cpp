@@ -46,8 +46,37 @@ void Node::pinMessage( int rem ) // Called by pin
 
 void Node::registerEnode( eNode* enode, int n )
 {
+    enode->addNodeComp( this );
     for( int i=0; i<3; i++ )
         if( m_pin[i]->conPin() ) m_pin[i]->registerPinsW( enode, n );
+}
+
+bool Node::hasCurrents() // calculate current when 2 pins already have current
+{
+    int noCurrent = -1;
+    int currents = 0;
+    double current;
+    for( int i=0; i<3; i++ )
+    {
+        if( m_pin[i]->conPin()->hasCurrent() )
+        {
+            double curr = m_pin[i]->conPin()->getCurrent();
+            m_pin[i]->setHasCurrent( true );
+            m_pin[i]->setCurrent( -curr );
+            currents ++;
+            current += curr;
+        }
+        else noCurrent = i;
+    }
+    if( currents == 2 )
+    {
+        m_pin[noCurrent]->setHasCurrent( true );
+        m_pin[noCurrent]->setCurrent( current );
+        currents = 3;
+    }
+    if( currents == 3 ) m_color = Qt::black;
+    else                m_color = Qt::red;
+    return currents == 3;
 }
 
 bool Node::checkRemove() // Only remove if there are less than 3 connectors
@@ -96,6 +125,7 @@ void Node::joinConns( int c0, int c1 )
     if( pin1->conPin() != pin0 )
     {
         Connector* con = new Connector( "Connector", "Connector-"+Circuit::self()->newConnectorId(), pin0->conPin() );
+        con->animate( con0->m_animate );
         Circuit::self()->conList()->append( con );
 
         QStringList list0 = con0->pointList();

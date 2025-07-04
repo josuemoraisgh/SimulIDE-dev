@@ -158,6 +158,7 @@ void IoPin::setPinMode( pinMode_t mode )
             m_vddAdmit = 0;
             break;
         case source:
+            m_hasCurrent = true;
             m_vddAdmit = 1/cero_doub;
             m_gndAdmit = cero_doub;
             m_outState = true;
@@ -299,6 +300,29 @@ void IoPin::stampAll()
 {
     ePin::stampAdmitance( m_admit );
     stampVolt( m_outVolt );
+}
+
+double IoPin::getCurrent()
+{
+    m_current = 0;
+    /*if( !m_enode ) return 0;
+
+    //double current = m_current;
+
+    double volt = m_enode->getVolt();
+    double volt1 = m_outVolt-volt;
+    double current = volt1*m_admit;
+
+    switch( m_pinMode )
+    {
+        case undef_mode: m_current = 0; break;
+        case input:  m_current = volt*m_gndAdmit; break;
+        case output:
+        case openCo:
+        case source: m_current = (m_outVolt-volt)*m_admit; break;
+    }
+    if( fabs(m_current) < 1e-6 ) m_current = 0;*/
+    return m_current;
 }
 
 void IoPin::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )

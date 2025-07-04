@@ -24,6 +24,7 @@ Connector::Connector( QString type, QString id, Pin* startpin, Pin* endpin )
     m_actLine   = 0;
     m_lastindex = 0;
     m_freeLine = false;
+    m_animate = Circuit::self()->animateCurr();
     m_startPin = startpin;
     setIsBus( m_startPin->isBus() );
 
@@ -43,6 +44,20 @@ new StrProp<Connector>( "pointList" ,"","", this, &Connector::pListStr,   &Conne
 Connector::~Connector()
 {
     Circuit::self()->compMap()->remove( m_id );
+}
+
+void Connector::updateStep()
+{
+    double current = getCurrent();
+
+    for( ConnectorLine* line : m_conLineList ) line->animateLine( current );
+
+    /*eNode* enode = startPin()->getEnode();
+    if( enode && enode->voltchanged() )
+    {
+        enode->setVoltChanged( false );
+        for( WireLine* line : m_wireLineList ) line->update();
+    }*/
 }
 
 void Connector::remNullLines()      // Remove lines with leght = 0 or aligned
@@ -109,6 +124,7 @@ void Connector::setPointList( QStringList plist )
 
         ConnectorLine* line2 = new ConnectorLine( p1x, p1y, p2x, p2y, this );
         line2->setIsBus( m_isBus );
+        line2->m_animateCurrent = m_animate;
         m_conLineList.insert( index, line2 );
         Circuit::self()->addItem( line2 );
 
@@ -159,6 +175,7 @@ void Connector::addConLine( ConnectorLine* line, int index )
         m_conLineList.at( index+1 )->sSetP1( line->p2() );
     }
     line->setIsBus( m_isBus );
+    line->m_animateCurrent = m_animate;
     if( Circuit::self()->is_constarted() ) line->setCursor( Qt::ArrowCursor );
 }
 
@@ -403,7 +420,29 @@ void Connector::setIsBus( bool bus )
     m_isBus = bus;
 }
 
+void Connector::animate( bool an )
+{
+    m_animate = an;
+
+    for( ConnectorLine* line : m_conLineList ) line->m_animateCurrent = an;
+
+    if( an ) Simulator::self()->addToUpdateList( this );
+    else     Simulator::self()->remFromUpdateList( this );
+}
+
 QString Connector::startPinId() { return m_startPin->pinId(); }
 QString Connector::endPinId()   { return m_endPin->pinId(); }
 
 double Connector::getVoltage() { return m_startPin->getVoltage(); }
+
+double Connector::getCurrent()
+{
+    Pin* pin = (Pin*) m_startPin;
+    double current = pin->getCurrent();
+    if( current == 0 )
+    {
+        pin = (Pin*) m_endPin;
+        current = -pin->getCurrent();
+    }
+    return current;
+}

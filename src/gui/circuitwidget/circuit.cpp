@@ -52,6 +52,7 @@ Circuit::Circuit( int width, int height, CircuitView* parent )
     m_redo       = false;
     m_changed    = false;
     m_animate    = false;
+    m_animateCurr = false;
     m_pasting    = false;
     m_deleting   = false;
     m_loading    = false;
@@ -421,7 +422,7 @@ void Circuit::loadStrDoc( QString &doc )
     for( ShieldSubc* shield : shieldList ) shield->connectBoard();
     for( Linker*     linker : linkList   ) linker->createLinks( &compList );
 
-    setAnimate( m_animate ); // Force Pin update
+    setAnimatePins( m_animate ); // Force Pin update
 
     m_subCircuit = nullptr;
     m_busy = false;
@@ -1242,10 +1243,17 @@ void Circuit::setDrawGrid( bool draw )
     update();
 }
 
-void Circuit::setAnimate( bool an )
+void Circuit::setAnimatePins( bool an )
 {
     m_animate = an;
     for( Pin* pin : m_pinMap.values() ) pin->animate( an );
+    update();
+}
+
+void Circuit::setAnimateCurr( bool an )
+{
+    m_animateCurr = an;
+    for( Connector* con : m_connList ) con->animate( an );
     update();
 }
 

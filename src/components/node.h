@@ -25,6 +25,8 @@ class Node : public Component
         void pinMessage( int rem=1 ) override;
         bool checkRemove();
 
+        bool hasCurrents();
+
         virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* option, QWidget* widget ) override;
 
     protected:

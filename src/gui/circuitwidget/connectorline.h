@@ -13,6 +13,8 @@ class ConnectorLine : public QGraphicsItem
 {
     Q_INTERFACES(QGraphicsItem)
 
+    friend class Connector;
+
     public:
         ConnectorLine( int x1, int y1, int x2, int y2, Connector* connector );
         ~ConnectorLine();
@@ -48,6 +50,8 @@ class ConnectorLine : public QGraphicsItem
         void updatePrev() { if( m_prevLine ) m_prevLine->sSetP2( QPoint( m_p1X, m_p1Y) ); }
         void updateNext();
 
+        void animateLine( double current );
+
         bool connectToWire( QPoint point1 );
         
         void setIsBus( bool bus ) { m_isBus = bus; }
@@ -66,12 +70,26 @@ class ConnectorLine : public QGraphicsItem
         void sSetP2( QPoint );
         void remove();
 
+    protected:
+        void hoverMoveEvent( QGraphicsSceneHoverEvent* event ) override;
+        void hoverLeaveEvent( QGraphicsSceneHoverEvent* event ) override;
+
     private:
+        void updtLength();
         int myIndex();
+
         int m_p1X;
         int m_p1Y;
         int m_p2X;
         int m_p2Y;
+
+        int m_lenght;
+        double m_step;
+        bool m_animateCurrent;
+        double m_currentSpeed;
+        double m_current;
+
+        QPoint m_mousePos;
         
         bool m_isBus;
         bool m_moveP1;

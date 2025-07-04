@@ -4,6 +4,7 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include <math.h>
+#include <QToolTip>
 
 #include "connectorline.h"
 #include "connector.h"
@@ -33,8 +34,16 @@ ConnectorLine::ConnectorLine( int x1, int y1, int x2, int y2, Connector* connect
     m_moveP1 = false;
     m_moveP2 = false;
     m_moving = false;
+    m_animateCurrent = false;
+
+    m_step   = 0;
+    m_lenght = 0;
+    m_current = 0;
+
+    m_mousePos = QPoint( 1e6, 1e6 );
 
     this->setFlag( QGraphicsItem::ItemIsSelectable, true );
+    setAcceptHoverEvents( true );
 
     setCursor( Qt::CrossCursor );
     setZValue( 100 );
@@ -319,6 +328,49 @@ void ConnectorLine::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
        menu.exec(event->screenPos());
 }   }
 
+void ConnectorLine::hoverMoveEvent( QGraphicsSceneHoverEvent* event )
+{
+    m_mousePos = event->screenPos();
+    QGraphicsItem::hoverMoveEvent( event );
+    // use p.x() and p.y() to set the tooltip accrdingly, for example:
+    //if (p.y() < height()/2)
+    //    setTooltip("Upper Half");
+    //else
+    //    setToolTip("Bottom Half");
+    //qDebug() << "WireLine::hoverMoveEvent";
+}
+
+void ConnectorLine::hoverLeaveEvent( QGraphicsSceneHoverEvent* event )
+{
+    m_mousePos = QPoint( 1e6, 1e6 );
+    QGraphicsItem::hoverLeaveEvent( event );
+}
+
+void ConnectorLine::animateLine( double current )
+{
+    m_current = current;
+    update();
+
+    if( m_moving ) return;
+    updtLength();
+    //m_animateCurrent = true;
+    m_currentSpeed = 100*current;
+    uint64_t time = Simulator::self()->circTime()/1e8;
+    m_step = time;
+    time *= m_currentSpeed;
+    time /= 80; // 50 ms FIXME: get FPS
+    time = time%80;
+    m_step = (double)time/10;
+    //qDebug() <<"ConnectorLine::animate"<< m_lenght << time << m_step;
+}
+
+void ConnectorLine::updtLength()
+{
+    int termX = m_p2X-m_p1X;
+    int termY = m_p2Y-m_p1Y;
+    m_lenght = std::fabs( std::sqrt( termX*termX + termY*termY) );
+}
+
 QPainterPath ConnectorLine::shape() const
 {
     int dy = m_p2Y-m_p1Y;
@@ -354,20 +406,20 @@ QPainterPath ConnectorLine::shape() const
     return path;
 }
 
-void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem* option, QWidget* widget )
+void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
 {
     //pen.setColor( Qt::darkGray);
     //p->setPen( pen );
 
     QColor color;
-    if( isSelected() ) color = QColor( Qt::darkGray );
-    else if( m_isBus ) color =  Qt::darkGreen;
+    if( isSelected() ) color = Qt::darkGray ;
+    else if( m_isBus ) color = Qt::darkGreen;
     else if( Circuit::self()->animate() )
     {
         if( m_pConnector->getVoltage() > 2.5 ) color = QColor( 200, 50, 50  );
         else                                   color = QColor( 50,  50, 200 );
     }
-    else color = QColor( 40, 40, 60 /*Qt::black*/ );
+    else color = QColor( 40, 40, 60 );
 
     QPen pen( color, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
     //p->setBrush( Qt::green );
@@ -376,8 +428,41 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem* option, 
     //p->drawPath( shape() );
     
     if( m_isBus ) pen.setWidth( 3 );
+    else if( m_animateCurrent ) pen.setWidthF( 2.6 );
 
     p->setPen( pen );
     p->drawLine( 0, 0, dx(), dy());
+
+    if( m_isBus ) return;
+    if( !m_animateCurrent ) return;
+
+    if( !Simulator::self()->isRunning() ) return;
+    p->setBrush( QColor( 220, 255, 70 ) );
+    pen.setWidthF( 0.0 );
+    p->setPen( pen );
+
+    int dir = 1;
+    if( dx() )
+    {
+        if( dx() < 0 ) dir = -1;
+
+        for( double i=0; i+m_step<m_lenght; i+=8 )
+            p->drawEllipse( QPointF( dir*(i+m_step), 0 ), 1.4, 1.4 );
+    }
+    if( dy() )
+    {
+        if( dy() < 0 ) dir = -1;
+
+        for( double i=0; i+m_step<m_lenght; i+=8 )
+            p->drawEllipse( QPointF( 0, dir*(i+m_step )), 1.4, 1.4 );
+    }
+
+    if( m_mousePos.x() < 1e6 )
+    {
+        QToolTip::showText( m_mousePos, "" );
+        QToolTip::showText( m_mousePos, "current = "+QString::number( fabs(m_current))+" A" );
+
+        // p->drawText( m_mousePos, "current = 10 A");
+    }
 }
 

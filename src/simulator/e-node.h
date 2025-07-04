@@ -8,10 +8,13 @@
 #include<QHash>
 
 class ePin;
+class Node;
 class eElement;
 
 class eNode
 {
+    friend class IoPin;
+
     public:
         eNode( QString id );
         ~eNode();
@@ -28,10 +31,10 @@ class eNode
         void addToNoLinList( eElement* el );
         //void remFromNoLinList( eElement* el );
 
-        void addConnection( ePin* epin, int node );
+        void addConnection( ePin* epin, eNode* node );
         void stampAdmitance( ePin* epin, double admit );
 
-        void addSingAdm( ePin* epin, int node, double admit );
+        void addSingAdm( ePin* epin, eNode* node, double admit );
         void stampSingAdm( ePin* epin, double admit );
 
         void createCurrent( ePin* epin );
@@ -51,6 +54,9 @@ class eNode
         void setSingle( bool single ) { m_single = single; } // This eNode can calculate it's own Volt
 
         void updateConnectors();
+        void updateCurrents();
+
+        void addNodeComp( Node* n );
 
         QList<ePin*> getEpins() { return m_ePinList; }
 
@@ -62,12 +68,15 @@ class eNode
         class Connection
         {
             public:
-                Connection( ePin* e, int n=0, double v=0 ){ epin = e; node = n; value = v; }
+                Connection( ePin* e, eNode* n=nullptr, double v=0 )
+                { epin = e; node = n; value = v;
+                  if( n ) nodeNum = n->getNodeNumber(); }
                 ~Connection(){;}
 
-                Connection* next;
-                ePin*  epin;
-                int    node;
+                Connection* next = nullptr;
+                ePin*  epin = nullptr;
+                eNode* node = nullptr;
+                int    nodeNum = 0;
                 double value;
         };
         class CallBackElement
@@ -100,6 +109,7 @@ class eNode
         Connection* m_nodeAdmit;
 
         QList<int> m_nodeList;
+        QList<Node*> m_nodeCompList;
 
         double m_totalCurr;
         double m_totalAdmit;

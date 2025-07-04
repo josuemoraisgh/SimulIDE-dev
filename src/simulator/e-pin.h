@@ -14,6 +14,8 @@ class Pin;
 
 class ePin
 {
+    friend class eNode;
+
     public:
         ePin( QString id, int index );
         virtual ~ePin();
@@ -33,7 +35,7 @@ class ePin
 
         inline void stampAdmitance( double data ) { if( m_enode ) m_enode->stampAdmitance( this, data ); }
 
-        void addSingAdm( int node, double admit );
+        void addSingAdm( eNode* node, double admit );
         void stampSingAdm( double admit );
 
         void createCurrent();
@@ -46,6 +48,12 @@ class ePin
 
         void setIndex( int i ) { m_index = i; }
 
+        virtual double getCurrent() { return m_current; }
+        void setCurrent( double c ) { m_current = c; }
+
+        virtual bool hasCurrent() { return m_hasCurrent; }
+        void setHasCurrent( bool h ) { m_hasCurrent = h; }
+
     protected:
         eNode* m_enode;     // My eNode
         eNode* m_enodeComp; // eNode at other side of my component
@@ -54,4 +62,7 @@ class ePin
         int m_index;
 
         bool m_inverted;
+        bool m_hasCurrent;
+
+        double m_current;
 };
