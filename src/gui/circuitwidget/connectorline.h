@@ -50,8 +50,6 @@ class ConnectorLine : public QGraphicsItem
         void updatePrev() { if( m_prevLine ) m_prevLine->sSetP2( QPoint( m_p1X, m_p1Y) ); }
         void updateNext();
 
-        void animateLine( double current );
-
         bool connectToWire( QPoint point1 );
         
         void setIsBus( bool bus ) { m_isBus = bus; }
@@ -84,13 +82,8 @@ class ConnectorLine : public QGraphicsItem
         int m_p2Y;
 
         int m_lenght;
-        double m_step;
-        double m_curPos;
 
         bool m_animateCurrent;
-
-        double m_currentSpeed;
-        double m_current;
 
         QPoint m_mousePos;
         

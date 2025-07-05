@@ -36,9 +36,7 @@ ConnectorLine::ConnectorLine( int x1, int y1, int x2, int y2, Connector* connect
     m_moving = false;
     m_animateCurrent = false;
 
-    m_step   = 0;
     m_lenght = 0;
-    m_current = 0;
 
     m_mousePos = QPoint( 1e6, 1e6 );
 
@@ -346,31 +344,12 @@ void ConnectorLine::hoverLeaveEvent( QGraphicsSceneHoverEvent* event )
     QGraphicsItem::hoverLeaveEvent( event );
 }
 
-void ConnectorLine::animateLine( double current ) // Runs at FPS
-{
-    m_current = current;
-    update();
-
-    if( m_moving ) return;
-    updtLength();
-
-    m_currentSpeed = 100 * current;
-
-    if     ( m_currentSpeed >  4 ) m_currentSpeed =  4;
-    else if( m_currentSpeed < -4 ) m_currentSpeed = -4;
-
-    m_step += m_currentSpeed;
-    if( fabs(m_step) >= 8 ) m_step = fmod( m_step, 8 );
-    if( m_step < 0 ) m_step += 8;
-
-    //if( fabs(current) > 0 ) qDebug() << m_currentSpeed << current << m_step;
-}
-
 void ConnectorLine::updtLength()
 {
     int termX = m_p2X-m_p1X;
     int termY = m_p2Y-m_p1Y;
     m_lenght = std::fabs( std::sqrt( termX*termX + termY*termY) );
+    update();
 }
 
 QPainterPath ConnectorLine::shape() const
@@ -437,11 +416,13 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
 
     if( m_isBus ) return;
     if( !m_animateCurrent ) return;
-    if( m_current == 0 ) return;
     if( !Simulator::self()->isRunning() ) return;
 
-    double speed = fabs( m_currentSpeed );
-    double bspeed = 100 * fabs( m_current );
+    double current = fabs( m_pConnector->m_current );
+    if( current == 0 ) return;
+
+    double speed = fabs( m_pConnector->m_currentSpeed );
+    double bspeed = 100 * current;
     if( bspeed > 8 ) bspeed = 8;
 
     color = QColor( 79+44*speed, 79+44*speed, 30*bspeed );
@@ -450,28 +431,29 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     pen.setBrush( color );
     p->setPen( pen );
 
+    double step = m_pConnector->m_step;
     int dir = 1;
     if( dx() )
     {
         if( dx() < 0 ) dir = -1;
 
-        for( double i=0; i+m_step<m_lenght; i+=8 )
-            //p->drawRect( dir*(i+m_step ), 0, 3, 3);
-            p->drawEllipse( QPointF( dir*(i+m_step), 0 ), 1.8, 1.6 );
+        for( double i=0; i+step<m_lenght; i+=8 )
+            //p->drawRect( dir*(i+step ), 0, 3, 3);
+            p->drawEllipse( QPointF( dir*(i+step), 0 ), 1.8, 1.6 );
     }
     if( dy() )
     {
         if( dy() < 0 ) dir = -1;
 
-        for( double i=0; i+m_step<m_lenght; i+=8 )
-            //p->drawRect( 0, dir*(i+m_step ), 3, 3);
-            p->drawEllipse( QPointF( 0, dir*(i+m_step )), 1.6, 1.8 );
+        for( double i=0; i+step<m_lenght; i+=8 )
+            //p->drawRect( 0, dir*(i+step ), 3, 3);
+            p->drawEllipse( QPointF( 0, dir*(i+step )), 1.6, 1.8 );
     }
 
     if( m_mousePos.x() < 1e6 )
     {
         QToolTip::showText( m_mousePos, "" );
-        QToolTip::showText( m_mousePos, "current = "+QString::number( fabs(m_current))+" A" );
+        QToolTip::showText( m_mousePos, "current = "+QString::number( current )+" A" );
 
         // p->drawText( m_mousePos, "current = 10 A");
     }

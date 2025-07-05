@@ -21,6 +21,7 @@ Connector::Connector( QString type, QString id, Pin* startpin, Pin* endpin )
 {
     if( id.isEmpty() ) qDebug() << "ERROR! Connector::Connector empty Id";
 
+    m_step = 0;
     m_actLine   = 0;
     m_lastindex = 0;
     m_freeLine = false;
@@ -48,9 +49,21 @@ Connector::~Connector()
 
 void Connector::updateStep()
 {
-    double current = getCurrent();
-    //if( fabs(current) > 0 )qDebug() <<"*";
-    for( ConnectorLine* line : m_conLineList ) line->animateLine( current );
+    if( Simulator::self()->isPaused() ) return;
+    m_current = getCurrent();
+
+    m_currentSpeed = 100 * m_current;
+
+    if     ( m_currentSpeed >  4 ) m_currentSpeed =  4;
+    else if( m_currentSpeed < -4 ) m_currentSpeed = -4;
+
+    m_step += m_currentSpeed;
+    if( fabs(m_step) > 8 ) m_step = fmod( m_step, 8 );
+    if( m_step < 0 ) m_step += 8;
+
+    //if( m_step < 0 ) qDebug() << m_currentSpeed << m_current << m_step;
+
+    for( ConnectorLine* line : m_conLineList ) line->updtLength(); //animateLine( current );
 
     /*eNode* enode = startPin()->getEnode();
     if( enode && enode->voltchanged() )
@@ -58,11 +71,6 @@ void Connector::updateStep()
         enode->setVoltChanged( false );
         for( WireLine* line : m_wireLineList ) line->update();
     }*/
-}
-
-void Connector::clearAnimation()
-{
-    for( ConnectorLine* line : m_conLineList ) line->m_step = 0;
 }
 
 void Connector::remNullLines()      // Remove lines with leght = 0 or aligned

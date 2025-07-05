@@ -21,7 +21,6 @@ class Connector : public CompBase, public Updatable
         ~Connector();
 
         void updateStep() override;
-        void clearAnimation();
 
         QString pListStr() { return m_pointList.join(","); }
         QStringList pointList() { refreshPointList(); return m_pointList; }
@@ -81,6 +80,11 @@ class Connector : public CompBase, public Updatable
         
         bool m_isBus;
         bool m_animate;
+
+
+        double m_step;
+        double m_current;
+        double m_currentSpeed;
 
         Pin*    m_startPin;
         Pin*    m_endPin;
