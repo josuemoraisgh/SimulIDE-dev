@@ -12,6 +12,7 @@
 #include "circuit.h"
 #include "pin.h"
 #include "e-node.h"
+#include "infowidget.h"
 #include "utils.h"
 
 #include "stringprop.h"
@@ -52,7 +53,7 @@ void Connector::updateStep()
     if( Simulator::self()->isPaused() ) return;
     m_current = getCurrent();
 
-    m_currentSpeed = 100 * m_current;
+    m_currentSpeed = InfoWidget::self()->currentSpeed() * m_current;
 
     if     ( m_currentSpeed >  4 ) m_currentSpeed =  4;
     else if( m_currentSpeed < -4 ) m_currentSpeed = -4;

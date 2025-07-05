@@ -13,6 +13,7 @@
 #include "simulator.h"
 #include "circuit.h"
 #include "node.h"
+#include "infowidget.h"
 #include "utils.h"
 
 #define tr(str) simulideTr("ConnectorLine",str)
@@ -422,7 +423,7 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     if( current == 0 ) return;
 
     double speed = fabs( m_pConnector->m_currentSpeed );
-    double bspeed = 100 * current;
+    double bspeed = InfoWidget::self()->currentSpeed() * current;
     if( bspeed > 8 ) bspeed = 8;
 
     color = QColor( 79+44*speed, 79+44*speed, 30*bspeed );
@@ -439,7 +440,7 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
 
         for( double i=0; i+step<m_lenght; i+=8 )
             //p->drawRect( dir*(i+step ), 0, 3, 3);
-            p->drawEllipse( QPointF( dir*(i+step), 0 ), 1.8, 1.6 );
+            p->drawEllipse( QPointF( dir*(i+step), 0 ), 1.6, 1.8 );
     }
     if( dy() )
     {
@@ -447,7 +448,7 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
 
         for( double i=0; i+step<m_lenght; i+=8 )
             //p->drawRect( 0, dir*(i+step ), 3, 3);
-            p->drawEllipse( QPointF( 0, dir*(i+step )), 1.6, 1.8 );
+            p->drawEllipse( QPointF( 0, dir*(i+step )), 1.8, 1.6 );
     }
 
     if( m_mousePos.x() < 1e6 )

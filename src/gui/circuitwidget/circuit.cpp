@@ -28,6 +28,7 @@
 #include "shield.h"
 #include "linker.h"
 #include "tunnel.h"
+#include "infowidget.h"
 
 Circuit* Circuit::m_pSelf = nullptr;
 
@@ -374,6 +375,7 @@ void Circuit::loadStrDoc( QString &doc )
                 else if( prop.name == "NLsteps" ) m_simulator->setMaxNlSteps( prop.value.toUInt() );
                 else if( prop.name == "reaStep" ) AnalogClock::self()->setPeriod( prop.value.toULongLong() );
                 else if( prop.name == "animate" ) m_animate = prop.value.toInt();
+                else if( prop.name == "anicurr" ) m_animateCurr = prop.value.toInt();
                 else if( prop.name == "width"   ) m_sceneWidth  = prop.value.toInt();
                 else if( prop.name == "height"  ) m_sceneHeight = prop.value.toInt();
                 else if( prop.name == "rev"     )
@@ -427,6 +429,7 @@ void Circuit::loadStrDoc( QString &doc )
     m_subCircuit = nullptr;
     m_busy = false;
     QApplication::restoreOverrideCursor();
+    setAnimateCurr( m_animateCurr );
     update();
 }
 
@@ -439,6 +442,7 @@ QString Circuit::circuitHeader()
     header += "NLsteps=\"" + QString::number( m_simulator->maxNlSteps() )+"\" ";
     header += "reaStep=\"" + QString::number( AnalogClock::self()->getPeriod() )+"\" ";
     header += "animate=\"" + QString::number( m_animate ? 1 : 0 )+"\" ";
+    header += "anicurr=\"" + QString::number( m_animateCurr ? 1 : 0 )+"\" ";
     header += "width=\""   + QString::number( m_sceneWidth )+"\" ";
     header += "height=\""  + QString::number( m_sceneHeight )+"\" ";
     header += ">\n";
@@ -1255,6 +1259,7 @@ void Circuit::setAnimateCurr( bool an )
     m_animateCurr = an;
     for( Connector* con : m_connList ) con->animate( an );
     update();
+    InfoWidget::self()->showCurrentSpeed( an );
 }
 
 int Circuit::autoBck() { return MainWindow::self()->autoBck(); }
@@ -1266,6 +1271,8 @@ void Circuit::setAutoBck( int secs )
 
     MainWindow::self()->setAutoBck( secs );
 }
+
+
 
 void Circuit::setUndoSteps( int steps )
 {

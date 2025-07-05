@@ -22,9 +22,14 @@ class InfoWidget : public QWidget, private Ui::infoWidget
         void setCircTime( uint64_t tStep );
         void setTargetSpeed( double s );
         void updtMcu();
+        void showCurrentSpeed( bool c );
+        double currentSpeed() { return m_currentSpeed; }
 
     public slots:
+        void on_currSpeedSlider_valueChanged( int speed );
 
     private:
+        double m_currentSpeed;
+
  static InfoWidget* m_pSelf;
 };
