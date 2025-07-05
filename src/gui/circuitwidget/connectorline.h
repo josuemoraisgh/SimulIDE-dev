@@ -85,7 +85,10 @@ class ConnectorLine : public QGraphicsItem
 
         int m_lenght;
         double m_step;
+        double m_curPos;
+
         bool m_animateCurrent;
+
         double m_currentSpeed;
         double m_current;
 

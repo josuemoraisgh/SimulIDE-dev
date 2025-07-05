@@ -49,7 +49,7 @@ Connector::~Connector()
 void Connector::updateStep()
 {
     double current = getCurrent();
-
+    //if( fabs(current) > 0 )qDebug() <<"*";
     for( ConnectorLine* line : m_conLineList ) line->animateLine( current );
 
     /*eNode* enode = startPin()->getEnode();
@@ -58,6 +58,11 @@ void Connector::updateStep()
         enode->setVoltChanged( false );
         for( WireLine* line : m_wireLineList ) line->update();
     }*/
+}
+
+void Connector::clearAnimation()
+{
+    for( ConnectorLine* line : m_conLineList ) line->m_step = 0;
 }
 
 void Connector::remNullLines()      // Remove lines with leght = 0 or aligned
@@ -444,5 +449,6 @@ double Connector::getCurrent()
         pin = (Pin*) m_endPin;
         current = -pin->getCurrent();
     }
+    if( fabs( current ) < 1e-6 ) current = 0;
     return current;
 }

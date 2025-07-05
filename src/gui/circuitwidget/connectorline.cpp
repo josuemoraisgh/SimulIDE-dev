@@ -346,22 +346,24 @@ void ConnectorLine::hoverLeaveEvent( QGraphicsSceneHoverEvent* event )
     QGraphicsItem::hoverLeaveEvent( event );
 }
 
-void ConnectorLine::animateLine( double current )
+void ConnectorLine::animateLine( double current ) // Runs at FPS
 {
     m_current = current;
     update();
 
     if( m_moving ) return;
     updtLength();
-    //m_animateCurrent = true;
-    m_currentSpeed = 100*current;
-    uint64_t time = Simulator::self()->circTime()/1e8;
-    m_step = time;
-    time *= m_currentSpeed;
-    time /= 80; // 50 ms FIXME: get FPS
-    time = time%80;
-    m_step = (double)time/10;
-    //qDebug() <<"ConnectorLine::animate"<< m_lenght << time << m_step;
+
+    m_currentSpeed = 100 * current;
+
+    if     ( m_currentSpeed >  4 ) m_currentSpeed =  4;
+    else if( m_currentSpeed < -4 ) m_currentSpeed = -4;
+
+    m_step += m_currentSpeed;
+    if( fabs(m_step) >= 8 ) m_step = fmod( m_step, 8 );
+    if( m_step < 0 ) m_step += 8;
+
+    //if( fabs(current) > 0 ) qDebug() << m_currentSpeed << current << m_step;
 }
 
 void ConnectorLine::updtLength()
@@ -428,17 +430,24 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     //p->drawPath( shape() );
     
     if( m_isBus ) pen.setWidth( 3 );
-    else if( m_animateCurrent ) pen.setWidthF( 2.6 );
+    else if( m_animateCurrent ) pen.setWidthF( 2.8 );
 
     p->setPen( pen );
     p->drawLine( 0, 0, dx(), dy());
 
     if( m_isBus ) return;
     if( !m_animateCurrent ) return;
-
+    if( m_current == 0 ) return;
     if( !Simulator::self()->isRunning() ) return;
-    p->setBrush( QColor( 220, 255, 70 ) );
-    pen.setWidthF( 0.0 );
+
+    double speed = fabs( m_currentSpeed );
+    double bspeed = 100 * fabs( m_current );
+    if( bspeed > 8 ) bspeed = 8;
+
+    color = QColor( 79+44*speed, 79+44*speed, 30*bspeed );
+    p->setBrush( color );
+    pen.setWidthF( 0.6 );
+    pen.setBrush( color );
     p->setPen( pen );
 
     int dir = 1;
@@ -447,14 +456,16 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
         if( dx() < 0 ) dir = -1;
 
         for( double i=0; i+m_step<m_lenght; i+=8 )
-            p->drawEllipse( QPointF( dir*(i+m_step), 0 ), 1.4, 1.4 );
+            //p->drawRect( dir*(i+m_step ), 0, 3, 3);
+            p->drawEllipse( QPointF( dir*(i+m_step), 0 ), 1.8, 1.6 );
     }
     if( dy() )
     {
         if( dy() < 0 ) dir = -1;
 
         for( double i=0; i+m_step<m_lenght; i+=8 )
-            p->drawEllipse( QPointF( 0, dir*(i+m_step )), 1.4, 1.4 );
+            //p->drawRect( 0, dir*(i+m_step ), 3, 3);
+            p->drawEllipse( QPointF( 0, dir*(i+m_step )), 1.6, 1.8 );
     }
 
     if( m_mousePos.x() < 1e6 )
