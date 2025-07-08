@@ -87,7 +87,7 @@ class IoPin : public Pin, public eElement
         void setFallTime( double time ) { m_timeFal = time; }
 
         double getCurrent() override;
-        bool hasCurrent() override { return false; }
+        bool hasCurrent() override { return m_pinMode != source; }
 
  static QStringList registerScript( asIScriptEngine* engine );
 

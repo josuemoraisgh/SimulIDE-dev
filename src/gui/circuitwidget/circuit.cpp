@@ -381,11 +381,11 @@ void Circuit::loadStrDoc( QString &doc )
                 else if( prop.name == "rev"     )
                 {
                     m_circRev  = prop.value.toInt();
-                    if( m_circRev < 240000 )
-                    {
-                        qDebug() << "Warning: this file was created with an older version";
-                        qDebug() << "A copy of the original will be created if you save this Circuit"<<endl;
-                    }
+                    //if( m_circRev < 240000 )
+                    //{
+                    //    qDebug() << "Warning: this file was created with an older version";
+                    //    qDebug() << "A copy of the original will be created if you save this Circuit"<<endl;
+                    //}
                 }
             }
         }

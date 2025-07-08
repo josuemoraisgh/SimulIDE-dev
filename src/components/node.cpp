@@ -74,8 +74,8 @@ bool Node::hasCurrents() // calculate current when 2 pins already have current
         m_pin[noCurrent]->setCurrent( current );
         currents = 3;
     }
-    if( currents == 3 ) m_color = Qt::black;
-    else                m_color = Qt::red;
+    //if( currents == 3 ) m_color = Qt::black;
+    //else                m_color = Qt::red;
     return currents == 3;
 }
 
