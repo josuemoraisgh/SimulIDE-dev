@@ -70,6 +70,9 @@ void ComponentList::createList()
     QDir compSetDir = MainWindow::self()->getFilePath("data");
     if( compSetDir.exists() ) LoadCompSetAt( compSetDir );
 
+    compSetDir = "./data";          // FIXME: provisional
+    LoadCompSetAt( compSetDir );
+
     m_listFile  = MainWindow::self()->getConfigPath("compList.xml");
     m_oldConfig = !QFile::exists( m_listFile ); // xml file doesn't exist: read old config
     if( !m_oldConfig ) readConfig(); // Read new xml config file

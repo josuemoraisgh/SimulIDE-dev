@@ -72,7 +72,7 @@ inline void Simulator::solveMatrix()
 
 void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (50 ms, 20 Hz max)
 {
-    e->accept();
+    if( e ) e->accept();
 
     if( m_state == SIM_WAITING ) return;
 
@@ -124,8 +124,8 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     {
         simState_t state = m_state;
         m_state = SIM_WAITING;
-        //m_CircuitFuture.waitForFinished();
-        while( m_state == SIM_WAITING ){;}
+        m_CircuitFuture.waitForFinished();
+        //while( m_state == SIM_WAITING ){;}
         m_state = state;
     }
     if( m_debug && m_state == SIM_PAUSED ) CircuitWidget::self()->debugPaused();
@@ -155,6 +155,7 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     if( Circuit::self()->animateCurr() )  // TODO:  optimize
     {
         for( eNode* node : m_eNodeList) node->updateCurrents();
+        //Circuit::self()->update();
     }
 
     // Calculate Real Simulation Speed
@@ -202,6 +203,8 @@ void Simulator::runCircuit()
             m_events--;
 #endif
             if( !m_firstEvent ) break;
+            if( m_state < SIM_RUNNING ) break;  // Needed for QemuDevice
+
             nextTime = m_firstEvent->eventTime;
         }
         solveCircuit();
@@ -210,7 +213,7 @@ void Simulator::runCircuit()
     m_loopTime = m_RefTimer.nsecsElapsed();
 
     if     ( m_state >  SIM_WAITING ) m_circTime = endRun;
-    else if( m_state == SIM_WAITING ) m_state = SIM_PAUSED;
+    //else if( m_state == SIM_WAITING ) m_state = SIM_PAUSED;
 }
 
 void Simulator::solveCircuit()
@@ -374,6 +377,8 @@ void Simulator::startSim( bool paused )
     m_timerTime = m_loopTime;
     m_realFPS = m_fps;
     m_timerId = this->startTimer( m_timerTick_ms, Qt::PreciseTimer ); // Init Timer
+
+    timerEvent( nullptr );
 }
 
 void Simulator::stopSim()
