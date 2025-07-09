@@ -62,16 +62,9 @@ void Connector::updateStep()
     if( fabs(m_step) > 8 ) m_step = fmod( m_step, 8 );
     if( m_step < 0 ) m_step += 8;
 
-    //if( m_step < 0 ) qDebug() << m_currentSpeed << m_current << m_step;
+    //m_step /= 8; // 0 to 1
 
-    for( ConnectorLine* line : m_conLineList ) line->updtLength(); //animateLine( current );
-
-    /*eNode* enode = startPin()->getEnode();
-    if( enode && enode->voltchanged() )
-    {
-        enode->setVoltChanged( false );
-        for( WireLine* line : m_wireLineList ) line->update();
-    }*/
+    for( ConnectorLine* line : m_conLineList ) line->updtLength();
 }
 
 void Connector::remNullLines()      // Remove lines with leght = 0 or aligned

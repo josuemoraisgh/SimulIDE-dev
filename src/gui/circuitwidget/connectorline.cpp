@@ -37,7 +37,7 @@ ConnectorLine::ConnectorLine( int x1, int y1, int x2, int y2, Connector* connect
     m_moving = false;
     m_animateCurrent = false;
 
-    m_lenght = 0;
+    m_length = 0;
 
     m_mousePos = QPoint( 1e6, 1e6 );
 
@@ -331,7 +331,7 @@ void ConnectorLine::hoverMoveEvent( QGraphicsSceneHoverEvent* event )
 {
     m_mousePos = event->screenPos();
     QGraphicsItem::hoverMoveEvent( event );
-    // use p.x() and p.y() to set the tooltip accrdingly, for example:
+    // use p.x() and p.y() to set the tooltip accordingly, for example:
     //if (p.y() < height()/2)
     //    setTooltip("Upper Half");
     //else
@@ -342,15 +342,16 @@ void ConnectorLine::hoverMoveEvent( QGraphicsSceneHoverEvent* event )
 void ConnectorLine::hoverLeaveEvent( QGraphicsSceneHoverEvent* event )
 {
     m_mousePos = QPoint( 1e6, 1e6 );
+    QToolTip::hideText();
     QGraphicsItem::hoverLeaveEvent( event );
 }
 
 void ConnectorLine::updtLength()
 {
-    int termX = m_p2X-m_p1X;
-    int termY = m_p2Y-m_p1Y;
-    m_lenght = std::fabs( std::sqrt( termX*termX + termY*termY) );
-    update();
+    double termX = m_p2X-m_p1X;
+    double termY = m_p2Y-m_p1Y;
+    m_length = std::fabs( std::sqrt( termX*termX + termY*termY) ) / 8;
+    //update(); // Diagonal wires don't update
 }
 
 QPainterPath ConnectorLine::shape() const
@@ -393,6 +394,9 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     //pen.setColor( Qt::darkGray);
     //p->setPen( pen );
 
+    double dX = dx();
+    double dY = dy();
+
     QColor color;
     if( isSelected() ) color = Qt::darkGray ;
     else if( m_isBus ) color = Qt::darkGreen;
@@ -413,12 +417,13 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     else if( m_animateCurrent ) pen.setWidthF( 2.8 );
 
     p->setPen( pen );
-    p->drawLine( 0, 0, dx(), dy());
+    p->drawLine( 0, 0, dX, dY );
 
     if( m_isBus ) return;
     if( !m_animateCurrent ) return;
     if( !Simulator::self()->isRunning() ) return;
 
+    // TODO: optimize in connector ---------------------------------
     double current = fabs( m_pConnector->m_current );
     if( current == 0 ) return;
 
@@ -427,36 +432,30 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     if( bspeed > 8 ) bspeed = 8;
 
     color = QColor( 79+44*speed, 79+44*speed, 30*bspeed );
+    // -------------------------------------------------------------
+
     p->setBrush( color );
     pen.setWidthF( 0.6 );
     pen.setBrush( color );
     p->setPen( pen );
 
-    double step = m_pConnector->m_step;
-    int dir = 1;
-    if( dx() )
-    {
-        if( dx() < 0 ) dir = -1;
+    double step = m_pConnector->m_step/8;
+    dX /= m_length;
+    dY /= m_length;
 
-        for( double i=0; i+step<m_lenght; i+=8 )
-            //p->drawRect( dir*(i+step ), 0, 3, 3);
-            p->drawEllipse( QPointF( dir*(i+step), 0 ), 1.6, 1.8 );
-    }
-    if( dy() )
+    for( double i=0; i<m_length; i++ )
     {
-        if( dy() < 0 ) dir = -1;
+        double delta = i+step;
+        if( delta > m_length ) break;
 
-        for( double i=0; i+step<m_lenght; i+=8 )
-            //p->drawRect( 0, dir*(i+step ), 3, 3);
-            p->drawEllipse( QPointF( 0, dir*(i+step )), 1.8, 1.6 );
+        p->drawEllipse( QPointF( dX*delta, dY*delta ), 1.6, 1.6 );
     }
 
     if( m_mousePos.x() < 1e6 )
     {
-        QToolTip::showText( m_mousePos, "" );
-        QToolTip::showText( m_mousePos, "current = "+QString::number( current )+" A" );
-
-        // p->drawText( m_mousePos, "current = 10 A");
+        //QToolTip::showText( m_mousePos, "" );
+        QToolTip::showText( m_mousePos, "current = "+QString::number( current )+" A\n"
+                                       +"voltage = "+QString::number( m_pConnector->getVoltage() )+" V");
     }
 }
 

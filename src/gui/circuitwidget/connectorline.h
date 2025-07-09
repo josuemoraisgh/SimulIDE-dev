@@ -81,7 +81,7 @@ class ConnectorLine : public QGraphicsItem
         int m_p2X;
         int m_p2Y;
 
-        int m_lenght;
+        double m_length; // Length in grid cells
 
         bool m_animateCurrent;
 

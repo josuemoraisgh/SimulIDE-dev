@@ -155,7 +155,7 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     if( Circuit::self()->animateCurr() )  // TODO:  optimize
     {
         for( eNode* node : m_eNodeList) node->updateCurrents();
-        //Circuit::self()->update();
+        Circuit::self()->update();                              // Diagonal wires don't update
     }
 
     // Calculate Real Simulation Speed
