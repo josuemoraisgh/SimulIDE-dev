@@ -13,7 +13,7 @@
 #include "simulator.h"
 #include "circuit.h"
 #include "node.h"
-#include "infowidget.h"
+#include "currentwidget.h"
 #include "utils.h"
 
 #define tr(str) simulideTr("ConnectorLine",str)
@@ -428,7 +428,7 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     if( current == 0 ) return;
 
     double speed = fabs( m_pConnector->m_currentSpeed );
-    double bspeed = InfoWidget::self()->currentSpeed() * current;
+    double bspeed = CurrentWidget::self()->speed() * current;
     if( bspeed > 8 ) bspeed = 8;
 
     color = QColor( 79+44*speed, 79+44*speed, 30*bspeed );

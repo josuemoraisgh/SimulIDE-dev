@@ -28,7 +28,7 @@
 #include "shield.h"
 #include "linker.h"
 #include "tunnel.h"
-#include "infowidget.h"
+#include "currentwidget.h"
 
 Circuit* Circuit::m_pSelf = nullptr;
 
@@ -1259,7 +1259,7 @@ void Circuit::setAnimateCurr( bool an )
     m_animateCurr = an;
     for( Connector* con : m_connList ) con->animate( an );
     update();
-    InfoWidget::self()->showCurrentSpeed( an );
+    CurrentWidget::self()->setVisible( an );
 }
 
 int Circuit::autoBck() { return MainWindow::self()->autoBck(); }
@@ -1271,8 +1271,6 @@ void Circuit::setAutoBck( int secs )
 
     MainWindow::self()->setAutoBck( secs );
 }
-
-
 
 void Circuit::setUndoSteps( int steps )
 {

@@ -3,9 +3,6 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#include <QDebug>
-#include <math.h>
-
 #include "infowidget.h"
 #include "mainwindow.h"
 #include "mcu.h"
@@ -39,10 +36,6 @@ InfoWidget::InfoWidget( QWidget* parent )
     mainMcuLabel->setFont( font );
     mainMcu->setFont( font );
     mainMcuName->setFont( font );
-
-    currSpeedSlider->setValue( 500 );
-
-    showCurrentSpeed( false );
 
     overLoadVal->setVisible( false );
 }
@@ -159,17 +152,4 @@ void InfoWidget::setCircTime( uint64_t tStep )
 
     simTime->setText( strH+":"+strM+":"+strS+" s  "
                      +strMS+" ms  "+strUS+" µs  "+strNS+" ns  "+strPS+" ps " );
-}
-
-void InfoWidget::showCurrentSpeed( bool c )
-{
-    currSpeedLine->setVisible( c );
-    currSpeedLabel->setVisible( c );
-    currSpeedSlider->setVisible( c );
-}
-
-void InfoWidget::on_currSpeedSlider_valueChanged( int speed )
-{
-    m_currentSpeed = pow( (double)speed/150, 4.5 );
-    //qDebug() << m_currentSpeed;
 }

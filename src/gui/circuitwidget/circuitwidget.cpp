@@ -17,6 +17,7 @@
 #include "circuit.h"
 #include "appdialog.h"
 #include "filebrowser.h"
+#include "currentwidget.h"
 #include "infowidget.h"
 #include "about.h"
 #include "utils.h"
@@ -49,13 +50,25 @@ CircuitWidget::CircuitWidget( QWidget *parent  )
     m_mainSplitter->setOrientation( Qt::Vertical );
     m_verticalLayout.addWidget( m_mainSplitter );
 
+    m_currentWidget = new CurrentWidget( this );
+
     m_infoWidget = new InfoWidget( this );
     m_infoWidget->setTargetSpeed( 100 );
+
+
+    QWidget* topWidget = new QWidget;
+    QVBoxLayout* panelLayout = new QVBoxLayout( topWidget );
+    panelLayout->setContentsMargins(0, 0, 0, 0);
+    panelLayout->setSpacing(0);
+    panelLayout->addWidget( m_currentWidget );
+    panelLayout->addWidget( m_infoWidget );
 
     m_panelSplitter = new QSplitter( this );
     m_panelSplitter->setObjectName("Panelplitter");
     m_panelSplitter->setOrientation( Qt::Horizontal );
-    m_panelSplitter->addWidget( m_infoWidget );
+    //m_panelSplitter->addWidget( m_currentWidget );
+    //m_panelSplitter->addWidget( m_infoWidget );
+    m_panelSplitter->addWidget( topWidget );
     m_panelSplitter->addWidget( &m_outPane );
     m_panelSplitter->setSizes( {170, 500} );
 

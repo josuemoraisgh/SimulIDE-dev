@@ -17,6 +17,7 @@ class QLabel;
 class AboutDialog;
 class AppDialog;
 class InfoWidget;
+class CurrentWidget;
 
 class CircuitWidget : public QWidget
 {
@@ -82,6 +83,7 @@ class CircuitWidget : public QWidget
         QToolBar m_circToolBar;
 
         QLabel* m_msgLabel;
+        CurrentWidget* m_currentWidget;
         InfoWidget* m_infoWidget;
 
         QSplitter* m_mainSplitter;
