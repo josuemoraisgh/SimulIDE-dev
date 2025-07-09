@@ -4,6 +4,7 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include <QDebug>
+#include <math.h>
 
 #include "infowidget.h"
 #include "mainwindow.h"
@@ -169,8 +170,6 @@ void InfoWidget::showCurrentSpeed( bool c )
 
 void InfoWidget::on_currSpeedSlider_valueChanged( int speed )
 {
-    m_currentSpeed = (double)speed;
-    m_currentSpeed *= m_currentSpeed;
-    m_currentSpeed /= 4000;
-    qDebug() << m_currentSpeed;
+    m_currentSpeed = pow( (double)speed/150, 4.5 );
+    //qDebug() << m_currentSpeed;
 }
