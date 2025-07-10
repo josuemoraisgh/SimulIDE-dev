@@ -25,8 +25,6 @@
 #include "filewidget.h"
 #include "utils.h"
 
-//#include "resgen.h"
-
 MainWindow* MainWindow::m_pSelf = nullptr;
 
 MainWindow::MainWindow()
@@ -47,7 +45,7 @@ MainWindow::MainWindow()
     //else                    m_filesDir.setPath( QApplication::applicationDirPath() );
     //if( m_filesDir.exists("../share/simulide") ) m_filesDir.cd("../share/simulide");
 
-    m_filesDir.setPath(":/");
+    m_filesDir.setPath( QStandardPaths::writableLocation( QStandardPaths::DataLocation ) );
     m_configDir.setPath( QStandardPaths::writableLocation( QStandardPaths::DataLocation ) );
 
     m_settings     = new QSettings( getConfigPath("simulide.ini"), QSettings::IniFormat, this );
@@ -108,9 +106,6 @@ MainWindow::MainWindow()
         if( msgBox.exec() == QMessageBox::Open ) CircuitWidget::self()->loadCirc( backPath );
         else                                     QFile::remove( backPath ); // Remove backup file
     }
-
-    //QString folder = "/media/user/soft/simulide/simulide_lauchpad/1.2.0/resources/data";
-    //ResGen::generate( "../resources/data", folder );
 }
 MainWindow::~MainWindow(){ }
 
@@ -237,7 +232,7 @@ void MainWindow::createWidgets()
     m_mainSplitter->setOrientation( Qt::Horizontal );
 
     m_sidepanel = new QTabWidget( this );
-    m_sidepanel->setTabPosition( QTabWidget::West );
+    m_sidepanel->setTabPosition( QTabWidget::North );
     QString fontSize = QString::number( int(11*m_fontScale) );
     m_sidepanel->tabBar()->setStyleSheet("QTabBar { font-size:"+fontSize+"px; }");
     m_mainSplitter->addWidget( m_sidepanel );
@@ -278,7 +273,7 @@ void MainWindow::createWidgets()
     listLayout->addWidget( m_components );
 
     m_sidepanel->addTab( m_listWidget, tr("Components") );
-    m_sidepanel->addTab( m_fileTree, tr( "File explorer" ) );
+    m_sidepanel->addTab( m_fileTree, tr("Files") );
 
     m_mainSplitter->addWidget( m_circuitW );
 
@@ -368,7 +363,7 @@ QString MainWindow::getDataFilePath( QString file )
     QString path = getUserFilePath( file ); // File in user data folder
 
     if( path.isEmpty() || !QFileInfo::exists( path ) )
-        path = ":/data/"+file;              // File in SimulIDE data folder
+        path = getConfigPath("data/"+file );              // File in SimulIDE data folder
 
     if( path.isEmpty() || !QFileInfo::exists( path ) ) return "";
 

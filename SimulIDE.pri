@@ -17,7 +17,6 @@ HEADERS      = $$files( $$PWD/src/*.h, true )
 TRANSLATIONS = $$files( $$PWD/resources/translations/*.ts )
 FORMS       += $$files( $$PWD/src/*.ui, true )
 RESOURCES    = $$PWD/src/application.qrc
-RESOURCES   += $$PWD/src/data.qrc
 
 INCLUDEPATH += $$PWD/src \
     $$PWD/src/components \

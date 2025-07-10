@@ -273,9 +273,9 @@ void EditorWindow::loadCompilers()
     loadCompilerSet( compilsPath, &m_assemblers );
 
     // Embeed compiler data
-    compilsPath = ":/data/codeeditor/compilers/compilers";
+    compilsPath = MainWindow::self()->getConfigPath("data/codeeditor/compilers/compilers");
     loadCompilerSet( compilsPath, &m_compilers );
-    compilsPath = ":/data/codeeditor/compilers/assemblers";
+    compilsPath = MainWindow::self()->getConfigPath("data/codeeditor/compilers/assemblers");
     loadCompilerSet( compilsPath, &m_assemblers );
 }
 

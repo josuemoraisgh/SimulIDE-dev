@@ -14,7 +14,7 @@ void watchRegister( uint16_t addr, int write
                   , T* inst, void (T::*func)(uint8_t)
                   , DataSpace* mcu, uint8_t mask=0xFF )
 {
-    if( addr == 0 ) qDebug() << "Warning: watchRegister address 0 ";
+    //if( addr == 0 ) qDebug() << "Warning: watchRegister address 0 ";
 
     if( write )
     {

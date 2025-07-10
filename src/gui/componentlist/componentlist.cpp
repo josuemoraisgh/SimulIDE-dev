@@ -38,12 +38,11 @@ ComponentList::ComponentList( QWidget* parent )
     setDragEnabled( true );
     viewport()->setAcceptDrops( true );
 
-    setIndentation( 12 );
+    float scale = MainWindow::self()->fontScale();
+    setIndentation( 6*scale );
     setRootIsDecorated( true );
     setCursor( Qt::OpenHandCursor );
     headerItem()->setHidden( true );
-
-    float scale = MainWindow::self()->fontScale();
     setIconSize( QSize( 30*scale, 24*scale ));
 
     createList();
