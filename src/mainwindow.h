@@ -70,7 +70,6 @@ class MainWindow : public QMainWindow
 
         QString getHelp( QString name, bool save=true );
 
-        QString getFilePath( QString file );              // Get file path in SimulIDE folders
         QString getConfigPath( QString file );            // Get file path in config folder
         QString getDataFilePath( QString file );          // Get file path in data folder, first user folder, if not SimulIDE folder
         QString getCircFilePath( QString file );          // Get file path in circuit folder
@@ -102,8 +101,7 @@ class MainWindow : public QMainWindow
         QString m_fontName;
         float m_fontScale;
         int m_autoBck;
-        
-        QDir m_filesDir;
+
         QDir m_configDir;
 
         QSettings* m_settings;

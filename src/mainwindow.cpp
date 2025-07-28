@@ -40,12 +40,6 @@ MainWindow::MainWindow()
 
     this->setWindowTitle( m_version );
 
-    //QString appImg = QProcessEnvironment::systemEnvironment().value( QStringLiteral("APPIMAGE") );
-    //if( !appImg.isEmpty() ) m_filesDir.setPath( appImg.left( appImg.lastIndexOf("/") ) );
-    //else                    m_filesDir.setPath( QApplication::applicationDirPath() );
-    //if( m_filesDir.exists("../share/simulide") ) m_filesDir.cd("../share/simulide");
-
-    m_filesDir.setPath( QStandardPaths::writableLocation( QStandardPaths::DataLocation ) );
     m_configDir.setPath( QStandardPaths::writableLocation( QStandardPaths::DataLocation ) );
 
     m_settings     = new QSettings( getConfigPath("simulide.ini"), QSettings::IniFormat, this );
@@ -351,24 +345,29 @@ void MainWindow::setUserPath( QString path )
     m_userDir = path;
 }
 
-QString MainWindow::getFilePath( QString file )   { return m_filesDir.absoluteFilePath( file ); }
-QString MainWindow::getConfigPath( QString file ) { return m_configDir.absoluteFilePath( file ); }
+QString MainWindow::getConfigPath( QString file )
+{
+    return m_configDir.absoluteFilePath( file );
+}
+
 QString MainWindow::getUserFilePath( QString file )
 {
     if( m_userDir.isEmpty() ) return "";
     return QDir( m_userDir ).absoluteFilePath( file );
 }
+
 QString MainWindow::getDataFilePath( QString file )
 {
-    QString path = getUserFilePath( file ); // File in user data folder
+    QString path = getUserFilePath( file );           // File in user data folder
 
     if( path.isEmpty() || !QFileInfo::exists( path ) )
-        path = getConfigPath("data/"+file );              // File in SimulIDE data folder
+        path = getConfigPath("data/"+file );          // File in SimulIDE data folder
 
     if( path.isEmpty() || !QFileInfo::exists( path ) ) return "";
 
     return path;
 }
+
 QString MainWindow::getCircFilePath( QString file )
 {
     if( !Circuit::self() ) return "";
@@ -385,7 +384,9 @@ QString MainWindow::getCircFilePath( QString file )
 
     return path;
 }
+
 QSettings* MainWindow::settings() { return m_settings; }
+
 QSettings* MainWindow::compSettings() { return m_compSettings; }
 
 #include  "moc_mainwindow.cpp"

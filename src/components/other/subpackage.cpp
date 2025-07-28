@@ -719,6 +719,7 @@ void SubPackage::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget*
 //_____________________________________________________________
 //_____________________________________________________________
 
+#undef tr
 #define tr(str) simulideTr("EditDialog",str)
 
 EditDialog::EditDialog( SubPackage* pack, Pin* eventPin, QWidget* parent )

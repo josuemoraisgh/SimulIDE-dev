@@ -95,6 +95,8 @@ QMAKE_CXXFLAGS_DEBUG -= -O2
 QMAKE_CXXFLAGS_DEBUG -= -O3
 QMAKE_CXXFLAGS_DEBUG += -O0
 
+LIBS += -lz
+
 
 win32 {
     OS = Windows
