@@ -253,7 +253,7 @@ void ComponentList::loadXml( QString xmlFile )
                     QString nameFolder = compFolder+"/"+name;
 
                     if( !QFile::exists( nameFolder+".sim2" )
-                     || !QFile::exists( nameFolder+".sim1" ) ) compFolder = nameFolder;
+                     && !QFile::exists( nameFolder+".sim1" ) ) compFolder = nameFolder;
 
                     m_dirFileList[ name ] = compFolder;
                 }
