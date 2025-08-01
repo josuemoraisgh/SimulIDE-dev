@@ -50,7 +50,9 @@
         <file alias="help.svg">../src/icons/mainwindow/help.svg</file>
         <file alias="about.svg">../src/icons/mainwindow/about.svg</file>
         <file alias="config.svg">../src/icons/mainwindow/config.svg</file>
-        
+        <file alias="files.svg">../src/icons/mainwindow/files.svg</file>
+        <file alias="complib.svg">../src/icons/mainwindow/complib.svg</file>
+
         <file alias="cut.svg">../src/icons/mainwindow/cut.svg</file>
         <file alias="copy.svg">../src/icons/mainwindow/copy.svg</file>
         <file alias="paste.svg">../src/icons/mainwindow/paste.svg</file>

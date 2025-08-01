@@ -12,6 +12,7 @@ class ComponentList;
 class CircuitWidget;
 class EditorWindow;
 class FileWidget;
+class Installer;
 class QVBoxLayout;
 class QLineEdit;
 class QPushButton;
@@ -78,7 +79,8 @@ class MainWindow : public QMainWindow
         void setUserPath( QString p );
         void getUserPath();                               // File open Dialog
         
-        QTabWidget* m_sidepanel;
+
+        Installer* installer() { return m_installer; }
 
  static MainWindow* self() { return m_pSelf; }
 
@@ -116,6 +118,8 @@ class MainWindow : public QMainWindow
 
         QHash<QString, QString> m_help;
         
+
+        Installer*     m_installer;
         CircuitWidget* m_circuitW;
         ComponentList* m_components;
         QWidget*       m_listWidget;
@@ -123,6 +127,7 @@ class MainWindow : public QMainWindow
         QPushButton*   m_clearButton;
         FileWidget*    m_fileTree;
         EditorWindow*  m_editor;
+        QTabWidget*    m_sidepanel;
         
         QSplitter*  m_mainSplitter;
 

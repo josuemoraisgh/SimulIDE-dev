@@ -23,6 +23,7 @@
 #include "editorwindow.h"
 #include "circuitwidget.h"
 #include "filewidget.h"
+#include "installer.h"
 #include "utils.h"
 
 MainWindow* MainWindow::m_pSelf = nullptr;
@@ -85,6 +86,8 @@ MainWindow::MainWindow()
     m_circuitW->newCircuit();
     readSettings();
 
+    m_installer->checkForUpdates();
+
     QString backPath = getConfigPath( "backup.sim2" );
     if( QFile::exists( backPath ) )
     {
@@ -142,6 +145,7 @@ void MainWindow::writeSettings()
     m_settings->setValue("Centralsplitter/geometry", m_mainSplitter->saveState() );
     m_settings->setValue("Circsplitter/geometry", CircuitWidget::self()->splitter()->saveState() );
 
+    m_installer->writeSettings();
     ComponentList::self()->writeSettings();
     FileWidget::self()->writeSettings();
 }
@@ -227,8 +231,9 @@ void MainWindow::createWidgets()
 
     m_sidepanel = new QTabWidget( this );
     m_sidepanel->setTabPosition( QTabWidget::North );
-    QString fontSize = QString::number( int(11*m_fontScale) );
-    m_sidepanel->tabBar()->setStyleSheet("QTabBar { font-size:"+fontSize+"px; }");
+    m_sidepanel->setIconSize( QSize( 20*m_fontScale, 20*m_fontScale ) );
+    //QString fontSize = QString::number( int(11*m_fontScale) );
+    //m_sidepanel->tabBar()->setStyleSheet("QTabBar { font-size:"+fontSize+"px; }");
     m_mainSplitter->addWidget( m_sidepanel );
 
     m_listWidget = new QWidget( this );
@@ -250,7 +255,7 @@ void MainWindow::createWidgets()
              this,              SLOT(   searchChanged() ) );
 
     m_clearButton = new QPushButton( this );
-    m_clearButton->setFixedSize( 24*m_fontScale,24*m_fontScale );
+    m_clearButton->setFixedSize( 24*m_fontScale, 24*m_fontScale );
     m_clearButton->setIcon( QIcon(":/remove.svg") );
     m_clearButton->setToolTip( tr("Clear search"));
 
@@ -260,19 +265,24 @@ void MainWindow::createWidgets()
 
     listLayout->addLayout( searchLayout );
 
+    m_installer = new Installer( this );
     m_fileTree = new FileWidget( this );
     m_circuitW = new CircuitWidget( this );
 
     m_components = new ComponentList( m_sidepanel );
     listLayout->addWidget( m_components );
 
-    m_sidepanel->addTab( m_listWidget, tr("Components") );
-    m_sidepanel->addTab( m_fileTree, tr("Files") );
+    m_sidepanel->addTab( m_listWidget, QIcon(":/ic2.png")    , "" );
+    m_sidepanel->addTab( m_installer , QIcon(":/complib.svg"), "" );
+    m_sidepanel->addTab( m_fileTree  , QIcon(":/files.svg")  , "" );
+
+    m_sidepanel->setTabToolTip( 0, tr("Components") );
+    m_sidepanel->setTabToolTip( 1, tr("Libraries") );
+    m_sidepanel->setTabToolTip( 2, tr("Files") );
 
     m_mainSplitter->addWidget( m_circuitW );
 
     m_editor = new EditorWindow( this );
-    m_editor->setObjectName(QString::fromUtf8("editor"));
     m_mainSplitter->addWidget( m_editor );
 
     baseWidgetLayout->addWidget( m_mainSplitter, 0, 0 );

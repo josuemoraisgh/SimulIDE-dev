@@ -8,12 +8,12 @@
 #include <unistd.h>
 
 #include "installitem.h"
-#include "managecomps.h"
+#include "installer.h"
 
-InstallItem::InstallItem( manCompDialog* parent, QString item )
+InstallItem::InstallItem( Installer* parent, QString item )
            : QWidget( (QWidget*)parent )
 {
-    m_dialog = parent;
+    m_Installer = parent;
     setupUi( this );
     setItem( item );
 }
@@ -38,13 +38,15 @@ void InstallItem::setItem( QString itemStr )
     {
         installButton->hide();
 
-        QPalette p = textEdit->palette();
+        QPalette p = setNameEdit->palette();
         p.setColor( QPalette::Base, QColor( 220, 220, 200 ) );
-        textEdit->setPalette( p );
+        setNameEdit->setPalette( p );
 
         p.setColor( QPalette::Window, QColor( 220, 220, 200 ) );
         this->setAutoFillBackground( true );
         this->setPalette( p );
+
+        textEdit->setVisible( false );
 
         header = "### ";
     }
@@ -54,10 +56,13 @@ void InstallItem::setItem( QString itemStr )
         m_version = set.at(3).toLongLong();
 
         if( set.size() > 4 ) m_depends = set.at(4);
+
+        textEdit->setMarkdown( m_description );
     }
-    QString md = header+m_name+"\n"+m_description;
+    //QString md = header+m_name+"\n"+m_description;
     //md.replace("<br>","\n");
-    textEdit->setMarkdown( md );
+
+    setNameEdit->setMarkdown( header+m_name );
 
     setButtonState( bInstall );
 
@@ -73,14 +78,14 @@ void InstallItem::buttonClicked()
             /*if( !m_depends.isEmpty() )
             {
                 /// TODO: implement multiple dependencies. m_depends = CSV of depends
-                m_dialog->installItem( m_depends );
+                m_Installer->installItem( m_depends );
                 waitUntillInstalled();
             }*/
-            m_dialog->installItem( m_name );
+            m_Installer->installItem( m_name );
             setButtonState( bUninstall );
             break;
         case bUninstall:
-            m_dialog->unInstallItem( m_name );
+            m_Installer->unInstallItem( m_name );
             setButtonState( bInstall );
             break;
     }

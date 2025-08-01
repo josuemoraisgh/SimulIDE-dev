@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>manCompDialog</class>
- <widget class="QDialog" name="manCompDialog">
+ <class>installer</class>
+ <widget class="QWidget" name="installer">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>283</width>
-    <height>233</height>
+    <width>400</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Manage Components</string>
+   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
@@ -30,11 +30,19 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QTableWidget" name="table">
-     <property name="columnCount">
-      <number>2</number>
+    <widget class="QTableWidget" name="installTable">
+     <property name="rowCount">
+      <number>0</number>
      </property>
-     <column/>
+     <property name="columnCount">
+      <number>1</number>
+     </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
      <column/>
     </widget>
    </item>

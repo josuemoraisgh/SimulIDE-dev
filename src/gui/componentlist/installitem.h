@@ -9,14 +9,14 @@
 
 #include "ui_installitem.h"
 
-class manCompDialog;
+class Installer;
 
 class InstallItem : public QWidget, private Ui::installItem
 {
-    friend class manCompDialog;
+    friend class Installer;
 
     public:
-        InstallItem( manCompDialog* parent , QString item );
+        InstallItem( Installer* parent , QString item );
 
         enum buttonState_t{
             bInstall=0,
@@ -44,5 +44,5 @@ class InstallItem : public QWidget, private Ui::installItem
 
         buttonState_t m_buttonState;
 
-        manCompDialog* m_dialog;
+        Installer* m_Installer;
 };

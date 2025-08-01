@@ -19,6 +19,7 @@
 #include "mainwindow.h"
 #include "circuit.h"
 #include "circuitwidget.h"
+#include "installer.h"
 #include "chip.h"
 #include "utils.h"
 
@@ -44,8 +45,6 @@ ComponentList::ComponentList( QWidget* parent )
     setCursor( Qt::OpenHandCursor );
     headerItem()->setHidden( true );
     setIconSize( QSize( 30*scale, 24*scale ));
-
-    //m_mcDialog.checkForUpdates();
 
     createList();
 
@@ -73,7 +72,7 @@ void ComponentList::createList()
     compSetDir = "./data";          // FIXME: provisional, used by QemuDevice
     LoadCompSetAt( compSetDir );
 
-    m_mcDialog.loadInstalled(); // Load Installed components
+    MainWindow::self()->installer()->loadInstalled(); // Load Installed components
 
     m_listFile  = MainWindow::self()->getConfigPath("compList.xml");
     m_oldConfig = !QFile::exists( m_listFile ); // xml file doesn't exist: read old config
@@ -546,6 +545,4 @@ void ComponentList::writeSettings()
     treeStr += "</comptree>\n";
 
     Circuit::self()->saveString( m_listFile, treeStr );
-
-    m_mcDialog.writeSettings();
 }
