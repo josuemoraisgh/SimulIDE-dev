@@ -67,7 +67,9 @@ class QemuDevice : public Chip
         IoPin* m_rstPin;
 
         QString m_shMemKey;
-        int m_shMemId;
+        int64_t m_shMemId;
+
+        void* m_wHandle;
 
         QProcess m_qemuProcess;
         QStringList m_arguments;

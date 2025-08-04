@@ -8,12 +8,15 @@
 #include <QFileInfo>
 #include <QDir>
 
-#include <sys/mman.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/mman.h>
+#include <sys/shm.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#endif
 
 #include "qemudevice.h"
 #include "circuitwidget.h"
@@ -24,6 +27,7 @@
 #include "utils.h"
 #include "stringprop.h"
 
+
 #define tr(str) simulideTr("QemuDevice",str)
 
 QemuDevice::QemuDevice( QString type, QString id )
@@ -31,55 +35,44 @@ QemuDevice::QemuDevice( QString type, QString id )
 {
     m_rstPin = nullptr;
 
-    //int shMemSize = 10*8;
-
-    //m_sharedMemOk = false;
-
-    /*if( !m_sharedMemory.create( shMemSize ) ) // Create shared memory segment
-    {
-        if( m_sharedMemory.error() == QSharedMemory::AlreadyExists )
-        {
-            if( m_sharedMemory.attach() )
-            {
-                m_sharedMemOk = true;
-                qDebug() << "Attached to existing sharedMemory";
-            }
-            else
-            {
-                //m_sharedMemory.detach();
-                qDebug() << "Could not attach to shared memory segment:" << m_sharedMemory.errorString();
-            }
-        }
-        else qDebug() << "Could not create shared memory segment:" << m_sharedMemory.errorString();
-    }else{
-        m_sharedMemOk = true;
-        qDebug() << "Created new sharedMemory";
-    }*/
-
     uint64_t pid = QCoreApplication::applicationPid();
     m_shMemKey = QString::number( pid )+id;
+    void* arena = nullptr;
+
+    const int shMemSize = sizeof( qemuArena_t );
 
     // create the shared memory object
-    m_shMemId = shm_open( m_shMemKey.toLocal8Bit().data(), O_CREAT | O_RDWR, 0666);
-
-    if( m_shMemId == -1 )
+#ifdef __linux__
+    const char* charMemKey = m_shMemKey.toLocal8Bit().data();
+    m_shMemId = shm_open( charMemKey, O_CREAT | O_RDWR, 0666);
+    if( m_shMemId != -1 )
     {
-        qDebug() << "Error creating shared Mem";
+        ftruncate( m_shMemId, shMemSize );
+        arena = mmap( 0, shMemSize, PROT_WRITE, MAP_SHARED, m_shMemId, 0 );
     }
-    else
+#elif defined(_WIN32)
+    const wchar_t* charMemKey = m_shMemKey.toStdWString().c_str();
+    // Create a file mapping object
+    HANDLE hMapFile = CreateFileMapping(
+        INVALID_HANDLE_VALUE, // Use paging file
+        NULL,                 // Default security
+        PAGE_READWRITE,       // Read/write access
+        0,                    // Maximum object size (high-order DWORD)
+        shMemSize,            // Maximum object size (low-order DWORD)
+        charMemKey );         // Name of the mapping object
+
+    if( hMapFile != NULL )
+        arena = MapViewOfFile( hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, shMemSize );
+
+    m_wHandle = hMapFile;
+#endif
+    if( arena )
     {
-        qDebug() << "Shared Mem created" << sizeof( qemuArena_t ) << "bytes";
-
-        ftruncate( m_shMemId, sizeof( qemuArena_t ) );
-        void* arena = mmap( 0, sizeof( qemuArena_t ), PROT_WRITE, MAP_SHARED, m_shMemId, 0 );
-
-        if( arena )
-        {
-            m_arena = (qemuArena_t*)arena;
-            m_arena->state = 0;
-        }
-        else qDebug() << "Error creating arena";
+        m_arena = (qemuArena_t*)arena;
+        m_arena->state = 0;
+        qDebug() << "Shared Mem created" << shMemSize << "bytes";
     }
+    else qDebug() << "Error creating arena";
 
     m_qemuProcess.setProcessChannelMode( QProcess::MergedChannels ); // Merge stdout and stderr
 
@@ -93,8 +86,15 @@ QemuDevice::QemuDevice( QString type, QString id )
 QemuDevice::~QemuDevice()
 {
     initialize();
-
-    if( m_shMemId != -1 ) shm_unlink( m_id.toLocal8Bit().data() );
+#ifdef __linux__
+    if( m_shMemId != -1 ) shm_unlink( m_shMemKey.toLocal8Bit().data() );
+#elif defined(_WIN32)
+    if( m_wHandle != 0 )
+    {
+        UnmapViewOfFile( (LPVOID)m_arena );
+        CloseHandle( (HANDLE)m_wHandle );
+    }
+#endif
 }
 
 void QemuDevice::initialize()
