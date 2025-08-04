@@ -179,7 +179,7 @@ void Installer::itemDataReady()
         }
 
         //QString setDir =m_compsDir.absolutePath()+ m_installItem->m_name;
-        QZipReader qZip( zipFile );
+        qZipReader qZip( zipFile );
         bool isExtracted = qZip.extractAll( m_compsDir.absolutePath() );
 
         if( isExtracted )

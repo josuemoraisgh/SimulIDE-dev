@@ -237,21 +237,21 @@ struct FileHeader
     QByteArray file_comment;
 };
 
-QZipReader::FileInfo::FileInfo()
+qZipReader::FileInfo::FileInfo()
     : isDir(false), isFile(true), isSymLink(false), crc32(0), size(0)
 {
 }
 
-QZipReader::FileInfo::~FileInfo()
+qZipReader::FileInfo::~FileInfo()
 {
 }
 
-QZipReader::FileInfo::FileInfo(const FileInfo &other)
+qZipReader::FileInfo::FileInfo(const FileInfo &other)
 {
     operator=(other);
 }
 
-QZipReader::FileInfo& QZipReader::FileInfo::operator=(const FileInfo &other)
+qZipReader::FileInfo& qZipReader::FileInfo::operator=(const FileInfo &other)
 {
     filePath = other.filePath;
     isDir = other.isDir;
@@ -263,16 +263,16 @@ QZipReader::FileInfo& QZipReader::FileInfo::operator=(const FileInfo &other)
     return *this;
 }
 
-class QZipPrivate
+class qZipPrivate
 {
     public:
-        QZipPrivate(QIODevice *device, bool ownDev)
+        qZipPrivate(QIODevice *device, bool ownDev)
             : device(device), ownDevice(ownDev), dirtyFileTree(true), start_of_directory(0)
         {}
 
-        ~QZipPrivate() {if( ownDevice) delete device;}
+        ~qZipPrivate() {if( ownDevice) delete device;}
 
-        void fillFileInfo(int index, QZipReader::FileInfo &fileInfo) const;
+        void fillFileInfo(int index, qZipReader::FileInfo &fileInfo) const;
 
         QIODevice *device;
         bool ownDevice;
@@ -282,7 +282,7 @@ class QZipPrivate
         uint start_of_directory;
 };
 
-void QZipPrivate::fillFileInfo(int index, QZipReader::FileInfo &fileInfo) const
+void qZipPrivate::fillFileInfo(int index, qZipReader::FileInfo &fileInfo) const
 {
     FileHeader header = fileHeaders.at(index);
     fileInfo.filePath = QString::fromLocal8Bit(header.file_name);
@@ -295,16 +295,16 @@ void QZipPrivate::fillFileInfo(int index, QZipReader::FileInfo &fileInfo) const
     fileInfo.size = readUInt(header.h.uncompressed_size);
 }
 
-class QZipReaderPrivate : public QZipPrivate
+class qZipReaderPrivate : public qZipPrivate
 {
     public:
-        QZipReaderPrivate(QIODevice *device, bool ownDev)
-            : QZipPrivate(device, ownDev), status(QZipReader::NoError)
+        qZipReaderPrivate(QIODevice *device, bool ownDev)
+            : qZipPrivate(device, ownDev), status(qZipReader::NoError)
         {}
 
         void scanFiles();
 
-        QZipReader::Status status;
+        qZipReader::Status status;
 };
 
 LocalFileHeader CentralFileHeader::toLocalHeader() const
@@ -323,17 +323,17 @@ LocalFileHeader CentralFileHeader::toLocalHeader() const
     return h;
 }
 
-void QZipReaderPrivate::scanFiles()
+void qZipReaderPrivate::scanFiles()
 {
     if( !dirtyFileTree ) return;
 
     if( !( device->isOpen() || device->open(QIODevice::ReadOnly))) {
-        status = QZipReader::FileOpenError;
+        status = qZipReader::FileOpenError;
         return;
     }
 
     if( (device->openMode() & QIODevice::ReadOnly) == 0) { // only read the index from readable files.
-        status = QZipReader::FileReadError;
+        status = qZipReader::FileReadError;
         return;
     }
 
@@ -341,7 +341,7 @@ void QZipReaderPrivate::scanFiles()
     uchar tmp[4];
     device->read((char *)tmp, 4);
 
-    if( readUInt(tmp) != 0x04034b50) { qWarning() << "QZip: not a zip file!"; return; }
+    if( readUInt(tmp) != 0x04034b50) { qWarning() << "qZip: not a zip file!"; return; }
 
     // find EndOfDirectory header
     int i = 0;
@@ -350,7 +350,7 @@ void QZipReaderPrivate::scanFiles()
     EndOfDirectory eod;
     while (start_of_directory == -1) {
         int pos = device->size() - sizeof(EndOfDirectory) - i;
-        if( pos < 0 || i > 65535 ) { qWarning() << "QZip: EndOfDirectory not found"; return; }
+        if( pos < 0 || i > 65535 ) { qWarning() << "qZip: EndOfDirectory not found"; return; }
 
         device->seek(pos);
         device->read((char *)&eod, sizeof(EndOfDirectory));
@@ -363,7 +363,7 @@ void QZipReaderPrivate::scanFiles()
     num_dir_entries = readUShort(eod.num_dir_entries);
     ZDEBUG("start_of_directory at %d, num_dir_entries=%d", start_of_directory, num_dir_entries);
     int comment_length = readUShort(eod.comment_length);
-    if( comment_length != i) qWarning() << "QZip: failed to parse zip file.";
+    if( comment_length != i) qWarning() << "qZip: failed to parse zip file.";
     comment = device->read( qMin(comment_length, i) );
 
     device->seek(start_of_directory);
@@ -371,30 +371,30 @@ void QZipReaderPrivate::scanFiles()
         FileHeader header;
         int read = device->read((char *) &header.h, sizeof(CentralFileHeader));
         if( read < (int)sizeof(CentralFileHeader)) {
-            qWarning() << "QZip: Failed to read complete header, index may be incomplete";
+            qWarning() << "qZip: Failed to read complete header, index may be incomplete";
             break;
         }
         if( readUInt(header.h.signature) != 0x02014b50) {
-            qWarning() << "QZip: invalid header signature, index may be incomplete";
+            qWarning() << "qZip: invalid header signature, index may be incomplete";
             break;
         }
 
         int l = readUShort(header.h.file_name_length);
         header.file_name = device->read(l);
         if( header.file_name.length() != l) {
-            qWarning() << "QZip: Failed to read filename from zip index, index may be incomplete";
+            qWarning() << "qZip: Failed to read filename from zip index, index may be incomplete";
             break;
         }
         l = readUShort(header.h.extra_field_length);
         header.extra_field = device->read(l);
         if( header.extra_field.length() != l) {
-            qWarning() << "QZip: Failed to read extra field in zip file, skipping file, index may be incomplete";
+            qWarning() << "qZip: Failed to read extra field in zip file, skipping file, index may be incomplete";
             break;
         }
         l = readUShort(header.h.file_comment_length);
         header.file_comment = device->read(l);
         if( header.file_comment.length() != l) {
-            qWarning() << "QZip: Failed to read read file comment, index may be incomplete";
+            qWarning() << "qZip: Failed to read read file comment, index may be incomplete";
             break;
         }
 
@@ -403,11 +403,11 @@ void QZipReaderPrivate::scanFiles()
     }
 }
 
-QZipReader::QZipReader( const QString &archive, QIODevice::OpenMode mode )
+qZipReader::qZipReader( const QString &archive, QIODevice::OpenMode mode )
 {
     QScopedPointer<QFile> f( new QFile(archive) );
     f->open(mode);
-    QZipReader::Status status;
+    qZipReader::Status status;
     if( f->error() == QFile::NoError) status = NoError;
     else {
         if      (f->error() == QFile::ReadError)        status = FileReadError;
@@ -415,7 +415,7 @@ QZipReader::QZipReader( const QString &archive, QIODevice::OpenMode mode )
         else if( f->error() == QFile::PermissionsError) status = FilePermissionsError;
         else                                            status = FileError;
     }
-    d = new QZipReaderPrivate( f.data(), /*ownDevice=*/true );
+    d = new qZipReaderPrivate( f.data(), /*ownDevice=*/true );
     f.take();
     d->status = status;
 }
@@ -425,56 +425,56 @@ QZipReader::QZipReader( const QString &archive, QIODevice::OpenMode mode )
     You have to open the device previous to calling the constructor and only a
     device that is readable will be scanned for zip filecontent.
  */
-QZipReader::QZipReader( QIODevice* device )
-          : d( new QZipReaderPrivate(device, /*ownDevice=*/false) )
+qZipReader::qZipReader( QIODevice* device )
+          : d( new qZipReaderPrivate(device, /*ownDevice=*/false) )
 {
     Q_ASSERT(device);
 }
-QZipReader::~QZipReader()
+qZipReader::~qZipReader()
 {
     close();
     delete d;
 }
 
-bool QZipReader::isReadable() const
+bool qZipReader::isReadable() const
 {
     return d->device->isReadable();
 }
 
-bool QZipReader::exists() const
+bool qZipReader::exists() const
 {
     QFile *f = qobject_cast<QFile*> (d->device);
     if( f == 0) return true;
     return f->exists();
 }
 
-QList<QZipReader::FileInfo> QZipReader::fileInfoList() const
+QList<qZipReader::FileInfo> qZipReader::fileInfoList() const
 {
     d->scanFiles();
-    QList<QZipReader::FileInfo> files;
+    QList<qZipReader::FileInfo> files;
     for (int i = 0; i < d->fileHeaders.size(); ++i) {
-        QZipReader::FileInfo fi;
+        qZipReader::FileInfo fi;
         d->fillFileInfo(i, fi);
         files.append(fi);
     }
     return files;
 }
 
-int QZipReader::count() const
+int qZipReader::count() const
 {
     d->scanFiles();
     return d->fileHeaders.count();
 }
 
-QZipReader::FileInfo QZipReader::entryInfoAt( int index ) const
+qZipReader::FileInfo qZipReader::entryInfoAt( int index ) const
 {
     d->scanFiles();
-    QZipReader::FileInfo fi;
+    qZipReader::FileInfo fi;
     d->fillFileInfo(index, fi);
     return fi;
 }
 
-QByteArray QZipReader::fileData( const QString &fileName ) const
+QByteArray qZipReader::fileData( const QString &fileName ) const
 {
     d->scanFiles();
     int i;
@@ -523,23 +523,23 @@ QByteArray QZipReader::fileData( const QString &fileName ) const
                 if( (int)len != baunzip.size()) baunzip.resize(len);
                 break;
             case Z_MEM_ERROR:
-                qWarning("QZip: Z_MEM_ERROR: Not enough memory");
+                qWarning("qZip: Z_MEM_ERROR: Not enough memory");
                 break;
             case Z_BUF_ERROR:
                 len *= 2;
                 break;
             case Z_DATA_ERROR:
-                qWarning("QZip: Z_DATA_ERROR: Input data is corrupted");
+                qWarning("qZip: Z_DATA_ERROR: Input data is corrupted");
                 break;
             }
         } while (res == Z_BUF_ERROR);
         return baunzip;
     }
-    qWarning() << "QZip: Unknown compression method";
+    qWarning() << "qZip: Unknown compression method";
     return QByteArray();
 }
 
-bool QZipReader::extractAll( const QString &destinationDir ) const
+bool qZipReader::extractAll( const QString &destinationDir ) const
 {
     QDir baseDir( destinationDir ) ;
 
@@ -567,12 +567,12 @@ bool QZipReader::extractAll( const QString &destinationDir ) const
     return true;
 }
 
-QZipReader::Status QZipReader::status() const
+qZipReader::Status qZipReader::status() const
 {
     return d->status;
 }
 
-void QZipReader::close()
+void qZipReader::close()
 {
     d->device->close();
 }
