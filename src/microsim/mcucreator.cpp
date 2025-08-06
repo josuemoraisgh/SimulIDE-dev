@@ -44,6 +44,7 @@
 #include "avrsleep.h"
 #include "avrintosc.h"
 
+#include "pic12core.h"
 #include "pic14core.h"
 #include "pic14ecore.h"
 #include "picport.h"
@@ -210,6 +211,7 @@ int McuCreator::processFile( QString fileName )
     if( root.hasAttribute("core") )
     {
         if     ( m_core == "AVR" )      mcu->m_cpu = new AvrCore( mcu );
+        else if( m_core == "Pic12" )    mcu->m_cpu = new Pic12Core( mcu );
         else if( m_core == "Pic14" )    mcu->m_cpu = new Pic14Core( mcu );
         else if( m_core == "Pic14e" )   mcu->m_cpu = new Pic14eCore( mcu );
         else if( m_core == "8051" )     mcu->m_cpu = new I51Core( mcu );
@@ -336,7 +338,8 @@ void McuCreator::createCfgWord( QDomElement* e )
 void McuCreator::createProgMem( uint32_t size )
 {
     mcu->m_flashSize = size;
-    if     ( m_core == "Pic14" )  mcu->m_progMem.resize( size, 0x3FFF );
+    if     ( m_core == "Pic12" )  mcu->m_progMem.resize( size, 0x0FFF );
+    else if( m_core == "Pic14" )  mcu->m_progMem.resize( size, 0x3FFF );
     else if( m_core == "Pic14e" ) mcu->m_progMem.resize( size, 0x3FFF );
     else                          mcu->m_progMem.resize( size, 0xFFFF );
 }
@@ -577,6 +580,7 @@ void McuCreator::createMcuPort( QDomElement* p )
 
     McuPort* port;
     if     ( m_core == "AVR" )    port = new AvrPort( mcu, name );
+    else if( m_core == "Pic12" )  port = new PicPort( mcu, name );
     else if( m_core == "Pic14" )  port = new PicPort( mcu, name );
     else if( m_core == "Pic14e" ) port = new PicPort( mcu, name );
     else if( m_core == "8051" )   port = new I51Port( mcu, name );
@@ -727,6 +731,7 @@ void McuCreator::createTimer( QDomElement* t )
 
     if     ( m_core == "8051" )   timer = new I51Timer( mcu, timerName );
     else if( m_core == "AVR" )    timer = AvrTimer::createTimer( mcu, timerName, type );
+    else if( m_core == "Pic12" )  timer = PicTimer::createTimer( mcu, timerName, type );
     else if( m_core == "Pic14" )  timer = PicTimer::createTimer( mcu, timerName, type );
     else if( m_core == "Pic14e" ) timer = PicTimer::createTimer( mcu, timerName, type );
 
@@ -1082,6 +1087,7 @@ void McuCreator::createAcomp( QDomElement* e )
     int type = e->attribute("type").toInt();
 
     if     ( m_core == "AVR" )    comp = new AvrComp( mcu, name );
+    else if( m_core == "Pic12" )  comp = PicComp::createComparator( mcu, name, type );
     else if( m_core == "Pic14" )  comp = PicComp::createComparator( mcu, name, type );
     else if( m_core == "Pic14e" ) comp = PicComp::createComparator( mcu, name, type );
     if( !comp ) return;
@@ -1248,6 +1254,7 @@ void McuCreator::createWdt( QDomElement* e )
     int type = e->attribute("type").toInt();
     McuWdt* wdt = nullptr;
     if     ( m_core == "AVR" )   wdt = AvrWdt::createWdt( mcu, name, type );
+    else if( m_core == "Pic12" ) wdt = PicWdt::createWdt( mcu, name, type );
     else if( m_core == "Pic14" ) wdt = PicWdt::createWdt( mcu, name, type );
     else if( m_core == "Pic14e") wdt = PicWdt::createWdt( mcu, name, type );
 

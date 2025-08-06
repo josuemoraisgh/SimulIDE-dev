@@ -23,9 +23,12 @@ class PicMrCore : public McuCpu
         virtual uint RET_ADDR() override { return m_stack[m_sp]; }
 
     protected:
-        virtual void runStep( uint16_t instr );
+        virtual void decode( uint16_t instr );
         uint8_t* m_Wreg;
         uint8_t* m_OPTION;
+
+        uint8_t* m_FSR;
+        uint8_t m_WregHidden;
 
         regBits_t m_bankBits;
         uint16_t  m_bank;
@@ -81,47 +84,47 @@ class PicMrCore : public McuCpu
         virtual void exitSleep() override;
 
         // Miscellaneous instructions
-        inline void RETURN();
-        inline void RETFIE();
-        inline void OPTION();
-        inline void SLEEP();
-        inline void CLRWDT();
-        //inline void TRIS( uint8_t f );
+        void RETURN();
+        void RETFIE();
+        void OPTION();
+        void SLEEP();
+        void CLRWDT();
+        //void TRIS( uint8_t f );
 
         // ALU operations: dest ← OP(f,W)
-        inline void MOVWF( uint8_t f );
-        inline void CLRF( uint8_t f );
-        inline void SUBWF( uint8_t f, uint8_t d );
-        inline void DECF( uint8_t f, uint8_t d );
-        inline void IORWF( uint8_t f, uint8_t d );
-        inline void ANDWF( uint8_t f, uint8_t d );
-        inline void XORWF( uint8_t f, uint8_t d );
-        inline void ADDWF( uint8_t f, uint8_t d );
-        inline void MOVF( uint8_t f, uint8_t d );
-        inline void COMF( uint8_t f, uint8_t d );
-        inline void INCF( uint8_t f, uint8_t d );
-        inline void DECFSZ( uint8_t f, uint8_t d );
-        inline void RRF( uint8_t f, uint8_t d );
-        inline void RLF( uint8_t f, uint8_t d );
-        inline void SWAPF( uint8_t f, uint8_t d );
-        inline void INCFSZ( uint8_t f, uint8_t d );
+        void MOVWF( uint8_t f );
+        void CLRF( uint8_t f );
+        void SUBWF( uint8_t f, uint8_t d );
+        void DECF( uint8_t f, uint8_t d );
+        void IORWF( uint8_t f, uint8_t d );
+        void ANDWF( uint8_t f, uint8_t d );
+        void XORWF( uint8_t f, uint8_t d );
+        void ADDWF( uint8_t f, uint8_t d );
+        void MOVF( uint8_t f, uint8_t d );
+        void COMF( uint8_t f, uint8_t d );
+        void INCF( uint8_t f, uint8_t d );
+        void DECFSZ( uint8_t f, uint8_t d );
+        void RRF( uint8_t f, uint8_t d );
+        void RLF( uint8_t f, uint8_t d );
+        void SWAPF( uint8_t f, uint8_t d );
+        void INCFSZ( uint8_t f, uint8_t d );
 
         // Bit operations
-        inline void BCF( uint8_t f, uint8_t b );
-        inline void BSF( uint8_t f, uint8_t b );
-        inline void BTFSC( uint8_t f, uint8_t b );
-        inline void BTFSS( uint8_t f, uint8_t b );
+        void BCF( uint8_t f, uint8_t b );
+        void BSF( uint8_t f, uint8_t b );
+        void BTFSC( uint8_t f, uint8_t b );
+        void BTFSS( uint8_t f, uint8_t b );
 
         // Control transfers
-        inline void CALL( uint16_t k );
-        inline void GOTO( uint16_t k );
+        void CALL( uint16_t k );
+        void GOTO( uint16_t k );
 
         // Operations with W and 8-bit literal: W ← OP(k,W)
-        inline void MOVLW( uint8_t k );
-        inline void RETLW( uint8_t k );
-        inline void IORLW( uint8_t k );
-        inline void ANDLW( uint8_t k );
-        inline void XORLW( uint8_t k );
-        inline void SUBLW( uint8_t k );
-        inline void ADDLW( uint8_t k );
+        void MOVLW( uint8_t k );
+        void RETLW( uint8_t k );
+        void IORLW( uint8_t k );
+        void ANDLW( uint8_t k );
+        void XORLW( uint8_t k );
+        void SUBLW( uint8_t k );
+        void ADDLW( uint8_t k );
 };

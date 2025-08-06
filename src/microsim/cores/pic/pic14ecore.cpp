@@ -219,7 +219,7 @@ inline void Pic14eCore::MOVWI( uint8_t n, uint8_t k )
     }
 }
 
-void Pic14eCore::runStep( uint16_t instr )
+void Pic14eCore::decode( uint16_t instr )
 {
     if( (instr & 0x3FC0) == 0 )  // Miscellaneous instrs
     {
@@ -269,8 +269,8 @@ void Pic14eCore::runStep( uint16_t instr )
             case 0x3F00: MOVIW( n, instr & 0x7F );  return; // MOVIW k[FSRn] 11 1111 0nkk kkkk
             case 0x3F80: MOVWI( n, instr & 0x7F );  return; // MOVWI k[FSRn] 11 1111 1nkk kkkk
         }
-        if( (instr & 0x3C00) == 0x3200 ) BRA( instr & 0x1FF); // BRA k 11 001k kkkk kkkk
+        if( (instr & 0x3C00) == 0x3200 ){ BRA( instr & 0x1FF); return; }// BRA k 11 001k kkkk kkkk
     }
-    PicMrCore::runStep( instr );
+    PicMrCore::decode( instr );
 }
 

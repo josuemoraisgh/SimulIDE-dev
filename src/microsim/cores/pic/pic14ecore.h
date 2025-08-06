@@ -16,7 +16,7 @@ class Pic14eCore : public PicMrCore
         //virtual void reset();
 
     protected:
-        virtual void runStep( uint16_t instr ) override;
+        virtual void decode( uint16_t instr ) override;
         virtual void setBank( uint8_t bank ) override { PicMrCore::setBank( bank ); }
 
         uint8_t* m_FSR0L;

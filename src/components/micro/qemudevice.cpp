@@ -89,7 +89,7 @@ QemuDevice::~QemuDevice()
 #ifdef __linux__
     if( m_shMemId != -1 ) shm_unlink( m_shMemKey.toLocal8Bit().data() );
 #elif defined(_WIN32)
-    if( m_wHandle != 0 )
+    if( m_wHandle != NULL )
     {
         UnmapViewOfFile( (LPVOID)m_arena );
         CloseHandle( (HANDLE)m_wHandle );

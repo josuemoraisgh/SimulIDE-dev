@@ -13,11 +13,8 @@ class Pic14Core : public PicMrCore
         Pic14Core( eMcu* mcu );
         ~Pic14Core();
 
-protected:
-    virtual void setBank( uint8_t bank ) override { PicMrCore::setBank( bank ); }
-
-        uint8_t* m_FSR;
-        uint8_t m_WregHidden;
+    protected:
+        virtual void setBank( uint8_t bank ) override { PicMrCore::setBank( bank ); }
 
         virtual uint8_t GET_RAM( uint16_t addr ) override //
         {

@@ -273,10 +273,10 @@ void PicMrCore::runStep()
     incDefault();
     m_RET_ADDR = m_PC;
 
-    runStep( instr );
+    decode( instr );
 }
 
-void PicMrCore::runStep( uint16_t instr )
+void PicMrCore::decode( uint16_t instr )
 {
     if( (instr & 0x3F80) == 0 )  // Miscellaneous instrs
     {
