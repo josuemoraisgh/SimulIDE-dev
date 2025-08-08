@@ -121,7 +121,7 @@ void Hd44780_Base::C_D_Shift( int data )
     }
     else                            // Shift Cursor
     {
-        m_DDaddr += dir;
+        m_DDaddr -= dir;
 
         if( m_DDaddr > 79 ) m_DDaddr = 0;
         if( m_DDaddr < 0 )  m_DDaddr = 79;
