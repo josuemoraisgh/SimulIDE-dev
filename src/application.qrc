@@ -163,6 +163,7 @@
         <file alias="ssd1306.png">../src/icons/components/ssd1306.png</file>
         <file alias="ili9341.png">../src/icons/components/ili9341.png</file>
         <file alias="mosfet.png">../src/icons/components/mosfet.png</file>
+        <file alias="jfet.png">../src/icons/components/jfet.png</file>
         <file alias="clock.png">../src/icons/components/clock.png</file>
         <file alias="resistordip.png">../src/icons/components/resistordip.png</file>
         <file alias="ledbar.png">../src/icons/components/ledbar.png</file>

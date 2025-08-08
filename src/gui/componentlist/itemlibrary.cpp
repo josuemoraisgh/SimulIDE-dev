@@ -59,6 +59,7 @@
 #include "i2cram.h"
 #include "i2ctoparallel.h"
 #include "inductor.h"
+#include "jfet.h"
 #include "keypad.h"
 #include "ky023.h"
 #include "ky040.h"
@@ -192,8 +193,9 @@ void ItemLibrary::loadItems()
     addItem( Diac::libraryItem() );
     addItem( Triac::libraryItem() );
     addItem( new LibraryItem( QObject::tr("Transistors"), "Active", "transistors.png","Transistors", nullptr ) );
-    addItem( Mosfet::libraryItem() );
     addItem( BJT::libraryItem() );
+    addItem( Mosfet::libraryItem() );
+    addItem( Jfet::libraryItem() );
     addItem( new LibraryItem( QObject::tr("Other Active"), "Active", "2to2.png","Other Active", nullptr ) );
     addItem( OpAmp::libraryItem() );
     addItem( Comparator::libraryItem() );
