@@ -133,7 +133,15 @@ void QemuDevice::stamp()
 
     if( createArgs() )
     {
-        m_qemuProcess.start( m_executable, m_arguments );
+        QString executable = m_executable;
+#ifdef _WIN32
+        executable += ".exe";
+#endif
+        if( !QFileInfo::exists( executable ) )
+        {
+            qDebug() << "Error: QemuDevice::stamp executable does not exist:" << endl << executable;
+        }
+        m_qemuProcess.start( executable, m_arguments );
 
         uint64_t timeout = 0;
         while( !m_arena->state )   // Wait for Qemu running

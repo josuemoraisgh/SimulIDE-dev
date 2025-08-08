@@ -49,9 +49,10 @@ Esp32::Esp32( QString type, QString id )
     m_area = QRect( 0, 0, 15*8, 15*8 );
     m_color = QColor( 50, 50, 70 );
 
-    m_ClkPeriod = 1000*1*1000; // ~1 ms //6400000; // 6.4 ms
+    m_ClkPeriod = 1000*1*1000; // 1 ms
 
     m_executable = "./data/esp32/qemu-system-xtensa";
+
     m_firmware ="";
 
     m_i2c[0].setDevice( this );
@@ -116,7 +117,7 @@ bool Esp32::createArgs()
     QString firmware = m_firmware.left( index );
     QString efuses = firmware+".efuse";
 
-    if( !QFile( efuses ).exists() )
+    if( !QFileInfo::exists( efuses ) )
         efuses = "./data/esp32/esp32.efuse";
 
     m_arguments.clear();
