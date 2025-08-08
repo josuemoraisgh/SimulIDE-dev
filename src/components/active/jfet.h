@@ -3,8 +3,7 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#ifndef JFET_H
-#define JFET_H
+#pragma once
 
 #include "e-jfet.h"
 #include "component.h"
@@ -22,10 +21,5 @@ class Jfet : public Component, public eJfet
 
         virtual void updateStep() override;
 
-        // virtual void setIdss( double Idss ) override;
-        // virtual void setVp( double Vp ) override;
-
         virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 };
-
-#endif

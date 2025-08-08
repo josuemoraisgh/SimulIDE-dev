@@ -89,8 +89,8 @@ void Mosfet::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w);
     
-    if( Circuit::self()->animate() && m_gateV > 0 )  p->setBrush( Qt::yellow );
-    else                                             p->setBrush( Qt::white );
+    if( Circuit::self()->animate() && m_gateV > 0 ) p->setBrush( Qt::yellow );
+    else                                            p->setBrush( Qt::white );
 
     p->drawEllipse( m_area );
     
@@ -107,11 +107,11 @@ void Mosfet::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
     p->setBrush( Qt::black );
     if( m_Pchannel )
     {
-         QPointF points[3] = {
-         QPointF( 7, 0 ),
-         QPointF( 3,-2 ),
-         QPointF( 3, 2 ) };
-         p->drawPolygon( points, 3 );
+        QPointF points[3] = {
+        QPointF( 7, 0 ),
+        QPointF( 3,-2 ),
+        QPointF( 3, 2 ) };
+        p->drawPolygon( points, 3 );
     } else {
         QPointF points[3] = {
         QPointF( 1, 0 ),

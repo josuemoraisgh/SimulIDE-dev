@@ -12,7 +12,6 @@
 #include "iopin.h"
 
 #include "doubleprop.h"
-// #include "boolprop.h"
 
 #define tr(str) simulideTr("Jfet",str)
 
@@ -73,17 +72,15 @@ void Jfet::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w);
     
-    if( Circuit::self()->animate() && m_gateV > 0 )  p->setBrush( Qt::yellow );
-    else                                             p->setBrush( Qt::white );
+    if( Circuit::self()->animate() && m_gateV > 0 ) p->setBrush( Qt::yellow );
+    else                                            p->setBrush( Qt::white );
 
     p->drawEllipse( m_area );
     
     p->drawLine(-12, 0, 0, 0 );
-    //p->drawLine( -4,-8,-4, 8 );
     p->drawLine( 0,-9, 0, 9 );
     
     p->drawLine( 0,-7, 8,-7 );
-    //p->drawLine( 0, 0, 8, 0 );
     p->drawLine( 0, 7, 8, 7 );
     
     p->drawLine( 8,-12, 8,-7 );
