@@ -51,13 +51,13 @@ uint8_t PicMrCore::sub( uint8_t val1, uint8_t val2 )
 
 // Miscellaneous instructions
 
-inline void PicMrCore::RETURN() { RET(); }
+void PicMrCore::RETURN() { RET(); }
 
-inline void PicMrCore::RETFIE() { RETI(); }
+void PicMrCore::RETFIE() { RETI(); }
 
-inline void PicMrCore::OPTION() { *m_OPTION = *m_Wreg; }
+void PicMrCore::OPTION() { *m_OPTION = *m_Wreg; }
 
-inline void PicMrCore::SLEEP()
+void PicMrCore::SLEEP()
 {
     write_S_Bit( PD, false );
     write_S_Bit( TO, true );
@@ -66,7 +66,7 @@ inline void PicMrCore::SLEEP()
 
 void PicMrCore::exitSleep() { write_S_Bit( TO, false ); }
 
-inline void PicMrCore::CLRWDT()
+void PicMrCore::CLRWDT()
 {
     write_S_Bit( PD, true );
     write_S_Bit( TO, true );
@@ -75,82 +75,82 @@ inline void PicMrCore::CLRWDT()
 
 // ALU operations: dest ← OP(f,W)
 
-inline void PicMrCore::MOVWF( uint8_t f )
+void PicMrCore::MOVWF( uint8_t f )
 {
     SET_RAM( f, *m_Wreg);
 }
 
-inline void PicMrCore::CLRF( uint8_t f )
+void PicMrCore::CLRF( uint8_t f )
 {
     SET_RAM( f, 0 );
     write_S_Bit( Z, true );
 }
 
-inline void PicMrCore::SUBWF( uint8_t f, uint8_t d )
+void PicMrCore::SUBWF( uint8_t f, uint8_t d )
 {
     uint8_t newV = sub( GET_RAM( f ), *m_Wreg );
     setValue( newV, f, d );
 }
 
-inline void PicMrCore::DECF( uint8_t f, uint8_t d )
+void PicMrCore::DECF( uint8_t f, uint8_t d )
 {
     uint8_t newV = GET_RAM( f );
     setValueZ( --newV, f, d );
 }
 
-inline void PicMrCore::IORWF( uint8_t f, uint8_t d )
+void PicMrCore::IORWF( uint8_t f, uint8_t d )
 {
     uint8_t oldV = GET_RAM( f ) ;
     uint8_t newV = oldV | *m_Wreg;
     setValueZ( newV, f, d );
 }
 
-inline void PicMrCore::ANDWF( uint8_t f, uint8_t d )
+void PicMrCore::ANDWF( uint8_t f, uint8_t d )
 {
     uint8_t oldV = GET_RAM( f ) ;
     uint8_t newV = oldV & *m_Wreg;
     setValueZ( newV, f, d );
 }
 
-inline void PicMrCore::XORWF( uint8_t f, uint8_t d )
+void PicMrCore::XORWF( uint8_t f, uint8_t d )
 {
     uint8_t oldV = GET_RAM( f ) ;
     uint8_t newV = oldV ^ *m_Wreg;
     setValueZ( newV, f, d );
 }
 
-inline void PicMrCore::ADDWF( uint8_t f, uint8_t d )
+void PicMrCore::ADDWF( uint8_t f, uint8_t d )
 {
     uint8_t newV = add( GET_RAM( f ), *m_Wreg );
     setValue( newV, f, d );
 }
 
-inline void PicMrCore::MOVF( uint8_t f, uint8_t d )
+void PicMrCore::MOVF( uint8_t f, uint8_t d )
 {
     uint8_t newV = GET_RAM( f );
     setValueZ( newV, f, d );
 }
 
-inline void PicMrCore::COMF( uint8_t f, uint8_t d )
+void PicMrCore::COMF( uint8_t f, uint8_t d )
 {
     uint8_t newV = GET_RAM( f ) ^ 0xFF;
     setValueZ( newV, f, d );
 }
 
-inline void PicMrCore::INCF( uint8_t f, uint8_t d )
+void PicMrCore::INCF( uint8_t f, uint8_t d )
 {
     uint8_t newV = GET_RAM( f );
     setValueZ( ++newV, f, d );
 }
 
-inline void PicMrCore::DECFSZ( uint8_t f, uint8_t d )
+void PicMrCore::DECFSZ( uint8_t f, uint8_t d )
 {
     uint8_t newV = GET_RAM( f ) - 1;
     setValue( newV, f, d );
     if( newV == 0 ) incDefault();
 }
 
-inline void PicMrCore::RRF( uint8_t f, uint8_t d )
+void PicMrCore::RRF( uint8_t f, uint8_t d )
 {
     uint8_t oldV = GET_RAM( f ) ;
     uint8_t newV = oldV >> 1;
@@ -159,7 +159,7 @@ inline void PicMrCore::RRF( uint8_t f, uint8_t d )
     setValue( newV, f, d );
 }
 
-inline void PicMrCore::RLF( uint8_t f, uint8_t d )
+void PicMrCore::RLF( uint8_t f, uint8_t d )
 {
     uint8_t oldV = GET_RAM( f ) ;
     uint8_t newV = oldV << 1;
@@ -168,14 +168,14 @@ inline void PicMrCore::RLF( uint8_t f, uint8_t d )
     setValue( newV, f, d );
 }
 
-inline void PicMrCore::SWAPF( uint8_t f, uint8_t d )
+void PicMrCore::SWAPF( uint8_t f, uint8_t d )
 {
     uint8_t oldV = GET_RAM( f );
     uint8_t newV = ((oldV >> 4) & 0x0F) | ((oldV << 4) & 0xF0);
     setValue( newV, f, d );
 }
 
-inline void PicMrCore::INCFSZ( uint8_t f, uint8_t d )
+void PicMrCore::INCFSZ( uint8_t f, uint8_t d )
 {
     uint8_t newV = GET_RAM( f ) + 1;
     setValue( newV, f, d );
@@ -184,28 +184,28 @@ inline void PicMrCore::INCFSZ( uint8_t f, uint8_t d )
 
 // Bit operations
 
-inline void PicMrCore::BCF( uint8_t f, uint8_t b )
+void PicMrCore::BCF( uint8_t f, uint8_t b )
 {
     uint8_t newV = GET_RAM( f );
     newV &= ~(1<<b);
     SET_RAM( f, newV );
 }
 
-inline void PicMrCore::BSF( uint8_t f, uint8_t b )
+void PicMrCore::BSF( uint8_t f, uint8_t b )
 {
     uint8_t newV = GET_RAM( f );
     newV |= 1<<b;
     SET_RAM( f, newV );
 }
 
-inline void PicMrCore::BTFSC( uint8_t f, uint8_t b )
+void PicMrCore::BTFSC( uint8_t f, uint8_t b )
 {
     uint8_t oldV = GET_RAM( f );
     uint8_t bitMask = 1<<b;
     if( (oldV & bitMask) == 0 ) incDefault();
 }
 
-inline void PicMrCore::BTFSS( uint8_t f, uint8_t b )
+void PicMrCore::BTFSS( uint8_t f, uint8_t b )
 {
     uint8_t oldV = GET_RAM( f );
     if( oldV & 1<<b  ) incDefault();
@@ -213,12 +213,12 @@ inline void PicMrCore::BTFSS( uint8_t f, uint8_t b )
 
 // Control transfers
 
-inline void PicMrCore::CALL( uint16_t k )
+void PicMrCore::CALL( uint16_t k )
 {
     CALL_ADDR( k | ((uint16_t)(m_dataMem[m_PCHaddr] & 0b00011000)<<8) );
 }
 
-inline void PicMrCore::GOTO( uint16_t k )
+void PicMrCore::GOTO( uint16_t k )
 {
     setPC( k | ((uint16_t)(m_dataMem[m_PCHaddr] & 0b00011000)<<8) );
     m_mcu->cyclesDone = 2;
@@ -226,41 +226,41 @@ inline void PicMrCore::GOTO( uint16_t k )
 
 // Operations with W and 8-bit literal: W ← OP(k,W)
 
-inline void PicMrCore::MOVLW( uint8_t k )
+void PicMrCore::MOVLW( uint8_t k )
 {
     *m_Wreg = k;
 }
 
-inline void PicMrCore::RETLW( uint8_t k )
+void PicMrCore::RETLW( uint8_t k )
 {
     *m_Wreg = k;
     RETURN();
 }
 
-inline void PicMrCore::IORLW( uint8_t k )
+void PicMrCore::IORLW( uint8_t k )
 {
     *m_Wreg |= k;
     write_S_Bit( Z, *m_Wreg==0 );
 }
 
-inline void PicMrCore::ANDLW( uint8_t k )
+void PicMrCore::ANDLW( uint8_t k )
 {
     *m_Wreg &= k;
     write_S_Bit( Z, *m_Wreg==0 );
 }
 
-inline void PicMrCore::XORLW( uint8_t k )
+void PicMrCore::XORLW( uint8_t k )
 {
     *m_Wreg ^= k;
     write_S_Bit( Z, *m_Wreg==0 );
 }
 
-inline void PicMrCore::SUBLW( uint8_t k ) //// C,DC,Z
+void PicMrCore::SUBLW( uint8_t k ) //// C,DC,Z
 {
     *m_Wreg = sub( k, *m_Wreg );
 }
 
-inline void PicMrCore::ADDLW( uint8_t k ) //// C,DC,Z
+void PicMrCore::ADDLW( uint8_t k ) //// C,DC,Z
 {
     *m_Wreg = add( k, *m_Wreg );
 }

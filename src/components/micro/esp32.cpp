@@ -33,7 +33,11 @@ Component* Esp32::construct( QString type, QString id )
 
 LibraryItem* Esp32::libraryItem()
 {
-    if( !QFileInfo::exists("./data/esp32/qemu-system-xtensa") ) return nullptr;
+    QString executable = "./data/esp32/qemu-system-xtensa";
+#ifdef _WIN32
+    executable += ".exe";
+#endif
+    if( !QFileInfo::exists( executable ) ) return nullptr;
 
     return new LibraryItem(
         "Esp32",
