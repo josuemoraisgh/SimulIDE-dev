@@ -131,12 +131,29 @@ CONFIG += warn_on
 CONFIG += no_qml_debug
 CONFIG *= c++11
 
+win32 {
+# year - month - day
+REV_NO = $$system("echo  %date:~10,4%%date:~4,2%%date:~7,2%")
+}
+linux {
 REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
-#$$system( git rev-parse --short HEAD )
+}
+macx {
+REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
+}
+
 DEFINES += REVNO=\\\"$$REV_NO\\\"
 DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"
-
+win32 {
+# day - month  - year
+BUILD_DATE = $$system("echo  %date:~7,2%-%date:~4,2%-%date:~10,4%")
+}
+linux {
 BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
+}
+macx {
+BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
+}
 DEFINES += BUILDDATE=\\\"$$BUILD_DATE\\\"
 
 TARGET_NAME   = SimulIDE_$$VERSION-$$RELEASE
