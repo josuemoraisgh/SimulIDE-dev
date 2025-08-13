@@ -41,8 +41,7 @@ QString langFile( QString locale )
 {
     QString langF = ":/simulide_"+locale+".qm";
 
-    QFile file( langF );
-    if( !file.exists() ) langF = "";
+    if( !QFile::exists( langF ) ) langF = "";
 
     return langF;
 }
