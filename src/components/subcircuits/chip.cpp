@@ -45,10 +45,12 @@ Chip::Chip( QString type, QString id, QString device )
     m_leftMargin   = 0;
     m_margins = "0,0,0,0";
     
-    m_lsColor = QColor( 255, 255, 255 );
-    m_icColor = QColor( 50, 50, 70 );
+    //m_lsColor = QColor( 255, 255, 255 );
+    m_lsColor = QColor( 235, 240, 255 );
+    m_icColor = QColor( 20, 30, 60 );
+
     m_pkgColor = m_lsColor;
-    m_color   = m_lsColor;
+    m_color    = m_lsColor;
 
     QFont f;
     f.setFamily("Ubuntu Mono");
@@ -247,15 +249,18 @@ void Chip::initPackage( QString pkgStr )
                 QString   name = property.name.toString().toLower();  // Property name
                 QStringRef val = property.value;                      // Property value
 
-                if     ( name == "width"     ) m_width    = val.split(" ").first().toInt();
-                else if( name == "height"    ) m_height   = val.split(" ").first().toInt();
-                else if( name == "name"      ) embedName  = val.toString();
-                else if( name == "background") background = val.toString();
-                else if( name == "bckgnddata") bckgndData = val.toString();
+                if     ( name == "width"       ) m_width    = val.split(" ").first().toInt();
+                else if( name == "height"      ) m_height   = val.split(" ").first().toInt();
+                else if( name == "name"        ) embedName  = val.toString();
+                else if( name == "border"      ) m_border = ( val == "true" );
+                else if( name == "custom_color") m_customColor = ( val == "true" );
+                else if( name == "background"  ) background = val.toString();
+                else if( name == "bckgnddata"  ) bckgndData = val.toString();
+                else if( name == "bckgndcolor" ) setPkgColorStr( val.toString() );
                 else if( name == "logic_symbol") m_isLS = ( val == "true" );
             }
-            if( !bckgndData.isEmpty() ) setBckGndData( bckgndData );
-            if( !background.isEmpty() ) setBackground( background );
+            setBckGndData( bckgndData );
+            if( !m_hasBckGndData ) setBackground( background );
         }
         else if( item == "Pin" ) setPinStr( properties );
     }
@@ -510,11 +515,11 @@ void Chip::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
             else                p->setBrush( QColor( 0, 0, 0, 0 ) );
             if( !m_border ) p->setPen( Qt::NoPen );
         }
-        p->drawRoundedRect( m_area, 1, 1);
+        p->drawRoundedRect( m_area, 1, 1 );
 
         if( m_backPixmap ) p->drawPixmap( imgArea, *m_backPixmap );
 
-        if( m_backData  )
+        if( m_backData ) // Script display
         {
             p->setRenderHint( QPainter::Antialiasing, true );
 

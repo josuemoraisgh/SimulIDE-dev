@@ -66,6 +66,9 @@ SubPackage::SubPackage( QString type, QString id )
     m_boardMode = false;
     m_name = "";
 
+    //m_lsColor = QColor( 235, 240, 255 );
+    m_icColor = QColor( 50, 50, 70 );
+
     m_boardModeAction = new QAction( tr("Board Mode") );
     m_boardModeAction->setCheckable( true );
     QObject::connect( m_boardModeAction, &QAction::triggered, [=](){ boardModeSlot(); } );

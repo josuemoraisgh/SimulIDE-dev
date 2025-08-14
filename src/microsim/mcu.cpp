@@ -90,7 +90,6 @@ Mcu::Mcu( QString type, QString id, QString device )
 
     m_uiFreq = 0;
     m_serialMon = -1;
-    m_icColor = QColor( 20, 30, 60 );
 
     addPropGroup( { tr("Main"), {},0} );
 

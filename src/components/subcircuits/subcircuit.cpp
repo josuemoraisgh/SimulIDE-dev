@@ -158,9 +158,6 @@ LibraryItem* SubCircuit::libraryItem()
 SubCircuit::SubCircuit( QString type, QString id, QString device )
           : Chip( type, id, device )
 {
-    m_lsColor = QColor( 235, 240, 255 );
-    m_icColor = QColor( 20, 30, 60 );
-
     addPropGroup( { tr("Main"), {},0} );
 
     if( s_graphProps.isEmpty() ) loadGraphProps();
