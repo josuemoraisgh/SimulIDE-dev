@@ -52,6 +52,7 @@ class ComponentList : public QTreeWidget
         void loadXml( QString xmlFile );
         void addItem( QString caption, TreeItem* catItem, QString icon, QString type );
         void addItem( QString caption, TreeItem* catItem, QIcon &icon, QString type );
+        void addLibraryItem( LibraryItem* item );
 
         void LoadLibraryItems();
         void loadTest( QString userDir );

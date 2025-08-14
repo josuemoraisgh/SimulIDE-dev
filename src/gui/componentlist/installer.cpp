@@ -106,8 +106,11 @@ void Installer::addInstallItem( QString itemStr, int row )
 
     installTable->insertRow( row );
     installTable->setCellWidget( row, 0, item );
-    if( item->m_file.isEmpty() ) installTable->setRowHeight( row, 30 );
-    else                         installTable->setRowHeight( row, 60 );
+
+    float scale = MainWindow::self()->fontScale();
+
+    if( item->m_file.isEmpty() ) installTable->setRowHeight( row, 25*scale );
+    else                         installTable->setRowHeight( row, 50*scale );
 }
 
 void Installer::installItem( QString itemStr )
@@ -130,7 +133,7 @@ void Installer::installItem( QString itemStr )
     QNetworkRequest request( url );
 
     request.setAttribute( QNetworkRequest::RedirectPolicyAttribute
-                         , QNetworkRequest::NoLessSafeRedirectPolicy );
+                        , QNetworkRequest::NoLessSafeRedirectPolicy );
 
     request.setTransferTimeout( 5000 );
 

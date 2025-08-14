@@ -227,19 +227,6 @@ void ItemLibrary::loadItems()
     addItem( Lamp::libraryItem() );
     // Micro
     addItem( new LibraryItem( QObject::tr("Micro"), "", "","Micro", nullptr ) );
-    addItem( new LibraryItem( "AVR" , "Micro", "ic2.png","AVR", nullptr ) );
-    addItem( new LibraryItem( "PIC" , "Micro", "ic2.png","PIC", nullptr ) );
-    addItem( new LibraryItem( "I51" , "Micro", "ic2.png","I51", nullptr ) );
-    addItem( new LibraryItem("MCS65", "Micro", "ic2.png","MCS65", nullptr ) );
-    addItem( new LibraryItem("Z80"  , "Micro", "ic2.png","Z80", nullptr ) );
-    LibraryItem* esp32 = Esp32::libraryItem();
-    if( esp32 )
-    {
-        addItem( new LibraryItem("Espressif"  , "Micro", "ic2.png","Espressif", nullptr ) );
-        addItem( esp32 );
-    }
-    addItem( new LibraryItem( QObject::tr("Arduino"), "Micro", "board.png","Arduino", nullptr ) );
-    addItem( new LibraryItem( QObject::tr("Shields"), "Micro", "shield.png","Shields", nullptr ) );
     addItem( new LibraryItem( QObject::tr("Sensors"), "Micro", "1to2.png","Sensors", nullptr ) );
     addItem( Mcu::libraryItem() );
     addItem( SR04::libraryItem() );

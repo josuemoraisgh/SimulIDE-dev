@@ -9,6 +9,7 @@
 
 #include "installitem.h"
 #include "installer.h"
+#include "mainwindow.h"
 
 InstallItem::InstallItem( Installer* parent, QString item )
            : QWidget( (QWidget*)parent )
@@ -28,21 +29,33 @@ void InstallItem::setItem( QString itemStr )
 {
     m_itemStr = itemStr;
 
+    float scale = MainWindow::self()->fontScale();
+    QFont font;
+    font.setFamily( MainWindow::self()->defaultFontName() );
+
+    font.setPixelSize( 11*scale );
+    textEdit->setFont( font );
+    installButton->setFont( font );
+
     QStringList set = itemStr.split("; ");
 
     m_name = set.at(0);
 
     QString header = "#### ";
 
+    QPalette p = setNameEdit->palette();
+    p.setColor( QPalette::Text, QColor( 80, 90, 110 ) );
+
     if( set.size() < 4 )
     {
         installButton->hide();
 
-        QPalette p = setNameEdit->palette();
-        p.setColor( QPalette::Base, QColor( 220, 220, 200 ) );
-        setNameEdit->setPalette( p );
+        font.setPixelSize( 13*scale );
+        setNameEdit->setFont( font );
 
-        p.setColor( QPalette::Window, QColor( 220, 220, 200 ) );
+        p.setColor( QPalette::Base, QColor( 220, 235, 240 ) );
+
+        p.setColor( QPalette::Window, QColor( 220, 235, 240 ) );
         this->setAutoFillBackground( true );
         this->setPalette( p );
 
@@ -57,11 +70,15 @@ void InstallItem::setItem( QString itemStr )
 
         if( set.size() > 4 ) m_depends = set.at(4);
 
+        font.setPixelSize( 12*scale );
+        setNameEdit->setFont( font );
+
         textEdit->setMarkdown( m_description );
     }
     //QString md = header+m_name+"\n"+m_description;
     //md.replace("<br>","\n");
 
+    setNameEdit->setPalette( p );
     setNameEdit->setMarkdown( header+m_name );
 
     setButtonState( bInstall );

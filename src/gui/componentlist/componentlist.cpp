@@ -23,6 +23,8 @@
 #include "chip.h"
 #include "utils.h"
 
+#include "esp32.h"
+
 ComponentList* ComponentList::m_pSelf = nullptr;
 
 ComponentList::ComponentList( QWidget* parent )
@@ -55,9 +57,7 @@ ComponentList::~ComponentList(){}
 
 void ComponentList::createList()
 {
-    m_customComp = false;
     LoadLibraryItems();
-    m_customComp = true;
 
     QString userDir = MainWindow::self()->userPath();
     if( !userDir.isEmpty() && QDir( userDir ).exists() )
@@ -134,21 +134,40 @@ void ComponentList::loadTest( QString userDir )
 
 void ComponentList::LoadLibraryItems()
 {
-    for( LibraryItem* item : m_itemLibrary.items() )
+    m_customComp = false;
+    for( LibraryItem* item : m_itemLibrary.items() ) addLibraryItem( item );
+    m_customComp = true;
+
+    addCategory("AVR"  , "AVR"  , "Micro", ":/ic2.png");
+    addCategory("PIC"  , "PIC"  , "Micro", ":/ic2.png");
+    addCategory("I51"  , "I51"  , "Micro", ":/ic2.png");
+    addCategory("MCS65", "MCS65", "Micro", ":/ic2.png");
+    addCategory("Z80"  , "Z80"  , "Micro", ":/ic2.png");
+    LibraryItem* esp32 = Esp32::libraryItem();
+    if( esp32 )
     {
-        QString category = item->category();
-
-        QString icon = item->iconfile();
-        QString iconFile = MainWindow::self()->getDataFilePath("images/"+icon );
-        if( !QFile::exists( iconFile ) ) iconFile = ":/"+icon; // Image not in simulide data folder, use hardcoded image
-
-        if( item->createItemFnPtr() )
-        {
-            TreeItem* catItem = getCategory( category );
-            if( catItem ) addItem( item->name(), catItem, iconFile, item->type() );
-        }
-        else addCategory( item->name(), item->type(), category, iconFile );
+        addCategory("Espressif", "Espressif", "Micro", ":/ic2.png");
+        addLibraryItem( esp32 );
+        delete esp32;
     }
+    addCategory("Arduino", "Arduino", "Micro", ":/ic2.png");
+    addCategory("Shields", "Shields", "Micro", ":/ic2.png");
+}
+
+void ComponentList::addLibraryItem( LibraryItem* item )
+{
+    QString category = item->category();
+
+    QString icon = item->iconfile();
+    QString iconFile = MainWindow::self()->getDataFilePath("images/"+icon );
+    if( !QFile::exists( iconFile ) ) iconFile = ":/"+icon; // Image not in simulide data folder, use hardcoded image
+
+    if( item->createItemFnPtr() )
+    {
+        TreeItem* catItem = getCategory( category );
+        if( catItem ) addItem( item->name(), catItem, iconFile, item->type() );
+    }
+    else addCategory( item->name(), item->type(), category, iconFile );
 }
 
 void ComponentList::LoadCompSetAt( QDir compSetDir )
