@@ -115,7 +115,6 @@ macx {
     contains( QMAKE_HOST.arch, arm64 ) {
         SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_xcode.S
     }
-
     QMAKE_CXXFLAGS -= -stdlib=libc++
     QMAKE_LFLAGS   -= -stdlib=libc++
 
@@ -126,34 +125,22 @@ macx {
     QMAKE_LINK = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
 }
 
+contains( QMAKE_HOST.os, Windows ) {
+    REV_NO = $$system("echo  %date:~10,4%%date:~4,2%%date:~7,2%")       # year-month-day
+    BUILD_DATE = $$system("echo  %date:~7,2%-%date:~4,2%-%date:~10,4%") # day-month-year
+}
+else {
+    REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
+    BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
+}
+
 CONFIG += qt 
 CONFIG += warn_on
 CONFIG += no_qml_debug
 CONFIG *= c++11
 
-win32 {
-# year - month - day
-REV_NO = $$system("echo  %date:~10,4%%date:~4,2%%date:~7,2%")
-}
-linux {
-REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
-}
-macx {
-REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
-}
-
 DEFINES += REVNO=\\\"$$REV_NO\\\"
 DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"
-win32 {
-# day - month  - year
-BUILD_DATE = $$system("echo  %date:~7,2%-%date:~4,2%-%date:~10,4%")
-}
-linux {
-BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
-}
-macx {
-BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
-}
 DEFINES += BUILDDATE=\\\"$$BUILD_DATE\\\"
 
 TARGET_NAME   = SimulIDE_$$VERSION-$$RELEASE
@@ -178,10 +165,10 @@ message( "-----------------------------------")
 message( "    "                               )
 message( "    "$$TARGET_NAME for $$OS         )
 message( "    "                               )
+message( "    Host:      "$$QMAKE_HOST.os     )
 message( "    Date:      "$$BUILD_DATE        )
 message( "    Qt version: "$$QT_VERSION       )
 message( "    "                               )
 message( "    Destination Folder:"            )
 message( $$TARGET_PREFIX                      )
 message( "-----------------------------------")
-
