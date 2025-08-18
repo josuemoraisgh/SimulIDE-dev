@@ -227,6 +227,12 @@ void ItemLibrary::loadItems()
     addItem( Lamp::libraryItem() );
     // Micro
     addItem( new LibraryItem( QObject::tr("Micro"), "", "","Micro", nullptr ) );
+    LibraryItem* esp32 = Esp32::libraryItem();
+    if( esp32 )
+    {
+        addItem( new LibraryItem("Espressif", "Micro", ":/ic2.png", "Espressif", nullptr) );
+        addItem( esp32 );
+    }
     addItem( new LibraryItem( QObject::tr("Sensors"), "Micro", "1to2.png","Sensors", nullptr ) );
     addItem( Mcu::libraryItem() );
     addItem( SR04::libraryItem() );
