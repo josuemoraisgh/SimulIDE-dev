@@ -228,7 +228,7 @@ void SubCircuit::loadSubCircuit( QString doc )
             else                 comp = circ->createItem( type, newUid, false );
 
             if( !comp ){
-                qDebug() << "SubCircuit:"<<m_name<<m_id<< "ERROR Creating Component: "<<type<<uid;
+                qDebug() << "SubCircuit:"<<m_name<<m_id<< "ERROR Creating Subcircuit Component: "<<type<<uid;
                 continue;
             }
             comp->setIdLabel( uid ); // Avoid parent Uids in label
