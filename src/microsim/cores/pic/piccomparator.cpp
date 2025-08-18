@@ -140,14 +140,14 @@ void PicComp01::setMode( uint8_t mode )
     McuPin* pinN = m_cis ? m_pins[1] : m_pins[0];
 
     switch ( mode ) {
-        case 0: m_enabled = false; connect( m_pins[0], m_pins[1], nullptr      ); break;
-        case 1:                    connect( pinN     , m_pins[2], nullptr      ); break;
-        case 2: m_fixVref = true;  connect( pinN     , nullptr     , nullptr      ); break;
-        case 3:                    connect( m_pins[0], m_pins[2], nullptr      ); break;
-        case 4:                    connect( m_pins[0], m_pins[1], nullptr      ); break;
-        case 5: m_enabled = false; connect( nullptr     , nullptr     , nullptr      ); break;
-        case 6:                    connect( m_pins[0], nullptr     , m_pins[1] ); break;
-        case 7: m_enabled = false; connect( nullptr     , nullptr     , nullptr      ); break;
+        case 0: m_enabled = false; connect( m_pins[0], m_pins[1], nullptr   ); break;
+        case 1:                    connect( pinN     , m_pins[2], nullptr   ); break;
+        case 2: m_fixVref = true;  connect( pinN     , nullptr  , nullptr   ); break;
+        case 3:                    connect( m_pins[0], m_pins[2], nullptr   ); break;
+        case 4:                    connect( m_pins[0], m_pins[1], nullptr   ); break;
+        case 5: m_enabled = false; connect( nullptr  , nullptr  , nullptr   ); break;
+        case 6:                    connect( m_pins[0], m_pins[2], m_pins[1] ); break;
+        case 7: m_enabled = false; connect( nullptr  , nullptr  , nullptr   ); break;
     }
 }
 
