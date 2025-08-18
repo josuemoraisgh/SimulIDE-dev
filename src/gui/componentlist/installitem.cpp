@@ -117,12 +117,14 @@ void InstallItem::setButtonState( buttonState_t state )
 {
     m_buttonState = state;
     QString buttonText;
+    QString color = "#CCCCCC";
 
     switch( state )
     {
-        case bInstall:   buttonText = tr("Install");   break;
-        case bUpdate:    buttonText = tr("Update");    break;
-        case bUninstall: buttonText = tr("Uninstall"); break;
+        case bInstall:   color = "#CCCCCC"; buttonText = tr("Install");   break;
+        case bUpdate:    color = "#EEEE00"; buttonText = tr("Update");    break;
+        case bUninstall: color = "#AAFFAA"; buttonText = tr("Uninstall"); break;
     }
     installButton->setText( buttonText );
+    installButton->setStyleSheet( "background-color:"+color );
 }
