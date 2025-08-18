@@ -51,6 +51,9 @@ void Installer::checkForUpdates( QString url )
 {
     if( !m_checkUpdates ) return;
 
+    //QString version = MainWindow::self()->settings()->value("library/version").toString();
+    //qDebug() << "version" << version;
+
     if( url.isEmpty() ) url = m_compsUrl+"dloadset.php?file=components.txt";
     QNetworkRequest request( url );
 
@@ -71,6 +74,12 @@ void Installer::updtReady()
     {
         QString    replyStr = m_reply->readAll();
         QStringList setList = replyStr.split("\n"); // List of Component Sets
+
+        //if( setList.size() < 2 ) return;
+        //QString version = setList.takeFirst();
+        //if( version = m_version ) return;
+        //m_version = version;
+        //MainWindow::self()->settings()->setValue("library/version", version );
 
         int row = 0;
         for( QString itemStr : setList )
@@ -151,6 +160,8 @@ void Installer::unInstallItem( QString itemStr )
     compSetDir.cd( itemStr );
     compSetDir.removeRecursively();
     m_installed.remove( itemStr );
+
+    ComponentList::self()->createList();
 }
 
 void Installer::itemDataReady()

@@ -38,6 +38,7 @@ class Installer : public QWidget, private Ui::installer
 
         QDir m_compsDir;
         QString m_compsUrl;
+        QString m_version;
 
         QString m_nextItem;
 

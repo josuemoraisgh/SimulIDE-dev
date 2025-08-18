@@ -57,6 +57,13 @@ ComponentList::~ComponentList(){}
 
 void ComponentList::createList()
 {
+    this->clear();
+    m_components.clear();
+    m_categories.clear();
+    m_categoryList.clear();
+    m_dataFileList.clear();
+    m_dirFileList.clear();
+
     LoadLibraryItems();
 
     QString userDir = MainWindow::self()->userPath();
@@ -143,13 +150,13 @@ void ComponentList::LoadLibraryItems()
     addCategory("I51"  , "I51"  , "Micro", ":/ic2.png");
     addCategory("MCS65", "MCS65", "Micro", ":/ic2.png");
     addCategory("Z80"  , "Z80"  , "Micro", ":/ic2.png");
-    LibraryItem* esp32 = Esp32::libraryItem();
+    /*LibraryItem* esp32 = Esp32::libraryItem();
     if( esp32 )
     {
         addCategory("Espressif", "Espressif", "Micro", ":/ic2.png");
         addLibraryItem( esp32 );
         delete esp32;
-    }
+    }*/
     addCategory("Arduino", "Arduino", "Micro", ":/ic2.png");
     addCategory("Shields", "Shields", "Micro", ":/ic2.png");
 }
