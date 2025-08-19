@@ -562,10 +562,9 @@ void Mcs65Cpu::BRK() // Break/Interrupt : 1 byte, 7 cycles
 
             switch( m_isrSource)             // Determine ISR source
             {
-                case 1:  m_Isr = 0xFFFA; break; // NMI (falling edge)
-                case 2:  m_Isr = 0xFFFE; break; // IRQ
-                default: m_Isr = 0xFFFE;        // Software BRK
-                         status |= 1<<B;        // Set B flag
+                case 1:  m_Isr = 0xFFFA; status &= ~BREAK; break; // NMI (falling edge) - B flag cleared
+                case 2:  m_Isr = 0xFFFE; status &= ~BREAK; break; // IRQ                 - B flag cleared
+                default: m_Isr = 0xFFFE; status |=  BREAK;        // Software BRK
             }
             pushStack8( status );
             m_nextState = cEXEC;
