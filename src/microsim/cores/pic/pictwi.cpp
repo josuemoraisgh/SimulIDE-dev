@@ -163,7 +163,7 @@ void PicTwi::setTwiState( twiState_t state )  // Set new Status value
     clearRegBits( m_S );
     clearRegBits( m_P );
 
-    if( state == TWI_START )                                           // Start sent
+    if( state == TWI_START || state == TWI_REP_START)                  // Start sent
     {
         clearRegBits( m_SEN );
         clearRegBits( m_RSEN );

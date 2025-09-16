@@ -59,8 +59,8 @@ void TwiModule::runEvent()
 
         case I2C_STOP:           // Send Stop Condition
         {
-            if     (  m_sdaState && clkLow )  setSDA( false ); // Step 1: Lower SDA
-            else if( !m_sdaState && clkLow )  setSCL( true );//m_toggleScl = true;  // Step 2: Raise Clock
+            if     (  m_sdaState &&  clkLow ) setSDA( false ); // Step 1: Lower SDA
+            else if( !m_sdaState &&  clkLow ) setSCL( true );  // Step 2: Raise Clock
             else if( !m_sdaState && !clkLow ) setSDA( true );  // Step 3: Raise SDA
             else if(  m_sdaState && !clkLow )                  // Step 4: Operation Finished
             {
@@ -76,7 +76,8 @@ void TwiModule::runEvent()
             else if( !clkLow )                     // Step 3: SDA Already Low, Lower Clock
             {
                 setSCL( false ); //m_toggleScl = true;
-                setTwiState( TWI_START );
+                if( m_i2cState == I2C_WRITE ) setTwiState( TWI_REP_START );
+                else                          setTwiState( TWI_START );
                 m_i2cState = I2C_IDLE;
             }
         }break;
