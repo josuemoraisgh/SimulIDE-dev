@@ -59,10 +59,11 @@ class TextComponent : public LinkerComponent
         void setLinkedString( QString str, int i=0 ) override;
         void setLinkedValue( double v, int i=0 ) override;
 
-        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
-
-    public slots:
         void updateGeometry(int, int, int);
+
+        bool freeMove( bool ) override { return true; }
+
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     private:
         QGraphicsTextItem* m_text;

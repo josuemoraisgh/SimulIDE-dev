@@ -76,7 +76,8 @@ TextComponent::TextComponent( QString type, QString id )
 
     Simulator::self()->addToUpdateList( this );
 
-    QObject::connect( m_text->document(), &QTextDocument::contentsChange, [=](int f, int cr, int ca){ updateGeometry(f,cr,ca); } );
+    QObject::connect( m_text->document(), &QTextDocument::contentsChange
+                    , [=](int f, int cr, int ca){ updateGeometry(f,cr,ca); } );
 
     addPropGroup( { tr("Main"), {
         new IntProp <TextComponent>("Margin", tr("Margin"),"_px"

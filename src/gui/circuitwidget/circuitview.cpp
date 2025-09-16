@@ -126,7 +126,11 @@ void CircuitView::dragEnterEvent( QDragEnterEvent* event )
 void CircuitView::dragMoveEvent( QDragMoveEvent* event )
 {
     event->accept();
-    if( m_enterItem ) m_enterItem->moveTo( toGrid( mapToScene( event->pos() ) ) );
+    if( !m_enterItem ) return;
+
+    QPointF itemPos = mapToScene( event->pos() );
+    if( !m_enterItem->freeMove( false ) ) itemPos = toGrid( itemPos );
+    m_enterItem->moveTo( itemPos );
 }
 
 void CircuitView::dragLeaveEvent( QDragLeaveEvent* event )

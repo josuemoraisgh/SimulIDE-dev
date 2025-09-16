@@ -142,6 +142,8 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
         void addSignalPin( Pin* pin );
         void remSignalPin( Pin* pin );
 
+        virtual bool freeMove( bool ctrlMod );
+
         virtual void paint( QPainter* painter, const QStyleOptionGraphicsItem*, QWidget* ) override;
 
         virtual QVariant itemChange( GraphicsItemChange change, const QVariant &value ) override;
@@ -155,7 +157,6 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
         int m_linkNumber;
 
  static bool m_boardMode;
-
 
         virtual void contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu );
         void rotateCW();
@@ -178,8 +179,6 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
         void slotCut();
 
         void paintSelected( QPainter* );
-
-        virtual bool freeMove( QGraphicsSceneMouseEvent* event );
 
         virtual void findHelp(){;}
 

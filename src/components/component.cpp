@@ -162,9 +162,9 @@ QVariant Component::itemChange( GraphicsItemChange change, const QVariant &value
     return QGraphicsItem::itemChange( change, value );
 }
 
-bool Component::freeMove( QGraphicsSceneMouseEvent* event )
+bool Component::freeMove( bool ctrlMod )
 {
-    return m_boardMode && event->modifiers() == Qt::ControlModifier;
+    return m_boardMode && ctrlMod;
 }
 
 void Component::mousePressEvent( QGraphicsSceneMouseEvent* event )
@@ -222,6 +222,8 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
     }
     event->accept();
 
+    QPointF delta = toGrid(event->scenePos()) - toGrid(event->lastScenePos());
+
     QList<QGraphicsItem*> itemList = Circuit::self()->selectedItems();
     QList<ConnectorLine*> lineList;
 
@@ -230,6 +232,8 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
         m_moveFree = true;
         m_conMoveList.clear();
         m_compMoveList.clear();
+
+        bool ctrlMod = event->modifiers() == Qt::ControlModifier;
 
         for( QGraphicsItem* item : itemList )
         {
@@ -244,7 +248,7 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
             else if( item->type() == UserType+1 )     // Component selected
             {
                 Component* comp =  qgraphicsitem_cast<Component*>( item );
-                if( !comp->freeMove( event ) ) m_moveFree = false;
+                if( !comp->freeMove( ctrlMod ) ) m_moveFree = false;
 
                 m_compMoveList.append( comp );
 
@@ -255,7 +259,7 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
                     Connector* con = pin->connector();
                     if( con && !m_conMoveList.contains( con ) ) m_conMoveList.append( con );
         }   }   }
-        if( !m_moveFree && (event->scenePos() - event->lastScenePos()) == QPointF(0, 0) ) return;
+        if( !m_moveFree && delta == QPointF(0, 0) ) return;
 
         Circuit::self()->beginCircuitBatch();
         for( Component* comp : m_compMoveList )    // Undo step
@@ -267,7 +271,6 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
         m_moving = true;
         Circuit::self()->saveChanges();
     }
-    QPointF delta = toGrid(event->scenePos()) - toGrid(event->lastScenePos());
     if( m_moveFree ) delta = event->scenePos() - event->lastScenePos();
 
     if( delta == QPointF(0, 0) ) return;

@@ -39,9 +39,10 @@ class Shape : public Component
 
         QString colorStr() { return m_color.name(); }
         void setColorStr( QString n ) { setColor( QColor(n) ); }
+
+        bool freeMove( bool ) override { return true; }
         
     protected:
-        bool freeMove( QGraphicsSceneMouseEvent* ) override { return true; }
         void changed();
 
         int m_hSize;
