@@ -191,6 +191,7 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
         bool m_warning;
         bool m_crashed;
         bool m_hidden;
+        bool m_moveFree;
 
         QPointF m_boardPos;
         QPointF m_circPos;

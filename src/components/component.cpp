@@ -222,59 +222,59 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
     }
     event->accept();
 
-    QPointF delta( 0, 0 );
-    if( freeMove( event ) ) delta = event->scenePos() - event->lastScenePos();
-    else                    delta = toGrid(event->scenePos()) - toGrid(event->lastScenePos());
-
-    if( !(fabs( delta.x() )> 0) && !(fabs( delta.y() )> 0) ) return;
-
-    QList<QGraphicsItem*> itemlist = Circuit::self()->selectedItems();
+    QList<QGraphicsItem*> itemList = Circuit::self()->selectedItems();
+    QList<ConnectorLine*> lineList;
 
     if( !m_moving )         // Get lists of elements to move and save Undo state
     {
-        Circuit::self()->beginCircuitBatch();
-
+        m_moveFree = true;
         m_conMoveList.clear();
         m_compMoveList.clear();
 
-        for( QGraphicsItem* item : itemlist )
+        for( QGraphicsItem* item : itemList )
         {
             if( item->type() == UserType+2 )          // ConnectorLine selected
             {
+                m_moveFree = false;
                 ConnectorLine* line =  qgraphicsitem_cast<ConnectorLine*>( item );
+                lineList.append( line );
                 Connector* con = line->connector();
-                if( !m_conMoveList.contains( con ) )  // Connectors selected
-                {
-                    m_conMoveList.append( con );
-                    Circuit::self()->addCompChange( con->getUid(), "pointList", con->pListStr() );
-                }
+                if( !m_conMoveList.contains( con ) ) m_conMoveList.append( con ); // Connectors selected
             }
             else if( item->type() == UserType+1 )     // Component selected
             {
                 Component* comp =  qgraphicsitem_cast<Component*>( item );
-                Circuit::self()->addCompChange( comp->getUid(), "Pos", comp->getPropStr("Pos") );
+                if( !comp->freeMove( event ) ) m_moveFree = false;
+
                 m_compMoveList.append( comp );
+
                 std::vector<Pin*> pins = comp->getPins();
                 for( Pin* pin : pins )
                 {                                     // Connectors attached to selected Component
                     if( !pin ) continue;
                     Connector* con = pin->connector();
-                    if( con && !m_conMoveList.contains( con ) ){
-                        m_conMoveList.append( con );
-                        Circuit::self()->addCompChange( con->getUid(), "pointList", con->pListStr() );
-        }   }   }   }
+                    if( con && !m_conMoveList.contains( con ) ) m_conMoveList.append( con );
+        }   }   }
+        if( !m_moveFree && (event->scenePos() - event->lastScenePos()) == QPointF(0, 0) ) return;
+
+        Circuit::self()->beginCircuitBatch();
+        for( Component* comp : m_compMoveList )    // Undo step
+            Circuit::self()->addCompChange( comp->getUid(), "Pos", comp->getPropStr("Pos") );
+
+        for( Connector* con  : m_conMoveList )    // Undo step
+            Circuit::self()->addCompChange( con->getUid(), "pointList", con->pListStr() );
 
         m_moving = true;
         Circuit::self()->saveChanges();
     }
-    for( QGraphicsItem* item : itemlist )                        // Move ConnectorLine
-    {
-        if( item->type() != UserType+2 ) continue;
-        ConnectorLine* line =  qgraphicsitem_cast<ConnectorLine*>( item );
-        line->moveSimple( delta );
-    }
-    for( Component* comp : m_compMoveList ) comp->move( delta ); // Move Components selected
-    for( Connector* con  : m_conMoveList  )  con->isMoved();     // Update Connectors
+    QPointF delta = toGrid(event->scenePos()) - toGrid(event->lastScenePos());
+    if( m_moveFree ) delta = event->scenePos() - event->lastScenePos();
+
+    if( delta == QPointF(0, 0) ) return;
+
+    for( ConnectorLine* line : lineList   ) line->moveSimple( delta ); // Move ConnectorLine
+    for( Component* comp : m_compMoveList ) comp->move( delta );    // Move Components selected
+    for( Connector* con  : m_conMoveList  ) con->isMoved();         // Update Connectors
 }
 
 void Component::mouseReleaseEvent( QGraphicsSceneMouseEvent* event )
