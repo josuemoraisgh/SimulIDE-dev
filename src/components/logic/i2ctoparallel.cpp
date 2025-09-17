@@ -53,6 +53,7 @@ I2CToParallel::I2CToParallel( QString type, QString id )
 
     m_int = m_inpPin[5];
     m_int->setPinMode( openCo );
+    m_int->setPullup( 1e5 );
 
     for( int i=0; i<8; ++i )
     {
