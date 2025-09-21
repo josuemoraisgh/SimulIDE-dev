@@ -100,7 +100,7 @@ LibraryItem* Stm32::libraryItem()
 {
     return new LibraryItem(
         "Stm32",
-        "Micro",
+        "STM32",
         "ic2.png",
         "Stm32",
         Stm32::construct );
@@ -113,7 +113,7 @@ Stm32::Stm32( QString type, QString id )
 
     m_ClkPeriod = 10240000; //6400000; // 6.4 ms
 
-    m_executable = "./data/stm32/qemu-system-arm";
+    m_executable = "./data/STM32/qemu-system-arm";
 
     m_firmware ="";
 
@@ -153,7 +153,7 @@ void Stm32::createPins()
     m_gpioSize = 64;
     m_ioPin.resize( m_gpioSize, nullptr ); // =NULL
 
-    setPackageFile("./data/stm32/stm32.package");
+    setPackageFile("./data/STM32/stm32.package");
 
     for( IoPin* pin : m_ioPin )
     {
@@ -180,11 +180,11 @@ bool Stm32::createArgs()
 {
     QFileInfo fi = QFileInfo( m_firmware );
 
-    if( fi.size() != 1048576 )
+    /*if( fi.size() != 1048576 )
     {
         qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
         return false;
-    }
+    }*/
 
     m_arguments.clear();
 
@@ -193,10 +193,10 @@ bool Stm32::createArgs()
     m_arguments << "qemu-system-arm";
 
     m_arguments << "-M";
-    m_arguments << "stm32l4x5xg-soc";
+    m_arguments << "STM32-L4X5XG";
 
-    m_arguments << "-drive";
-    m_arguments << "file="+m_firmware+",if=flash,format=raw";
+    m_arguments << "-kernel";
+    m_arguments << m_firmware;
 
     return true;
 }
@@ -211,10 +211,14 @@ void Stm32::doAction()
         } break;
         case GPIO_DIR:       // Set Direction
         {
+            qDebug() << "Stm32::doAction GPIO_DIR"<< m_arena->data32;
         } break;
         case GPIO_IN:                  // Read Inputs
         {
+            qDebug() << "Stm32::doAction GPIO_IN"<< m_arena->data32;
         } break;
+        default:
+            qDebug() << "Stm32::doAction Unimplemented"<< m_arena->action;
     }
 }
 

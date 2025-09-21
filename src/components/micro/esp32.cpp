@@ -275,13 +275,14 @@ void Esp32::doAction()
         case GPIO_OUT:       // Set Output
         {
             //qDebug() << "i"<<m_arena->nextState<<eventEnter;
+            uint32_t state = m_arena->data32;
             for( uint i=0; i<32; ++i )
             {
                 IoPin* pin = m_ioPin[i];
                 if( !pin ) continue;
                 uint32_t mask = 1<<i;
                 uint32_t oldState = m_state & mask;
-                uint32_t newState = m_arena->data32 & mask;
+                uint32_t newState = state & mask;
                 if( oldState == newState ) continue;
                 //qDebug() << "outChanged" << i << newState;
                 pin->setOutState( newState );
