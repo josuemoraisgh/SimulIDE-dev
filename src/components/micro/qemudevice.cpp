@@ -219,10 +219,10 @@ void QemuDevice::setFirmware( QString file )
 {
     if( Simulator::self()->isRunning() ) CircuitWidget::self()->powerCircOff();
 
-    QDir    circuitDir   = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
-    QString fileNameAbs  = circuitDir.absoluteFilePath( file );
-    QString cleanPathAbs = circuitDir.cleanPath( fileNameAbs );
-    m_firmware = cleanPathAbs;
+    //QDir    circuitDir   = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
+    //QString fileNameAbs  = circuitDir.absoluteFilePath( file );
+    //QString cleanPathAbs = circuitDir.cleanPath( fileNameAbs );
+    m_firmware = file;//cleanPathAbs;
 }
 
 void QemuDevice::setPackageFile( QString package )
