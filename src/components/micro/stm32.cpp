@@ -192,11 +192,20 @@ bool Stm32::createArgs()
 
     m_arguments << "qemu-system-arm";
 
-    m_arguments << "-M";
-    m_arguments << "STM32-L4X5XG";
+    //m_arguments << "-d";
+    //m_arguments << "in_asm";
 
-    m_arguments << "-kernel";
-    m_arguments << m_firmware;
+    //m_arguments << "-machine";
+    //m_arguments << "help";
+
+    m_arguments << "-M";
+    m_arguments << "stm32-f103c8-simul";
+
+    m_arguments << "-drive";
+    m_arguments << "file="+m_firmware+",if=pflash,format=raw";
+
+    //m_arguments << "-kernel";
+    //m_arguments << m_firmware;
 
     return true;
 }
