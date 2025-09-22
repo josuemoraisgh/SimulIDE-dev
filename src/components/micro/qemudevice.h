@@ -40,6 +40,9 @@ class QemuDevice : public Chip
         QString firmware() { return m_firmware; }
         void setFirmware( QString file );
 
+        QString extraArgs()  { return m_extraArgs; }
+        void setExtraArgs( QString a ){ m_extraArgs = a; }
+
         void setPackageFile( QString package );
 
         void clearData32() { m_arena->data32 = 0; }
@@ -57,6 +60,8 @@ class QemuDevice : public Chip
 
         QString m_firmware;
         QString m_executable;
+
+        QString m_extraArgs;
 
         volatile qemuArena_t* m_arena;
 

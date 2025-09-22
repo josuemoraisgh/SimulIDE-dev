@@ -81,6 +81,9 @@ QemuDevice::QemuDevice( QString type, QString id )
     addPropGroup( { tr("Main"),{
         new StrProp<QemuDevice>("Program", tr("Firmware"),""
                          , this, &QemuDevice::firmware, &QemuDevice::setFirmware ),
+
+        new StrProp<QemuDevice>("Args", tr("Extra arguments"),""
+                               , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
 }
 QemuDevice::~QemuDevice()

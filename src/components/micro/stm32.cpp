@@ -192,6 +192,13 @@ bool Stm32::createArgs()
 
     m_arguments << "qemu-system-arm";
 
+    QStringList extraArgs = m_extraArgs.split(",");
+    for( QString arg : extraArgs )
+    {
+        if( arg.isEmpty() ) continue;
+        m_arguments << arg;
+    }
+
     //m_arguments << "-d";
     //m_arguments << "in_asm";
 
