@@ -50,10 +50,6 @@ class QemuDevice : public Chip
         volatile qemuArena_t* getArena() { return m_arena; }
 
     protected:
-
-        Pin* addPin( QString id, QString type, QString label,
-                     int n, int x, int y, int angle , int length=8, int space=0 ) override;
-
         virtual bool createArgs(){ return false;}
 
         virtual void doAction(){;}

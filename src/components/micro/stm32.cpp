@@ -20,10 +20,10 @@ enum actions{
 };
 
 
-#define PORTA 0x1000
-#define PORTB 0x2000
-#define PORTC 0x3000
-#define PORTD 0x4000
+//#define PORTA 0x1000
+//#define PORTB 0x2000
+//#define PORTC 0x3000
+//#define PORTD 0x4000
 
 /*static const short int pinmap[65] = {
         64,      // number of pins
@@ -108,10 +108,15 @@ LibraryItem* Stm32::libraryItem()
 
 Stm32::Stm32( QString type, QString id )
      : QemuDevice( type, id )
+     , m_portA("PortA")
+     , m_portB("PortB")
+     , m_portC("PortC")
+     , m_portD("PortD")
 {
     m_area = QRect(-32,-32, 64, 64 );
 
     m_ClkPeriod = 10240000; //6400000; // 6.4 ms
+    m_frequency = 72*1000*1000;
 
     m_executable = "./data/STM32/qemu-system-arm";
 
@@ -148,32 +153,26 @@ Stm32::Stm32( QString type, QString id )
 }
 Stm32::~Stm32(){}
 
+void Stm32::stamp()
+{
+    m_portA.reset();
+    m_portB.reset();
+    m_portC.reset();
+    m_portD.reset();
+
+    QemuDevice::stamp();
+}
+
 void Stm32::createPins()
 {
-    m_gpioSize = 64;
-    m_ioPin.resize( m_gpioSize, nullptr ); // =NULL
+    //m_gpioSize = 64;
+    //m_ioPin.resize( m_gpioSize, nullptr ); // =NULL
+    m_portA.createPins( this, "16", 0xFFFFFFFF );
+    m_portB.createPins( this, "16", 0xFFFFFFFF );
+    m_portC.createPins( this, "16", 0xFFFFFFFF );
+    m_portD.createPins( this,  "3", 0xFFFFFFFF );
 
     setPackageFile("./data/STM32/stm32.package");
-
-    for( IoPin* pin : m_ioPin )
-    {
-        if( pin )
-        {
-            //qDebug() << i << pin->pinId();
-            pin->setOutHighV( 3.3 );
-            pin->setInputHighV( 1.65 );
-            pin->setInputLowV( 1.65 );
-        }
-        //else      qDebug() << i << "Null pin";
-        //i++;
-    }
-    if( m_rstPin )
-    {
-        m_rstPin->setOutHighV( 3.3 );
-        m_rstPin->setPullup( 1e5 );
-        m_rstPin->setInputHighV( 0.65 );
-        m_rstPin->setInputLowV( 0.65 );
-    }
 }
 
 bool Stm32::createArgs()
@@ -185,6 +184,8 @@ bool Stm32::createArgs()
         qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
         return false;
     }*/
+
+    m_arena->data32 = m_frequency;
 
     m_arguments.clear();
 
@@ -223,11 +224,29 @@ void Stm32::doAction()
     {
         case GPIO_OUT:       // Set Output
         {
-            qDebug() << "Stm32::doAction GPIO_OUT"<< m_arena->data32;
+            uint8_t  port  = m_arena->data8;
+            uint16_t state = m_arena->data16;
+
+            qDebug() << "Stm32::doAction GPIO_OUT Port:"<< port << "State:" << state;
+            switch( port ) {
+                case 1: m_portA.setOutState( state ); break;
+                case 2: m_portB.setOutState( state ); break;
+                case 3: m_portC.setOutState( state ); break;
+                case 4: m_portD.setOutState( state ); break;
+            }
         } break;
         case GPIO_DIR:       // Set Direction
         {
-            qDebug() << "Stm32::doAction GPIO_DIR"<< m_arena->data32;
+            uint8_t  port = m_arena->data8;
+            uint16_t dir  = m_arena->data16;
+
+            qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << dir;
+            switch( port ) {
+                case 1: m_portA.setDirection( dir ); break;
+                case 2: m_portB.setDirection( dir ); break;
+                case 3: m_portC.setDirection( dir ); break;
+                case 4: m_portD.setDirection( dir ); break;
+            }
         } break;
         case GPIO_IN:                  // Read Inputs
         {
@@ -238,10 +257,50 @@ void Stm32::doAction()
     }
 }
 
-void Stm32::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
+Pin* Stm32::addPin( QString id, QString type, QString label,
+                   int n, int x, int y, int angle, int length, int space )
 {
-    Component::paint( p, o, w );
+    IoPin* pin = nullptr;
+    //qDebug() << "Stm32::addPin" << id;
+    if( type.contains("rst") )
+    {
+        pin = new IoPin( angle, QPoint(x, y), m_id+"-"+id, n-1, this, input );
+        m_rstPin = pin;
+        m_rstPin->setOutHighV( 3.3 );
+        m_rstPin->setPullup( 1e5 );
+        m_rstPin->setInputHighV( 0.65 );
+        m_rstPin->setInputLowV( 0.65 );
+    }
+    else{
+        int n = id.right(2).toInt();
+        QString portStr = id.at(1);
+        IoPort* port = nullptr;
+        if     ( portStr == "A" ) port = &m_portA;
+        else if( portStr == "B" ) port = &m_portB;
+        else if( portStr == "C" ) port = &m_portC;
+        else if( portStr == "D" ) port = &m_portD;
 
-    p->drawRoundedRect( m_area, 2, 2 );
-    Component::paintSelected( p );
+        if( !port ) return nullptr; //new IoPin( angle, QPoint(x, y), m_id+"-"+id, n-1, this, input );
+
+        pin = port->getPinN( n );
+        if( !pin ) return nullptr;
+
+        pin->setOutHighV( 3.3 );
+        pin->setInputHighV( 1.65 );
+        pin->setInputLowV( 1.65 );
+        pin->setPos( x, y );
+        pin->setPinAngle( angle );
+        //m_ioPin.at(n) = pin;
+    }
+    QColor color = Qt::black;
+    if( !m_isLS ) color = QColor( 250, 250, 200 );
+
+    //if( type.startsWith("inv") ) pin->setInverted( true );
+
+    pin->setLength( length );
+    pin->setSpace( space );
+    pin->setLabelText( label );
+    pin->setLabelColor( color );
+    pin->setFlag( QGraphicsItem::ItemStacksBehindParent, true );
+    return pin;
 }

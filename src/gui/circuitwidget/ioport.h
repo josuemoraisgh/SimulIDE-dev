@@ -53,10 +53,12 @@ class IoPort :public eElement
         void trigger( uint n=0 );
         void addSequence( CScriptArray* t );
 
+        void createPins( Component* comp, QString pins, uint32_t pinMask );
+
  static QStringList registerScript( asIScriptEngine* engine );
 
     protected:
-        void createPins( Component* comp, QString pins, uint32_t pinMask );
+
         IoPin* createPin( int i, QString id , Component* comp );
 
         inline void nextStep();

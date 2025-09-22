@@ -130,6 +130,9 @@ bool Esp32::createArgs()
 
     m_arguments << "qemu-system-xtensa";
 
+    //m_arguments << "-d";
+    //m_arguments << "in_asm";
+
     m_arguments << "-M";
     m_arguments << "esp32-simul";
 
@@ -524,4 +527,27 @@ void Esp32::doAction()
             if( id < 2 ) m_i2c[id].doAction( event, data );
         } break;
     }
+}
+
+Pin* Esp32::addPin( QString id, QString type, QString label,
+                        int n, int x, int y, int angle, int length, int space )
+{
+    IoPin* pin = new IoPin( angle, QPoint(x, y), m_id+"-"+id, n-1, this, input );
+
+    if( type.contains("rst") ) m_rstPin = pin;
+    else{
+        int n = id.right(2).toInt();
+        m_ioPin.at(n) = pin;
+    }
+    QColor color = Qt::black;
+    if( !m_isLS ) color = QColor( 250, 250, 200 );
+
+    if( type.startsWith("inv") ) pin->setInverted( true );
+
+    pin->setLength( length );
+    pin->setSpace( space );
+    pin->setLabelText( label );
+    pin->setLabelColor( color );
+    pin->setFlag( QGraphicsItem::ItemStacksBehindParent, true );
+    return pin;
 }

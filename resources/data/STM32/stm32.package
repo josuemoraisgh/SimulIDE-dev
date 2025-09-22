@@ -55,7 +55,7 @@
     <pin type=""    xpos="-8"   ypos="24"   angle="180" length="8"  space="0"   id="PC13" label="PC13"/>
     <pin type=""    xpos="-8"   ypos="32"   angle="180" length="8"  space="0"   id="PC14" label="PC14"/>
     <pin type=""    xpos="-8"   ypos="40"   angle="180" length="8"  space="0"   id="PC15" label="PC15"/>
-    <pin type=""    xpos="-8"   ypos="64"   angle="180" length="8"  space="0"   id="nrst" label="Nrst"/>
+    <pin type="rst" xpos="-8"   ypos="64"   angle="180" length="8"  space="0"   id="nrst" label="Nrst"/>
     <pin type=""    xpos="-8"   ypos="72"   angle="180" length="8"  space="0"   id="PC00" label="PC00"/>
     <pin type=""    xpos="-8"   ypos="80"   angle="180" length="8"  space="0"   id="PC01" label="PC01"/>
     <pin type=""    xpos="-8"   ypos="88"   angle="180" length="8"  space="0"   id="PC02" label="PC02"/>
@@ -64,7 +64,7 @@
     <pin type="nc"  xpos="-8"   ypos="112"  angle="180" length="8"  space="0"   id="vdda" label="Vdda"/>
     <pin type=""    xpos="-8"   ypos="120"  angle="180" length="8"  space="0"   id="PA00" label="PA00"/>
     <pin type=""    xpos="-8"   ypos="128"  angle="180" length="8"  space="0"   id="PA01" label="PA01"/>
-    <pin type=""    xpos="-8"   ypos="48"   angle="180" length="8"  space="0"   id="PH00" label="PH00"/>
-    <pin type=""    xpos="-8"   ypos="56"   angle="180" length="8"  space="0"   id="PH01" label="PH01"/>
+    <pin type=""    xpos="-8"   ypos="48"   angle="180" length="8"  space="0"   id="PD00" label="PD00"/>
+    <pin type=""    xpos="-8"   ypos="56"   angle="180" length="8"  space="0"   id="PD01" label="PD01"/>
     
 </packageB>

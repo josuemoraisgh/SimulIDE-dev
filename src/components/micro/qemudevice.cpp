@@ -74,7 +74,7 @@ QemuDevice::QemuDevice( QString type, QString id )
     }
     else qDebug() << "Error creating arena";
 
-    m_qemuProcess.setProcessChannelMode( QProcess::MergedChannels ); // Merge stdout and stderr
+    m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
 
     Simulator::self()->addToUpdateList( this );
 
@@ -166,6 +166,8 @@ void QemuDevice::stamp()
 
 void QemuDevice::updateStep()
 {
+    return;
+
     QString output = m_qemuProcess.readAllStandardOutput();
     if( !output.isEmpty() )
     {
@@ -247,27 +249,4 @@ void QemuDevice::setPackageFile( QString package )
     m_label.setPlainText( m_name );
 
     Circuit::self()->update();
-}
-
-Pin* QemuDevice::addPin( QString id, QString type, QString label,
-                 int n, int x, int y, int angle, int length, int space )
-{
-    IoPin* pin = new IoPin( angle, QPoint(x, y), m_id+"-"+id, n-1, this, input );
-
-    if( type.contains("rst") ) m_rstPin = pin;
-    else{
-        int n = id.right(2).toInt();
-        m_ioPin.at(n) = pin;
-    }
-    QColor color = Qt::black;
-    if( !m_isLS ) color = QColor( 250, 250, 200 );
-
-    if( type.startsWith("inv") ) pin->setInverted( true );
-
-    pin->setLength( length );
-    pin->setSpace( space );
-    pin->setLabelText( label );
-    pin->setLabelColor( color );
-    pin->setFlag( QGraphicsItem::ItemStacksBehindParent, true );
-    return pin;
 }
