@@ -106,9 +106,12 @@ void QemuDevice::initialize()
 
     m_arena->state = 0;
 
-    m_qemuProcess.kill();
-
-    m_qemuProcess.waitForFinished( 1000 );
+    m_qemuProcess.waitForFinished( 500 );
+    if( m_qemuProcess.state() != QProcess::NotRunning )
+    {
+        m_qemuProcess.kill();
+        qDebug() << "QemuDevice: Qemu proccess killed";
+    }
     updateStep();
 }
 
