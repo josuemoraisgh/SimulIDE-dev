@@ -123,7 +123,7 @@ bool Stm32::createArgs()
     //m_arguments << "tcg,tb-size=100";
 
     m_arguments << "-icount";
-    m_arguments <<"shift=6,align=off,sleep=off";
+    m_arguments <<"shift=4,align=off,sleep=off";
 
     //m_arguments << "-kernel";
     //m_arguments << m_firmware;
@@ -161,7 +161,8 @@ void Stm32::doAction()
         } break;
         case ARM_GPIO_IN:                  // Read Inputs
         {
-            qDebug() << "Stm32::doAction GPIO_IN"<< m_arena->data32;
+            uint8_t  port   = m_arena->data8;
+            m_arena->data16 = readInputs( port );
         } break;
         case SIM_I2C:
         {
@@ -177,6 +178,28 @@ void Stm32::doAction()
         default:
             qDebug() << "Stm32::doAction Unimplemented"<< m_arena->action;
     }
+}
+
+uint16_t Stm32::readInputs( uint8_t port )
+{
+    std::vector<Stm32Pin*>* ioPort = nullptr;
+
+    switch( port ) {
+        case 1: ioPort = &m_portA; break;
+        case 2: ioPort = &m_portB; break;
+        case 3: ioPort = &m_portC; break;
+        case 4: ioPort = &m_portD; break;
+    }
+    if( !ioPort ) return 0;
+
+    uint16_t state = 0;
+    for( uint8_t i=0; i<ioPort->size(); ++i )
+    {
+        Stm32Pin* ioPin = ioPort->at( i );
+        if( ioPin->getInpState() ) state |= 1<<i;
+    }
+    //qDebug() << "Stm32::doAction GPIO_IN"<< port << state;
+    return state;
 }
 
 void Stm32::setPortState( std::vector<Stm32Pin*>* port, uint16_t state )

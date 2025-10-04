@@ -36,7 +36,7 @@ class Stm32 : public QemuDevice
 
         void setPortState( std::vector<Stm32Pin*>* port, uint16_t state );
 
-        //void readInputs();
+        uint16_t readInputs( uint8_t port );
 
         uint64_t m_frequency;
 
