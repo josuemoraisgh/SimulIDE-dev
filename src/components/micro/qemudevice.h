@@ -5,7 +5,6 @@
 
 #pragma once
 
-//#include <QSharedMemory>
 #include <QProcess>
 
 #include "chip.h"
@@ -21,6 +20,10 @@ typedef struct qemuArena{
     uint8_t  state;
     uint8_t  action;
 } qemuArena_t;
+
+enum simuAction{
+    SIM_I2C=10
+};
 
 
 class IoPin;
@@ -45,9 +48,9 @@ class QemuDevice : public Chip
 
         void setPackageFile( QString package );
 
-        void clearData32() { m_arena->data32 = 0; }
+        //void clearData32() { m_arena->data32 = 0; }
 
-        volatile qemuArena_t* getArena() { return m_arena; }
+        //volatile qemuArena_t* getArena() { return m_arena; }
 
     protected:
         virtual bool createArgs(){ return false;}

@@ -71,8 +71,11 @@ QemuDevice::QemuDevice( QString type, QString id )
         m_arena = (qemuArena_t*)arena;
         m_arena->state = 0;
         qDebug() << "Shared Mem created" << shMemSize << "bytes";
+    }else{
+        m_arena = nullptr;
+        m_shMemId = -1;
+        qDebug() << "Error creating arena";
     }
-    else qDebug() << "Error creating arena";
 
     m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
 
