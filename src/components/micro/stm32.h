@@ -8,6 +8,7 @@
 #include "qemudevice.h"
 #include "ioport.h"
 #include "qemutwi.h"
+#include "qemuusart.h"
 
 class LibraryItem;
 class Stm32Pin;
@@ -48,4 +49,6 @@ class Stm32 : public QemuDevice
         std::vector<Stm32Pin*> m_portD;
 
         QemuTwi m_i2c[2];
+
+        QemuUsart m_usart[3];
 };

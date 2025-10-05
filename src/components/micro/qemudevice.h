@@ -22,7 +22,8 @@ typedef struct qemuArena{
 } qemuArena_t;
 
 enum simuAction{
-    SIM_I2C=10
+    SIM_I2C=10,
+    SIM_USART
 };
 
 

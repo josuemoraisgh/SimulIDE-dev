@@ -17,7 +17,8 @@
 enum arm32Actions{
     ARM_GPIO_OUT = 1,
     ARM_GPIO_CRx,
-    ARM_GPIO_IN
+    ARM_GPIO_IN,
+    ARM_UART_TX
 };
 
 
@@ -55,11 +56,18 @@ Stm32::Stm32( QString type, QString id )
     m_i2c[1].setDevice( this );
     m_i2c[1].setSclPin( m_portB.at(10) );
     m_i2c[1].setSdaPin( m_portB.at(11) );
+
+    m_usart[0].setPins({m_portA.at(9), m_portA.at(10)}); // Remap (TX/PB6, RX/PB7)
+    m_usart[1].setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+    m_usart[2].setPins({m_portB.at(10), m_portB.at(11)});
 }
 Stm32::~Stm32(){}
 
 void Stm32::stamp()
 {
+    m_usart[0].enable( true );
+    m_usart[1].enable( true );
+    m_usart[2].enable( true );
     QemuDevice::stamp();
 }
 
@@ -164,11 +172,20 @@ void Stm32::doAction()
             uint8_t  port   = m_arena->data8;
             m_arena->data16 = readInputs( port );
         } break;
+        case SIM_USART:
+        {
+            uint16_t    id = m_arena->data16;
+            uint8_t  event = m_arena->data8;
+            uint32_t  data = m_arena->data32;
+
+            //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
+            if( id < 3 ) m_usart[id].doAction( event, data );
+        } break;
         case SIM_I2C:
         {
             uint16_t    id = m_arena->data16;
-            uint8_t   data = m_arena->data8;
-            uint32_t event = m_arena->data32;
+            uint8_t   data = m_arena->data32;
+            uint8_t  event = m_arena->data8;
 
             //qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
 

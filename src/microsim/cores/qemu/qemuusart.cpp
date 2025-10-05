@@ -1,0 +1,80 @@
+/***************************************************************************
+ *   Copyright (C) 2025 by Santiago González                               *
+ *                                                                         *
+ ***( see copyright.txt file at root folder )*******************************/
+
+
+#include <QDebug>
+
+#include "qemuusart.h"
+#include "serialmon.h"
+#include "usartrx.h"
+#include "usarttx.h"
+//#include "e_mcu.h"
+//#include "mcuinterrupts.h"
+//#include "datautils.h"
+
+QemuUsart::QemuUsart( /*QemuDevice* mcu, QString name, int number*/ )
+         : UsartModule( nullptr, "" /*mcu->getId()+"-"+name*/ )
+{
+    //m_number = number;
+
+    /// FIXME ----------------------------
+
+    this->setBaudRate( 9600 );
+}
+QemuUsart::~QemuUsart( ){}
+
+void QemuUsart::enable( bool e )
+{
+    //m_serData.clear();
+    //m_uartData.clear();
+    m_sender->enable( e );
+    m_receiver->enable( e );
+    //m_sending = false;
+    //m_receiving = false;
+}
+
+void QemuUsart::doAction( uint32_t action, uint32_t data )
+{
+    switch( action ) {
+        case QUSART_READ:  /*readByte( data );*/ break;
+        case QUSART_WRITE: sendByte( data ); break;
+        case QUSART_BAUD:  setBaudRate( data ); qDebug() << "QemuUsart::doAction Baudrate:"<<data; break;
+
+        default: break;
+    }
+}
+
+void QemuUsart::bufferEmpty()
+{
+    //if( m_interrupt ) m_interrupt->raise(); // USART Data Register Empty Interrupt
+}
+
+void QemuUsart::frameSent( uint8_t data )
+{
+    if( m_monitor ) m_monitor->printOut( data );
+    //m_sender->raiseInt();
+}
+
+void QemuUsart::readByte( uint8_t )
+{
+    //if( m_mcu->isCpuRead() ) m_mcu->m_regOverride = m_receiver->getData();
+}
+
+uint8_t QemuUsart::getBit9Tx()
+{
+    //return getRegBitsVal( m_bit9Tx );
+    return 0;
+}
+
+void QemuUsart::setBit9Rx( uint8_t bit )
+{
+    //writeRegBits( m_bit9Rx, bit );
+}
+
+void QemuUsart::setPins( QList<IoPin*> pinList )
+{
+    m_sender->setPins( {pinList.at(0)} );
+    m_receiver->setPins( {pinList.at(1)} );
+}
