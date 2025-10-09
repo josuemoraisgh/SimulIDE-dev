@@ -29,7 +29,7 @@ jobs:
     runs-on: windows-latest
     env:
       QT_VERSION: '5.15.2'
-      QT_ARCH: 'win64_msvc2019_64'
+      QT_ARCH: 'win64_mingw81'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
         run: |
           if (-not (Test-Path build_XX)) { throw "Pasta build_XX não encontrada no fork." }
           cd build_XX
-          qmake -spec win32-msvc "CONFIG+=release"
+          qmake
           if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
           
       - name: Patch Makefile.Release (lrelease com ; -> &)
@@ -115,12 +115,12 @@ jobs:
           }
 
 
-      - name: Build (nmake)
+      - name: Build (mingw32-make)
         shell: pwsh
         run: |
           cd build_XX
-          nmake
-          if ($LASTEXITCODE -ne 0) { throw "nmake falhou" }
+          mingw32-make -j4
+
 
       - name: Locate executables folder
         id: find_out
