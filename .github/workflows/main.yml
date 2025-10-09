@@ -40,11 +40,6 @@ jobs:
       - name: MSVC Dev Cmd
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: (Opcional) Listar archives Qt disponíveis
-        shell: pwsh
-        run: |
-          python -m aqt list-qt windows desktop 5.15.2 win64_msvc2019_64 --archives
-
       # Instala Qt 5.15.2 + módulos necessários (qmake, Svg, Multimedia, SerialPort)
       - name: Install Qt (5.15.2 + addons necessários)
         uses: jurplel/install-qt-action@v4
