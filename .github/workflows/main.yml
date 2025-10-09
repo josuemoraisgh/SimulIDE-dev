@@ -1,0 +1,125 @@
+name: Windows Qt Build (SimulIDE 2.x)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão (tag) ex.: v2.0.0-RC1"
+        required: false
+        type: string
+      tag_repository:
+        description: "Criar/enviar tag ao repositório (workflow_dispatch)?"
+        required: true
+        default: true
+        type: boolean
+      publish_release:
+        description: "Publicar Release com o ZIP?"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-win-msvc:
+    runs-on: windows-latest
+    env:
+      QT_VERSION: '5.15.2'
+      QT_ARCH: 'win64_msvc2019_64'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # MSVC toolchain em PATH (necessário para nmake/compiladores)
+      - name: MSVC Dev Cmd
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # Instala Qt 5.15.2 + módulos necessários (qmake, Svg, Multimedia, SerialPort)
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: ${{ env.QT_ARCH }}
+          modules: qtserialport qtmultimedia qtsvg
+          cache: true
+
+      - name: Compute version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.version }}") {
+            $ver = "${{ inputs.version }}"
+          } elseif ("${{ github.ref }}".StartsWith("refs/tags/")) {
+            $ver = "${{ github.ref_name }}"
+          } else {
+            $ver = "dev-${{ github.run_number }}"
+          }
+          "APP_VER=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "APP_VER=$ver"
+
+      # (Opcional) cria/pusha tag quando disparado manualmente
+      - name: Create & push tag (manual dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_repository && inputs.version != '' }}
+        shell: bash
+        run: |
+          set -e
+          VER="${{ env.APP_VER }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VER" -m "Release $VER" || true
+          git push origin "refs/tags/$VER" || true
+
+      - name: Configure (qmake) in build_XX
+        shell: pwsh
+        run: |
+          if (-not (Test-Path build_XX)) { throw "Pasta build_XX não encontrada no fork." }
+          cd build_XX
+          qmake
+          if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
+
+      - name: Build (nmake)
+        shell: pwsh
+        run: |
+          cd build_XX
+          nmake
+          if ($LASTEXITCODE -ne 0) { throw "nmake falhou" }
+
+      - name: Locate executables folder
+        id: find_out
+        shell: pwsh
+        run: |
+          $out = Get-ChildItem -Path build_XX\executables -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $out) { throw "Não encontrei build_XX/executables/*" }
+          "OUT_DIR=$($out.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Executables dir: $($out.FullName)"
+
+      - name: Package ZIP
+        shell: pwsh
+        run: |
+          $name = "SimulIDE-${{ env.APP_VER }}-win64"
+          $zip  = "$name.zip"
+          Compress-Archive -Path "${{ env.OUT_DIR }}\*" -DestinationPath "$zip" -Force
+          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "ZIP: $zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulIDE-${{ env.APP_VER }}-win64
+          path: ${{ env.ZIP_NAME }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish_release) }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.APP_VER }}
+          files: ${{ env.ZIP_NAME }}
+          generate_release_notes: true
