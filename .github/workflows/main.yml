@@ -1,4 +1,4 @@
-name: Windows Qt Build (SimulIDE 2.x)
+name: Windows Qt Build (SimulIDE MinGW)
 
 on:
   push:
@@ -11,12 +11,12 @@ on:
         required: false
         type: string
       tag_repository:
-        description: "Criar/enviar tag ao repositório (workflow_dispatch)?"
+        description: "Criar e enviar tag?"
         required: true
         default: true
         type: boolean
       publish_release:
-        description: "Publicar Release com o ZIP?"
+        description: "Publicar Release?"
         required: true
         default: true
         type: boolean
@@ -25,7 +25,7 @@ permissions:
   contents: write
 
 jobs:
-  build-win-msvc:
+  build-win-mingw:
     runs-on: windows-latest
     env:
       QT_VERSION: '5.15.2'
@@ -36,19 +36,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      # MSVC toolchain em PATH (necessário para nmake/compiladores)
-      - name: MSVC Dev Cmd
-        uses: ilammy/msvc-dev-cmd@v1
-
-      # Instala Qt 5.15.2 + módulos necessários (qmake, Svg, Multimedia, SerialPort)
-      - name: Install Qt (5.15.2 + addons necessários)
+      # Instala Qt5 + MinGW + módulos necessários
+      - name: Install Qt (5.15.2 MinGW)
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
+          version: ${{ env.QT_VERSION }}
           host: windows
           target: desktop
-          arch: 'win64_msvc2019_64'
-          # Para Qt5 USE 'archives', não 'modules'
+          arch: ${{ env.QT_ARCH }}
           archives: 'qtbase qtsvg qtmultimedia qtserialport qttools'
           cache: true
 
@@ -63,64 +58,47 @@ jobs:
             $ver = "dev-${{ github.run_number }}"
           }
           "APP_VER=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "APP_VER=$ver"
+          $repo = "${{ github.repository }}".Split("/")[1]
+          "APP_NAME=$repo" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "APP_VER=$ver | APP_NAME=$repo"
 
-      # (Opcional) cria/pusha tag quando disparado manualmente
       - name: Create & push tag (manual dispatch)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_repository && inputs.version != '' }}
         shell: bash
         run: |
           set -e
           VER="${{ env.APP_VER }}"
-          git config user.name  "github-actions[bot]"
+          git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$VER" -m "Release $VER" || true
           git push origin "refs/tags/$VER" || true
 
-      - name: Configure (qmake) in build_XX
+      - name: Configure project (qmake win32-g++)
         shell: pwsh
         run: |
-          if (-not (Test-Path build_XX)) { throw "Pasta build_XX não encontrada no fork." }
           cd build_XX
-          qmake
+          qmake -spec win32-g++ "CONFIG+=release"
           if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
-          
-      - name: Patch Makefile.Release (lrelease com ; -> &)
-        shell: pwsh
-        run: |
-          $mf = "build_XX\Makefile.Release"
-          if (-not (Test-Path $mf)) { throw "Makefile.Release não encontrado" }
 
-          $content = Get-Content $mf -Raw
-          # Substitui ; por & apenas em linhas que chamam lrelease/move numa sequência única
-          $content = $content -replace '(?m)^(.*\blrelease\b[^\r\n]*)\;(.*)$', '$1 & $2'
-          $content = $content -replace '(?m)^(.*\blrelease\b[^\r\n]*)\;(.*)$', '$1 & $2'  # se houver mais de um ;
-          $content = $content -replace '(?m)^(.*\bmove\b[^\r\n]*)\;(.*)$',     '$1 & $2'
-
-          # também remove um ; sobrando colado no *.ts;
-          $content = $content -replace '\.ts;', '.ts'
-
-          Set-Content $mf $content -Encoding UTF8
-
-      - name: Patch Makefile.Release (remover lrelease problemático)
+      # Remove linhas problemáticas antes do make
+      - name: Patch Makefile.Release (remover lrelease/move quebrados)
         shell: pwsh
         run: |
           $mf = "build_XX\\Makefile.Release"
           if (Test-Path $mf) {
-            $content = Get-Content $mf -Raw
-            $content = $content -replace '(?m)^.*lrelease .*$', 'rem lrelease disabled in CI'
-            $content = $content -replace '(?m)^.*move .*\.qm.*$', 'rem move disabled in CI'
-            Set-Content $mf $content -Encoding UTF8
-            Write-Host "Removed lrelease lines from Makefile.Release"
+            $c = Get-Content $mf -Raw
+            $c = $c -replace '(?m)^.*lrelease .*$', '# lrelease removido'
+            $c = $c -replace '(?m)^.*move .*\.qm.*$', '# move removido'
+            Set-Content $mf $c -Encoding UTF8
+            Write-Host "Removidas linhas de tradução problemáticas"
           }
-
 
       - name: Build (mingw32-make)
         shell: pwsh
         run: |
           cd build_XX
           mingw32-make -j4
-
+          if ($LASTEXITCODE -ne 0) { throw "mingw32-make falhou" }
 
       - name: Locate executables folder
         id: find_out
@@ -134,7 +112,7 @@ jobs:
       - name: Package ZIP
         shell: pwsh
         run: |
-          $name = "SimulIDE-${{ env.APP_VER }}-win64"
+          $name = "SimulIDE-${{ env.APP_VER }}-win64-MinGW"
           $zip  = "$name.zip"
           Compress-Archive -Path "${{ env.OUT_DIR }}\*" -DestinationPath "$zip" -Force
           "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -143,7 +121,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SimulIDE-${{ env.APP_VER }}-win64
+          name: SimulIDE-${{ env.APP_VER }}-win64-MinGW
           path: ${{ env.ZIP_NAME }}
           if-no-files-found: error
 
