@@ -82,7 +82,7 @@ jobs:
         run: |
           if (-not (Test-Path build_XX)) { throw "Pasta build_XX não encontrada no fork." }
           cd build_XX
-          qmake
+          qmake -spec win32-msvc "CONFIG+=release"
           if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
           
       - name: Patch Makefile.Release (lrelease com ; -> &)
@@ -101,6 +101,19 @@ jobs:
           $content = $content -replace '\.ts;', '.ts'
 
           Set-Content $mf $content -Encoding UTF8
+
+      - name: Patch Makefile.Release (remover lrelease problemático)
+        shell: pwsh
+        run: |
+          $mf = "build_XX\\Makefile.Release"
+          if (Test-Path $mf) {
+            $content = Get-Content $mf -Raw
+            $content = $content -replace '(?m)^.*lrelease .*$', 'rem lrelease disabled in CI'
+            $content = $content -replace '(?m)^.*move .*\.qm.*$', 'rem move disabled in CI'
+            Set-Content $mf $content -Encoding UTF8
+            Write-Host "Removed lrelease lines from Makefile.Release"
+          }
+
 
       - name: Build (nmake)
         shell: pwsh
