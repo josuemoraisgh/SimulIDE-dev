@@ -84,6 +84,23 @@ jobs:
           cd build_XX
           qmake
           if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
+          
+      - name: Patch Makefile.Release (lrelease com ; -> &)
+        shell: pwsh
+        run: |
+          $mf = "build_XX\Makefile.Release"
+          if (-not (Test-Path $mf)) { throw "Makefile.Release não encontrado" }
+
+          $content = Get-Content $mf -Raw
+          # Substitui ; por & apenas em linhas que chamam lrelease/move numa sequência única
+          $content = $content -replace '(?m)^(.*\blrelease\b[^\r\n]*)\;(.*)$', '$1 & $2'
+          $content = $content -replace '(?m)^(.*\blrelease\b[^\r\n]*)\;(.*)$', '$1 & $2'  # se houver mais de um ;
+          $content = $content -replace '(?m)^(.*\bmove\b[^\r\n]*)\;(.*)$',     '$1 & $2'
+
+          # também remove um ; sobrando colado no *.ts;
+          $content = $content -replace '\.ts;', '.ts'
+
+          Set-Content $mf $content -Encoding UTF8
 
       - name: Build (nmake)
         shell: pwsh
