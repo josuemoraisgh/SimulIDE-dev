@@ -76,7 +76,32 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "build_XX\executables\SimulIDE_${{ env.APP_VER }}" | Out-Null
 
-      # --- Remove linhas quebradas de tradução ------------------------------
+      # --- Pré-compila traduções (.ts -> .qm) -------------------------------
+      - name: Precompile translations (lrelease -> resources/qm)
+        shell: pwsh
+        run: |
+          $lrel = (Get-Command lrelease.exe).Path
+          if (-not (Test-Path "resources\qm")) {
+            New-Item -ItemType Directory -Force -Path "resources\qm" | Out-Null
+          }
+
+          $tsList = @()
+          if (Test-Path "resources\translations") {
+            $tsList += Get-ChildItem -Path "resources\translations" -Filter *.ts -File -Recurse
+          }
+          if (Test-Path "resources\translations\qt") {
+            $tsList += Get-ChildItem -Path "resources\translations\qt" -Filter *.ts -File -Recurse
+          }
+
+          foreach ($ts in $tsList) {
+            $base = [IO.Path]::GetFileNameWithoutExtension($ts.Name)
+            $outQm = Join-Path "resources\qm" ($base + ".qm")
+            & $lrel $ts.FullName -qm $outQm
+            if ($LASTEXITCODE -ne 0) { throw "lrelease falhou em $($ts.FullName)" }
+            Write-Host ">> Gerado: $outQm"
+          }
+
+      # --- Remove linhas quebradas de tradução (do Makefile) ----------------
       - name: Patch Makefile.Release (remove lrelease/move)
         shell: pwsh
         run: |
