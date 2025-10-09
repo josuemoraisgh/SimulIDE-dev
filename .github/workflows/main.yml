@@ -7,16 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão (tag) ex.: v2.0.0-RC1"
+        description: "Versão (ex: v2.0.0-RC1)"
         required: false
         type: string
-      tag_repository:
-        description: "Criar e enviar tag?"
-        required: true
-        default: true
-        type: boolean
       publish_release:
-        description: "Publicar Release?"
+        description: "Publicar release?"
         required: true
         default: true
         type: boolean
@@ -30,14 +25,14 @@ jobs:
     env:
       QT_VERSION: '5.15.2'
       QT_ARCH: 'win64_mingw81'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Instala Qt5 + MinGW + módulos necessários
-      - name: Install Qt (5.15.2 MinGW)
+      - name: Install Qt 5.15.2 (MinGW)
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
@@ -55,43 +50,34 @@ jobs:
           } elseif ("${{ github.ref }}".StartsWith("refs/tags/")) {
             $ver = "${{ github.ref_name }}"
           } else {
-            $ver = "dev-${{ github.run_number }}"
+            $ver = "dev${{ github.run_number }}"
           }
+          $ver = $ver -replace '[^0-9A-Za-z._-]', ''
           "APP_VER=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          $repo = "${{ github.repository }}".Split("/")[1]
-          "APP_NAME=$repo" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "APP_VER=$ver | APP_NAME=$repo"
+          Write-Host ">> Versão: $ver"
 
-      - name: Create & push tag (manual dispatch)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_repository && inputs.version != '' }}
-        shell: bash
-        run: |
-          set -e
-          VER="${{ env.APP_VER }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$VER" -m "Release $VER" || true
-          git push origin "refs/tags/$VER" || true
-
-      - name: Configure project (qmake win32-g++)
+      - name: Configure project (qmake MinGW)
         shell: pwsh
         run: |
           cd build_XX
           qmake -spec win32-g++ "CONFIG+=release" "VERSION=${{ env.APP_VER }}"
           if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
 
+      - name: Ensure executables directory exists
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "build_XX\executables" | Out-Null
 
-      # Remove linhas problemáticas antes do make
-      - name: Patch Makefile.Release (remover lrelease/move quebrados)
+      - name: Patch Makefile.Release (remove lrelease/move)
         shell: pwsh
         run: |
           $mf = "build_XX\\Makefile.Release"
           if (Test-Path $mf) {
-            $c = Get-Content $mf -Raw
-            $c = $c -replace '(?m)^.*lrelease .*$', '# lrelease removido'
-            $c = $c -replace '(?m)^.*move .*\.qm.*$', '# move removido'
-            Set-Content $mf $c -Encoding UTF8
-            Write-Host "Removidas linhas de tradução problemáticas"
+            $content = Get-Content $mf -Raw
+            $content = $content -replace '(?m)^.*lrelease .*$', '# lrelease removido'
+            $content = $content -replace '(?m)^.*move .*\.qm.*$', '# move removido'
+            Set-Content $mf $content -Encoding UTF8
+            Write-Host ">> Linhas problemáticas removidas"
           }
 
       - name: Build (mingw32-make)
@@ -101,23 +87,23 @@ jobs:
           mingw32-make -j4
           if ($LASTEXITCODE -ne 0) { throw "mingw32-make falhou" }
 
-      - name: Locate executables folder
-        id: find_out
+      - name: Deploy Qt DLLs
         shell: pwsh
         run: |
-          $out = Get-ChildItem -Path build_XX\executables -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $out) { throw "Não encontrei build_XX/executables/*" }
-          "OUT_DIR=$($out.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "Executables dir: $($out.FullName)"
+          $qtbin = (Get-Command windeployqt.exe).Path
+          $exe = Get-ChildItem -Path build_XX\executables -Filter "*.exe" -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "Nenhum .exe encontrado" }
+          & $qtbin $exe.FullName --no-angle --no-opengl-sw
+          Write-Host ">> windeployqt OK: $($exe.Name)"
+          "FINAL_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Package ZIP
         shell: pwsh
         run: |
-          $name = "SimulIDE-${{ env.APP_VER }}-win64-MinGW"
-          $zip  = "$name.zip"
-          Compress-Archive -Path "${{ env.OUT_DIR }}\*" -DestinationPath "$zip" -Force
+          $zip = "SimulIDE-${{ env.APP_VER }}-win64-MinGW.zip"
+          Compress-Archive -Path "build_XX\\executables\\*" -DestinationPath $zip -Force
           "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "ZIP: $zip"
+          Write-Host ">> ZIP pronto: $zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
