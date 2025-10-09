@@ -77,8 +77,9 @@ jobs:
         shell: pwsh
         run: |
           cd build_XX
-          qmake -spec win32-g++ "CONFIG+=release"
+          qmake -spec win32-g++ "CONFIG+=release" "VERSION=${{ env.APP_VER }}"
           if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
+
 
       # Remove linhas problemáticas antes do make
       - name: Patch Makefile.Release (remover lrelease/move quebrados)
