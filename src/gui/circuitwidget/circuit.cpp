@@ -523,7 +523,7 @@ void Circuit::importCircuit()
     m_deltaMove = QPointF( 0, 0 );
 
     QString filePath = QFileDialog::getOpenFileName( 0l, tr("Import Circuit"), m_filePath,
-                                          tr("Circuits (*.sim2);;All files (*.*)"));
+                                          tr("Circuits (*.sim*);;All files (*.*)"));
 
     if( !filePath.endsWith(".sim2") || !filePath.endsWith(".sim1")) return;
 
@@ -1160,8 +1160,10 @@ void Circuit::dropEvent( QGraphicsSceneDragDropEvent* event )
         Component* image = createComponent("Image", "", cPos );
         if( image ) image->setBackground( file );
     }
-    else if( file.endsWith(".sim2") ) CircuitWidget::self()->loadCirc( file );
-    else if( file.endsWith(".sim1") ) CircuitWidget::self()->loadCirc( file );
+    else if( file.endsWith(".sim2") || file.endsWith(".sim1") )
+    {
+        CircuitWidget::self()->loadCirc( file );
+    }
     else if( file.endsWith(".package") )
     {
         Component* pkg = createComponent("Package", "Package", cPos );

@@ -85,7 +85,8 @@ void IoPin::updateStep()
                     m_pinState = state? open_high  : low ;
                 }break;
             case output:
-            case source: m_pinState = state? out_high : out_low; break;
+            case source:
+                m_pinState = state? out_high : out_low; break;
         }
     }
     Pin::updateStep();
@@ -152,6 +153,7 @@ void IoPin::setPinMode( pinMode_t mode )
             break;
         case output:
             m_vddAdmit = m_admit = 1/m_outputImp;
+            m_gndAdmit = 0;
             ePin::stampAdmitance( m_admit );
             break;
         case openCo:
@@ -333,12 +335,14 @@ void IoPin::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
     menu->exec( event->screenPos() );
 }
 
-void IoPin::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w)
+void IoPin::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     if( !isVisible() ) return;
     Pin::paint( p, o, w );
 
     if( m_vddAdmEx == 0 ) return;
+
+    // Draw pullUp
 
     p->setBrush( QColor( 255, 180, 0 ) );
     QPen pen = p->pen();

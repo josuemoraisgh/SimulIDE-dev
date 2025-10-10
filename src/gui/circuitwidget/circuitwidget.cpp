@@ -311,31 +311,31 @@ void CircuitWidget::openRecentFile()
 
 void CircuitWidget::openCirc()
 {
-    const QString dir = m_lastCircDir;
+    QString dir = m_lastCircDir;
     QString fileName = QFileDialog::getOpenFileName( 0l, tr("Load Circuit"), dir,
-                                        tr("Circuits (*.sim2);;All files (*.*)"));
+                                        tr("Circuits (*.sim*);;All files (*.*)"));
     loadCirc( fileName );
 }
 
 void CircuitWidget::loadCirc( QString path )
 {
-    if( !path.isEmpty()
-     && (path.endsWith(".sim2") || path.endsWith(".sim1")) )
-    {
-        if( !newCircuit() ) return;
-        Circuit::self()->loadCircuit( path );
-   
-        m_curCirc = path;
-        m_lastCircDir = path;
-        MainWindow::self()->setFile(path.split("/").last());
+    if( path.isEmpty() || !(path.endsWith(".sim2") || path.endsWith(".sim1")) )
+        return;
 
-        QSettings* settings = MainWindow::self()->settings();
-        settings->setValue( "lastCircDir", m_lastCircDir );
+    if( !newCircuit() ) return;
+    Circuit::self()->loadCircuit( path );
 
-        updateRecentFiles();
+    m_curCirc = path;
+    m_lastCircDir = path;
+    MainWindow::self()->setFile(path.split("/").last());
 
-        m_infoWidget->setCircTime( 0 );
-}   }
+    QSettings* settings = MainWindow::self()->settings();
+    settings->setValue( "lastCircDir", m_lastCircDir );
+
+    updateRecentFiles();
+
+    m_infoWidget->setCircTime( 0 );
+}
 
 void CircuitWidget::saveCirc()
 {
@@ -347,7 +347,7 @@ void CircuitWidget::saveCircAs()
 {
     const QString dir = m_lastCircDir;
     QString fileName = QFileDialog::getSaveFileName( this, tr("Save Circuit"), dir,
-                                                     tr("Circuits (*.sim2);;All files (*.*)") );
+                                                     tr("Circuits (*.sim*);;All files (*.*)") );
     if( fileName.isEmpty() ) return;
 
     saveCirc( fileName );
@@ -355,7 +355,8 @@ void CircuitWidget::saveCircAs()
 
 void CircuitWidget::saveCirc( QString file )
 {
-    if( !file.endsWith(".sim2") ) file.append(".sim2");
+    if     (  file.endsWith(".sim1") ) file.replace(".sim1",".sim2");
+    else if( !file.endsWith(".sim2") ) file.append(".sim2");
 
     if( Circuit::self()->saveCircuit( file ) )
     {

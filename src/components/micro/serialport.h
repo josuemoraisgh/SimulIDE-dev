@@ -24,9 +24,9 @@ class SerialPort : public Component, public UsartModule, public eElement
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
 
-        virtual void stamp() override;
-        virtual void updateStep() override;
-        virtual void runEvent() override;
+        void stamp() override;
+        void updateStep() override;
+        void runEvent() override;
 
         bool autoOpen() { return m_autoOpen; }
         void setAutoOpen( bool a ) { m_autoOpen = a; }
@@ -39,12 +39,12 @@ class SerialPort : public Component, public UsartModule, public eElement
 
         void setSerialMon( bool s );
 
-        virtual void setIdLabel( QString id ) override;
+        void setIdLabel( QString id ) override;
 
-        virtual void byteReceived( uint8_t byte ) override;
-        virtual void frameSent( uint8_t data ) override;
+        void byteReceived( uint8_t byte ) override;
+        void frameSent( uint8_t data ) override;
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
         void onbuttonclicked();
         void slotClose();
