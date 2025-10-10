@@ -445,8 +445,8 @@ void Pin::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
             p->drawLine( 0,-2, 2, 0);
         }else{
             if( m_pinState >= out_low ) // Draw lower half Output arrow
-            p->drawLine( 0, 0, 2, 2);
+                p->drawLine( 0, 0, 2, 2);
             if( m_pinState >= driven_low )
-            p->drawLine( 2,-2, 0, 0);  // Draw upper half Output arrow
+                p->drawLine( 2,-2, 0, 0);  // Draw upper half Output arrow
         }
 }   }
