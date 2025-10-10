@@ -313,7 +313,7 @@ void CircuitWidget::openCirc()
 {
     const QString dir = m_lastCircDir;
     QString fileName = QFileDialog::getOpenFileName( 0l, tr("Load Circuit"), dir,
-                                        tr("Circuits (*.sim2);;All files (*.*)"));
+                                        tr("All files (*.*);;Circuits (*.sim*)"));
     loadCirc( fileName );
 }
 
