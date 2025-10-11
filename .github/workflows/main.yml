@@ -12,10 +12,10 @@ jobs:
     name: Build & Cache Qt 5.15.2 Static (MSVC)
     runs-on: windows-latest
     env:
-      QT_VER: 5.15.2
-      QT_TRIPLET: msvc2019_64
-      QT_SRC_ROOT: C:\qt-src\5.15.2\Src
-      QT_INSTALL_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
+      QT_VER: "5.15.2"
+      QT_TRIPLET: "msvc2019_64"
+      QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
+      QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
       QT_MODULES: "qtsvg qtmultimedia qtserialport"
 
     steps:
@@ -28,20 +28,20 @@ jobs:
         id: cache-qt
         uses: actions/cache@v4
         with:
-          path: ${{ env.QT_INSTALL_PREFIX }}
-          key: qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v1
+          path: "${{ env.QT_INSTALL_PREFIX }}"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v1"
 
       - name: Install Python (for aqt)
         if: steps.cache-qt.outputs.cache-hit != 'true'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Perl (required by Qt build on Windows)
         if: steps.cache-qt.outputs.cache-hit != 'true'
         uses: shogo82148/actions-setup-perl@v1
         with:
-          perl-version: '5.32'
+          perl-version: "5.32"
 
       - name: Install aqt
         if: steps.cache-qt.outputs.cache-hit != 'true'
@@ -51,14 +51,14 @@ jobs:
       - name: Download Qt 5.15.2 sources
         if: steps.cache-qt.outputs.cache-hit != 'true'
         run: |
-          python -m aqt install-src windows desktop 5.15.2 --outputdir C:\qt-src
+          python -m aqt install-src windows desktop 5.15.2 --outputdir "C:\qt-src"
 
       - name: Configure + Build + Install Qt (static + /MT)
         if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: cmd
         env:
-          QT_INSTALL_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
-          QT_SRC_ROOT: C:\qt-src\5.15.2\Src
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
           cd /d %QT_SRC_ROOT%\qtbase
           call configure.bat -prefix "%QT_INSTALL_PREFIX%" -platform win32-msvc ^
@@ -72,8 +72,8 @@ jobs:
         if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: cmd
         env:
-          QT_INSTALL_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
-          QT_SRC_ROOT: C:\qt-src\5.15.2\Src
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
@@ -91,9 +91,9 @@ jobs:
     needs: qt-static-build
     runs-on: windows-latest
     env:
-      BUILD_DIR: build_XX
-      CONFIG: release
-      QT_INSTALL_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
+      BUILD_DIR: "build_XX"
+      CONFIG: "release"
+      QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
 
     steps:
       - name: Checkout
@@ -109,8 +109,8 @@ jobs:
       - name: Restore Qt static cache
         uses: actions/cache@v4
         with:
-          path: ${{ env.QT_INSTALL_PREFIX }}
-          key: qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1
+          path: "${{ env.QT_INSTALL_PREFIX }}"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
 
       - name: Prepare build directory
         shell: pwsh
@@ -120,7 +120,7 @@ jobs:
       - name: qmake (Static Release)
         shell: cmd
         env:
-          QT_INSTALL_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
@@ -131,17 +131,14 @@ jobs:
         shell: pwsh
         run: |
           if (-not (Test-Path ".\SimulIDE.pro")) { Write-Host "Aviso: SimulIDE.pro não encontrado na raiz. Pule este reforço."; exit 0 }
-          $append = @'
-QMAKE_CFLAGS_RELEASE += /MT
-QMAKE_CXXFLAGS_RELEASE += /MT
-QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT
-'@
-          Add-Content ".\SimulIDE.pro" $append
+          Add-Content ".\SimulIDE.pro" "QMAKE_CFLAGS_RELEASE += /MT`n"
+          Add-Content ".\SimulIDE.pro" "QMAKE_CXXFLAGS_RELEASE += /MT`n"
+          Add-Content ".\SimulIDE.pro" "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
 
       - name: Build with nmake
         shell: cmd
         env:
-          QT_INSTALL_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
@@ -178,7 +175,7 @@ QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT
         uses: actions/upload-artifact@v4
         with:
           name: SimulIDE-MSVC-STATIC
-          path: ${{ steps.pack.outputs.ZIP }}
+          path: "${{ steps.pack.outputs.ZIP }}"
           if-no-files-found: error
           retention-days: 14
 
@@ -186,5 +183,5 @@ QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.pack.outputs.ZIP }}
+          files: "${{ steps.pack.outputs.ZIP }}"
           generate_release_notes: true
