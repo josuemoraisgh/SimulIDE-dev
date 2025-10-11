@@ -7,14 +7,14 @@
 
 #include "scriptbase.h"
 #include "iopin.h"
-#include "mcucpu.h"
+#include "mcu8bits.h"
 
 using namespace std;
 
 class ScriptPerif;
 class Mcu;
 
-class ScriptCpu : public ScriptBase, public McuCpu
+class ScriptCpu : public ScriptBase, public Mcu8bits
 {
     public:
         ScriptCpu( eMcu* mcu );

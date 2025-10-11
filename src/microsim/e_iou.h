@@ -9,7 +9,8 @@
 
 #include "e-element.h"
 
-class CpuBase;
+class CoreBase;
+class Cpu8bits;
 class Mcu;
 class IoPort;
 class IoPin;
@@ -27,15 +28,15 @@ class eIou : public eElement
         IoPin*  getIoPin( QString pinName );
 
         Watcher* getWatcher() { return m_watcher; }
-        void createWatcher( CpuBase* cpu );
+        void createWatcher( CoreBase* cpu );
 
         Mcu* component() { return m_component; }
-        CpuBase* cpu()   { return m_cpu; }
+        Cpu8bits* cpu()   { return m_cpu; }
 
     protected:
         Mcu* m_component;
 
-        CpuBase* m_cpu;
+        Cpu8bits* m_cpu;
 
         IoPin*  m_clkPin;
 

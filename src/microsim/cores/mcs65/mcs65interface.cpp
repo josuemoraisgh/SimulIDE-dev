@@ -7,18 +7,13 @@
 #include "watcher.h"
 
 Mcs65Interface::Mcs65Interface( eMcu* mcu )
-        : CpuBase( mcu )
-        , eElement( mcu->getId()+"-el" )
+              : Cpu8bits( mcu )
+              , eElement( mcu->getId()+"-el" )
 {
     mcu->createWatcher( this );
     mcu->getWatcher()->addVariable( "Instruction", "string" );
 }
 Mcs65Interface::~Mcs65Interface() {}
-
-int Mcs65Interface::getCpuReg( QString reg ) // Called by Mcu Monitor to get Integer values
-{
-    return CpuBase::getCpuReg( reg );
-}
 
 QString Mcs65Interface::getStrInst( uint8_t IR ) // Called by Mcu Monitor to get String values
 {

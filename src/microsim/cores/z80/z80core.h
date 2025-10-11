@@ -19,13 +19,13 @@
 
 #pragma once
 
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "e-element.h"
 #include "z80regs.h"
 
 #define Z80CORE_MAX_T_INT 1000000   // Maximum T cycles after interrupt
 
-class Z80Core : public CpuBase, public eElement
+class Z80Core : public Cpu8bits, public eElement
 {
     public:
         Z80Core( eMcu* mcu );

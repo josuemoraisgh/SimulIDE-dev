@@ -6,7 +6,7 @@
 #include "mcumonitor.h"
 #include "simulator.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "memtable.h"
 #include "mainwindow.h"
 #include "utils.h"

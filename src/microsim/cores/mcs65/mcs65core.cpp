@@ -79,7 +79,7 @@ QString Mcs65Cpu::getStrReg( QString reg ) // Called by Mcu Monitor to get Strin
 
 void Mcs65Cpu::reset()
 {
-    CpuBase::reset();
+    Cpu8bits::reset();
 
     *m_STATUS = 0b00110100; // Status
 

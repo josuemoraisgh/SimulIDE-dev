@@ -283,7 +283,7 @@ int McuCreator::processFile( QString fileName )
 
             cpu->setScriptFile( m_basePath+"/"+root.attribute("script") );
         }
-        else mcu->m_cpu = new McuCpu( mcu );
+        else mcu->m_cpu = new Mcu8bits( mcu );
 
         if( m_displays.size() )
         {

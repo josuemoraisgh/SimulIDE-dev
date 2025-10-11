@@ -22,7 +22,7 @@ class CoreBase
 
         virtual void command( QString c ){;}
 
-        virtual int getCpuReg( QString reg ) { return 0; }
+        virtual int getCpuReg( QString reg ) { return -1; }
         virtual QString getStrReg( QString ){ return ""; }
 
     protected:

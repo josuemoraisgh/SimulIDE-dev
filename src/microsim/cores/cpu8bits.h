@@ -12,13 +12,13 @@
 #define REG_SPH      m_sph[0]
 #define STATUS(bit) (*m_STATUS & (1<<bit))
 
-class CpuBase : public CoreBase
+class Cpu8bits : public CoreBase
 {
         friend class McuCreator;
 
     public:
-        CpuBase( eMcu* mcu );
-        virtual ~CpuBase();
+        Cpu8bits( eMcu* mcu );
+        virtual ~Cpu8bits();
 
         virtual void reset() override;
 

@@ -11,7 +11,7 @@
 #include "headerwidget.h"
 #include "mainwindow.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "corebase.h"
 #include "console.h"
 #include "scriptcpu.h"
 

@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "e-element.h"
 
-class ULA_ZX48k : public CpuBase, public eElement
+class ULA_ZX48k : public Cpu8bits, public eElement
 {
     public:
         ULA_ZX48k( eMcu* mcu );

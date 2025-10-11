@@ -5,7 +5,7 @@
 
 #include "e_mcu.h"
 #include "mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "mcuconfigword.h"
 #include "mcuport.h"
 #include "mcupin.h"

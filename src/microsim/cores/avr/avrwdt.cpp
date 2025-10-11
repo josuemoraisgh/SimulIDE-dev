@@ -5,7 +5,7 @@
 
 #include "avrwdt.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "simulator.h"
 #include "datautils.h"
 

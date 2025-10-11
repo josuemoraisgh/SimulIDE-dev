@@ -24,7 +24,7 @@
 
 ScriptCpu::ScriptCpu( eMcu* mcu )
          : ScriptBase( mcu->getId()+"-"+"ScriptCpu" )
-         , McuCpu( mcu )
+         , Mcu8bits( mcu )
 {
     m_watcher  = nullptr;
 

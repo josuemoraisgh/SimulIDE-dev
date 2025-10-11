@@ -47,7 +47,7 @@ int ULA_ZX48k::m_colours[16] = { 0x000000, 0x00007f, 0x7f0000, 0x7f007f,\
                                  0x00ff00, 0x00ffff, 0xffff00, 0xffffff };
 
 ULA_ZX48k::ULA_ZX48k( eMcu* mcu )
-         : CpuBase( mcu )
+         : Cpu8bits( mcu )
          , eElement( mcu->getId()+"-Z80Core" )
 {
     m_type = ula6c001e7;                                            // default type

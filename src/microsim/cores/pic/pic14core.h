@@ -21,7 +21,7 @@ class Pic14Core : public PicMrCore
             addr = m_mcu->getMapperAddr( addr+m_bank );
 
             if( addr == 0 ) addr = getINDF();// INDF
-            return McuCpu::GET_RAM( addr );
+            return Mcu8bits::GET_RAM( addr );
         }
         virtual void SET_RAM( uint16_t addr, uint8_t v ) override //
         {
@@ -30,7 +30,7 @@ class Pic14Core : public PicMrCore
             if( addr == m_PCLaddr ) setPC( v + (m_dataMem[m_PCHaddr]<<8) ); // Writting to PCL
             else if( addr == 0 ) addr = getINDF();      // INDF
 
-            McuCpu::SET_RAM( addr, v );
+            Mcu8bits::SET_RAM( addr, v );
         }
         inline uint16_t getINDF()
         {

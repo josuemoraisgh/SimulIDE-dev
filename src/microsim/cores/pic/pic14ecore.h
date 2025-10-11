@@ -60,7 +60,7 @@ class Pic14eCore : public PicMrCore
                      return m_progMem[addr];
                 }
             }
-            return McuCpu::GET_RAM( addr );
+            return Mcu8bits::GET_RAM( addr );
         }
         virtual void SET_RAM( uint16_t addr, uint8_t v ) override //
         {
@@ -68,7 +68,7 @@ class Pic14eCore : public PicMrCore
             if( addr == m_PCLaddr ) setPC( v + (m_dataMem[m_PCHaddr]<<8) ); // Writting to PCL
             else if( addr == 0 ) addr = getFSR0(); // INDF0
             else if( addr == 1 ) addr = getFSR1(); // INDF1
-            McuCpu::SET_RAM( addr, v );
+            Mcu8bits::SET_RAM( addr, v );
         }
 
         // Miscellaneous instructions

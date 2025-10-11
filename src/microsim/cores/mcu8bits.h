@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include "cpubase.h"
+#include "cpu8bits.h"
 
-class McuCpu : public CpuBase
+class Mcu8bits : public Cpu8bits
 {
     public:
-        McuCpu( eMcu* mcu );
-        ~McuCpu();
+        Mcu8bits( eMcu* mcu );
+        ~Mcu8bits();
 
         virtual void CALL_ADDR( uint32_t addr ) override; // Used by MCU Interrupts:: All MCUs should use or override this
 

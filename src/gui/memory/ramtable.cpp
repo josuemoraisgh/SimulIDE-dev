@@ -14,7 +14,7 @@
 
 #include "ramtable.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "circuit.h"
 #include "basedebugger.h"
 #include "mainwindow.h"

@@ -4,7 +4,7 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include "e_iou.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "ioport.h"
 #include "watcher.h"
 
@@ -39,7 +39,7 @@ IoPin* eIou::getIoPin( QString pinName )
     return pin;
 }
 
-void eIou::createWatcher( CpuBase* cpu )
+void eIou::createWatcher( CoreBase* cpu )
 {
     if( !m_watcher ) m_watcher = new Watcher( nullptr, cpu );
 }

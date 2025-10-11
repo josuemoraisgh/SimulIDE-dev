@@ -16,7 +16,7 @@
 #include "datautils.h"
 
 AvrCore::AvrCore( eMcu* mcu )
-       : McuCpu( mcu )
+       : Mcu8bits( mcu )
 {
     if( mcu->regExist("EIND") ) EIND = m_mcu->getReg( "EIND" );
     else EIND = nullptr;
@@ -45,7 +45,7 @@ AvrCore::~AvrCore() {}
 
 void AvrCore::reset()
 {
-    McuCpu::reset();
+    Mcu8bits::reset();
 
     uint16_t ramEnd = m_dataMemEnd-1;
     if( m_spl ) *m_spl = ramEnd;

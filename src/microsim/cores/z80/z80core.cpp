@@ -29,7 +29,7 @@
 #include "stringprop.h"
 
 Z80Core::Z80Core( eMcu* mcu )
-       : CpuBase( mcu )
+       : Cpu8bits( mcu )
        , eElement( mcu->getId()+"-Z80Core" )
 {
     // Values to show in Monitor High Area (any type)

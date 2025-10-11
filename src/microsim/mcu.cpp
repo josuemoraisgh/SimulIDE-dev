@@ -12,7 +12,7 @@
 #include <QSettings>
 
 #include "mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "mcuport.h"
 #include "mcupin.h"
 #include "mcuwdt.h"
