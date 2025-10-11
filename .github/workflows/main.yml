@@ -16,7 +16,6 @@ jobs:
       QT_TRIPLET: "msvc2019_64"
       QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
       QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
-      QT_MODULES: "qtsvg qtmultimedia qtserialport"
 
     steps:
       - name: Setup MSVC (VS 2022, x64)
@@ -48,11 +47,16 @@ jobs:
         run: |
           pip install "aqtinstall==3.1.*"
 
-      - name: Download Qt 5.15.2 sources
-        if: steps.cache-qt.outputs.cache-hit != 'true'
+      # Garante que os FONTES do Qt existem (mesmo com cache hit do prefixo estático)
+      - name: Ensure Qt sources present
+        shell: pwsh
         run: |
-          python -m aqt install-src windows desktop 5.15.2 --outputdir "C:\qt-src"
+          if (-not (Test-Path "C:\qt-src\5.15.2\Src")) {
+            pip install "aqtinstall==3.1.*"
+            python -m aqt install-src windows desktop 5.15.2 --outputdir "C:\qt-src"
+          }
 
+      # Compila/instala qtbase ESTÁTICO somente quando não vier no cache
       - name: Configure + Build + Install Qt (static + /MT)
         if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: cmd
@@ -67,9 +71,9 @@ jobs:
             -no-icu -no-dbus -no-angle -mp
           nmake /NOLOGO
           nmake /NOLOGO install
-          
-      - name: Build Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
-        if: steps.cache-qt.outputs.cache-hit != 'true'
+
+      # SEM condição de cache: garante módulos presentes; compila apenas se faltar
+      - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
         shell: cmd
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
@@ -78,61 +82,56 @@ jobs:
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
 
-          rem === Diretório de build fora da árvore de fontes ===
+          rem Onde faremos builds fora da árvore de fontes
           set MOD_BUILD=C:\qt-build-mods
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
 
-          rem ======================
-          rem  qtsvg (somente src)
-          rem ======================
-          set MOD=qtsvg
-          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
-          set MOD_BLD=%MOD_BUILD%\%MOD%
-          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
-          cd /d "%MOD_BLD%"
-          rem disponibiliza features do módulo (se necessário)
-          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
-          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
-          nmake /NOLOGO
-          nmake /NOLOGO install
+          rem ---------- Função inline para construir módulo se faltar ----------
+          rem Uso: call :ensure_module qtsvg Qt5Svg
+          rem      call :ensure_module qtmultimedia Qt5Multimedia
+          rem      call :ensure_module qtserialport Qt5SerialPort
+          goto after_functions
 
-          rem ==========================
-          rem  qtmultimedia (somente src)
-          rem  IMPORTANTE: expor features (wasapi, etc.)
-          rem ==========================
-          set MOD=qtmultimedia
+          :ensure_module
+          set MOD=%1
+          set LIBNAME=%2
           set MOD_SRC=%QT_SRC_ROOT%\%MOD%
           set MOD_BLD=%MOD_BUILD%\%MOD%
-          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
-          cd /d "%MOD_BLD%"
-          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
-          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
-          nmake /NOLOGO
-          nmake /NOLOGO install
 
-          rem ==========================
-          rem  qtserialport (somente src)
-          rem ==========================
-          set MOD=qtserialport
-          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
-          set MOD_BLD=%MOD_BUILD%\%MOD%
+          if exist "%QTDIR%\lib\%LIBNAME%.lib" (
+            echo %LIBNAME% já presente — pulando build.
+            goto :eof
+          )
+
+          echo === Construindo %MOD% (porque %LIBNAME%.lib não foi encontrado) ===
           if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
           cd /d "%MOD_BLD%"
           set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
           "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
           nmake /NOLOGO
           nmake /NOLOGO install
+          echo === %MOD% instalado. ===
+          goto :eof
+
+          :after_functions
+
+          call :ensure_module qtsvg Qt5Svg
+          call :ensure_module qtmultimedia Qt5Multimedia
+          call :ensure_module qtserialport Qt5SerialPort
+
+          echo ----- Bibliotecas Qt presentes -----
+          dir /b "%QTDIR%\lib\Qt5*.lib"
 
   build-app:
     name: Build App (Static, One EXE)
     needs: qt-static-build
     runs-on: windows-latest
     env:
-      # Pasta do .pro no repositório (já existente no seu repo)
+      # Caminho do .pro no repositório
       PRO_DIR: "build_XX"
       PRO_FILE: "SimulIDE_Build.pro"
 
-      # Pasta de build fora da árvore de fontes do repo
+      # Build fora da árvore de fontes do repo
       BUILD_DIR: "out_msvc"
       CONFIG: "release"
 
@@ -161,6 +160,16 @@ jobs:
         run: |
           if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
+      # Reforço de CRT estático antes do qmake (para surtir efeito)
+      - name: Forçar CRT estático (/MT) no .pro
+        shell: pwsh
+        run: |
+          $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
+          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço de /MT."; exit 0 }
+          Add-Content $proPath "QMAKE_CFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
+
       - name: qmake (Static Release) usando build_XX/SimulIDE_Build.pro
         shell: cmd
         env:
@@ -170,15 +179,6 @@ jobs:
           set PATH=%QTDIR%\bin;%PATH%
           cd %BUILD_DIR%
           qmake "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
-
-      - name: Forçar CRT estático (/MT)
-        shell: pwsh
-        run: |
-          $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
-          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço de /MT."; exit 0 }
-          Add-Content $proPath "QMAKE_CFLAGS_RELEASE += /MT`n"
-          Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
-          Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
 
       - name: Build with nmake
         shell: cmd
@@ -197,7 +197,6 @@ jobs:
           $exe = Get-ChildItem ".\${env:BUILD_DIR}" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
                  Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if (-not $exe) {
-            # Fallback: procura em todo o workspace se o .pro gerar em outra pasta
             $exe = Get-ChildItem "$env:GITHUB_WORKSPACE" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
                    Sort-Object LastWriteTime -Descending | Select-Object -First 1
           }
