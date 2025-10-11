@@ -43,21 +43,16 @@ jobs:
           perl-version: "5.32"
 
       - name: Install aqt
-        if: steps.cache-qt.outputs.cache-hit != 'true'
         run: |
           pip install "aqtinstall==3.1.*"
 
-      # Garante que os FONTES do Qt existem (mesmo com cache hit do prefixo estático)
       - name: Ensure Qt sources present
-        shell: pwsh
         run: |
-          if (-not (Test-Path "C:\qt-src\5.15.2\Src")) {
-            pip install "aqtinstall==3.1.*"
+          if not exist "C:\qt-src\5.15.2\Src" (
             python -m aqt install-src windows desktop 5.15.2 --outputdir "C:\qt-src"
-          }
+          )
 
-      # Compila/instala qtbase ESTÁTICO somente quando não vier no cache
-      - name: Configure + Build + Install Qt (static + /MT)
+      - name: Configure + Build + Install Qt (static + /MT) if not cached
         if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: cmd
         env:
@@ -72,7 +67,7 @@ jobs:
           nmake /NOLOGO
           nmake /NOLOGO install
 
-      # SEM condição de cache: garante módulos presentes; compila apenas se faltar
+      # Garante módulos SEMPRE: recompila/instala se faltar lib OU .pri
       - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
         shell: cmd
         env:
@@ -82,28 +77,30 @@ jobs:
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
 
-          rem Onde faremos builds fora da árvore de fontes
           set MOD_BUILD=C:\qt-build-mods
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
 
-          rem ---------- Função inline para construir módulo se faltar ----------
-          rem Uso: call :ensure_module qtsvg Qt5Svg
-          rem      call :ensure_module qtmultimedia Qt5Multimedia
-          rem      call :ensure_module qtserialport Qt5SerialPort
           goto after_functions
-
           :ensure_module
+          rem %1 = modulo (ex.: qtmultimedia)
+          rem %2 = lib base (ex.: Qt5Multimedia)
+          rem %3 = pri base (ex.: qt_lib_multimedia)
           set MOD=%1
-          set LIBNAME=%2
+          set LIBBASE=%2
+          set PRIBASE=%3
           set MOD_SRC=%QT_SRC_ROOT%\%MOD%
           set MOD_BLD=%MOD_BUILD%\%MOD%
 
-          if exist "%QTDIR%\lib\%LIBNAME%.lib" (
-            echo %LIBNAME% já presente — pulando build.
+          set NEED=0
+          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
+          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
+
+          if "%NEED%"=="0" (
+            echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD%.
             goto :eof
           )
 
-          echo === Construindo %MOD% (porque %LIBNAME%.lib não foi encontrado) ===
+          echo === Construindo %MOD% (faltava lib ou pri) ===
           if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
           cd /d "%MOD_BLD%"
           set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
@@ -112,30 +109,26 @@ jobs:
           nmake /NOLOGO install
           echo === %MOD% instalado. ===
           goto :eof
-
           :after_functions
 
-          call :ensure_module qtsvg Qt5Svg
-          call :ensure_module qtmultimedia Qt5Multimedia
-          call :ensure_module qtserialport Qt5SerialPort
+          call :ensure_module qtsvg Qt5Svg qt_lib_svg
+          call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia
+          call :ensure_module qtserialport Qt5SerialPort qt_lib_serialport
 
-          echo ----- Bibliotecas Qt presentes -----
+          echo ----- Present Qt libs -----
           dir /b "%QTDIR%\lib\Qt5*.lib"
+          echo ----- Present Qt module PRIs -----
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
 
   build-app:
     name: Build App (Static, One EXE)
     needs: qt-static-build
     runs-on: windows-latest
     env:
-      # Caminho do .pro no repositório
       PRO_DIR: "build_XX"
       PRO_FILE: "SimulIDE_Build.pro"
-
-      # Build fora da árvore de fontes do repo
       BUILD_DIR: "out_msvc"
       CONFIG: "release"
-
-      # Qt estático compilado no job anterior
       QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
 
     steps:
@@ -160,8 +153,17 @@ jobs:
         run: |
           if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
-      # Reforço de CRT estático antes do qmake (para surtir efeito)
-      - name: Forçar CRT estático (/MT) no .pro
+      # (Opcional, mas útil) Debug: conferir se multimedia está realmente instalado
+      - name: Debug installed Qt modules
+        shell: pwsh
+        run: |
+          Write-Host "Libraries in $env:QT_INSTALL_PREFIX\lib:"
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\lib" -Filter "Qt5*.lib" | Sort-Object Name | Select-Object -ExpandProperty Name
+          Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
+
+      # Reforço CRT estático antes do qmake
+      - name: Force static CRT (/MT) in .pro
         shell: pwsh
         run: |
           $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
@@ -170,7 +172,7 @@ jobs:
           Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
           Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
 
-      - name: qmake (Static Release) usando build_XX/SimulIDE_Build.pro
+      - name: qmake (Static Release) using build_XX/SimulIDE_Build.pro
         shell: cmd
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
