@@ -8,17 +8,17 @@
 #include "valuewidget.h"
 #include "mainwindow.h"
 #include "e_mcu.h"
-#include "corebase.h"
+#include "watched.h"
 #include "utils.h"
 
-ValueWidget::ValueWidget( QString name, QString type, CoreBase* core, QWidget* parent )
+ValueWidget::ValueWidget( QString name, QString type, Watched* core, QWidget* parent )
            : QWidget( parent )
 {
     setupUi(this);
 
     m_name = name;
     m_type = type.toLower();
-    m_core = core;
+    m_watched = core;
 
     float scale = MainWindow::self()->fontScale();
     QFont fontS;
@@ -43,10 +43,16 @@ ValueWidget::ValueWidget( QString name, QString type, CoreBase* core, QWidget* p
 
 void ValueWidget::updateValue()
 {
-    if( !m_core ) return;
+    if( !m_watched ) return;
 
-    if( m_type == "string" ) setValueStr( m_core->getStrReg( m_name ) );
-    else                     setValueInt( m_core->getCpuReg( m_name ) );
+    if( m_type == "string" ) setValueStr( m_watched->getStrReg( m_name ) );
+    if( m_type == "double" ) setValueDbl( m_watched->getDblReg( m_name ) );
+    else                     setValueInt( m_watched->getIntReg( m_name ) );
+}
+
+void ValueWidget::setValueDbl( double val )
+{
+    m_strVal = QString::number(val);
 }
 
 void ValueWidget::setValueInt( int val )

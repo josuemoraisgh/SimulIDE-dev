@@ -6,7 +6,7 @@
 #include "cpu8bits.h"
 
 Cpu8bits::Cpu8bits( eMcu* mcu )
-        : CoreBase()
+        : Watched()
 {
     m_mcu = mcu;
 

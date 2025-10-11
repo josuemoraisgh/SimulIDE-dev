@@ -39,7 +39,7 @@ class ScriptCpu : public ScriptBase, public Mcu8bits
 
         void addCpuReg( string name, string type );
         void addCpuVar( string name, string type );
-        virtual int getCpuReg( QString reg ) override;
+        virtual int getIntReg( QString reg ) override;
         virtual QString getStrReg( QString ) override;
 
         ComProperty* addProperty( QString name, QString label, QString type, QString unit );
@@ -90,7 +90,7 @@ class ScriptCpu : public ScriptBase, public Mcu8bits
         asIScriptFunction* m_extClockF;
         asIScriptFunction* m_INTERRUPT;
 
-        asIScriptFunction* m_getCpuReg;
+        asIScriptFunction* m_getIntReg;
         asIScriptFunction* m_getStrReg;
         asIScriptFunction* m_command;
 
@@ -112,8 +112,6 @@ class ScriptCpu : public ScriptBase, public Mcu8bits
         QMap<QString, QStringList> m_memberWords;
 
         QString m_value;
-
-        Watcher* m_watcher;
 
         std::vector<ScriptPerif*> m_periferals;
 };

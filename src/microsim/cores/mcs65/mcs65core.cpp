@@ -23,7 +23,7 @@ Mcs65Cpu::Mcs65Cpu( eMcu* mcu )
     m_cpuRegs.insert("X" , &m_rX );
     m_cpuRegs.insert("Y" , &m_rY );
     //m_rI = NULL;
-    mcu->getWatcher()->setRegisters( m_cpuRegs.keys() );
+    m_watcher->setRegisters( m_cpuRegs.keys() );
 
     // <register name="P"  addr="0x05" bits="C,Z,I,D,B,1,V,N" reset="00110100" mask="11011111" />
     m_STATUS = &m_P;
@@ -57,7 +57,7 @@ new BoolProp<Mcu>( "Ext_Osc", tr("External Clock"),"", this, &Mcu::extOscEnabled
 }
 Mcs65Cpu::~Mcs65Cpu() {}
 
-int Mcs65Cpu::getCpuReg( QString reg )
+int Mcs65Cpu::getIntReg( QString reg )
 {
     if( m_cpuRegs.contains( reg ) )
     {

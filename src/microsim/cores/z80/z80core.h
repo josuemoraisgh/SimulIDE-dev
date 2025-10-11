@@ -38,7 +38,7 @@ class Z80Core : public Cpu8bits, public eElement
         virtual void runStep() override;
         virtual void extClock( bool clkState ) override;
 
-        virtual int getCpuReg( QString reg ) override;
+        virtual int getIntReg( QString reg ) override;
         virtual QString getStrReg( QString reg ) override;
 
         QString getStrInst();

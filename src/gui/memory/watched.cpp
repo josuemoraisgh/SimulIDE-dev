@@ -3,12 +3,17 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#include "corebase.h"
+#include "watched.h"
+#include "watcher.h"
 
-CoreBase::CoreBase()
+Watched::Watched()
 {
     m_display = nullptr;
+    m_watcher = nullptr;
 }
-CoreBase::~CoreBase() {}
+Watched::~Watched() {}
 
-
+void Watched::createWatcher()
+{
+    if( !m_watcher ) m_watcher = new Watcher( nullptr, this );
+}

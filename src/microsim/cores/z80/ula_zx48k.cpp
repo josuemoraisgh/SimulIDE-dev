@@ -60,15 +60,14 @@ ULA_ZX48k::ULA_ZX48k( eMcu* mcu )
         <<"ULA 6C001E7"
         <<"ULA 6C011E";
 
-    mcu->createWatcher( this );
-    Watcher* watcher = mcu->getWatcher();
+   createWatcher();
 
-    watcher->addRegister( "Horizontal Counter", "uint16" );
-    watcher->addRegister( "Vertical Counter", "uint16" );
-    watcher->addRegister( "Border Colour"  , "uint8" );
-    watcher->addRegister( "Data Latch"     , "uint8" );
-    watcher->addRegister( "Atr. Data Latch", "uint8" );
-    watcher->addRegister( "Shift Register" , "uint8" );
+    m_watcher->addRegister( "Horizontal Counter", "uint16" );
+    m_watcher->addRegister( "Vertical Counter", "uint16" );
+    m_watcher->addRegister( "Border Colour"  , "uint8" );
+    m_watcher->addRegister( "Data Latch"     , "uint8" );
+    m_watcher->addRegister( "Atr. Data Latch", "uint8" );
+    m_watcher->addRegister( "Shift Register" , "uint8" );
 
     m_rasPin    = mcu->getIoPin("RAS");
     m_casPin    = mcu->getIoPin("CAS");
@@ -104,7 +103,7 @@ ULA_ZX48k::ULA_ZX48k( eMcu* mcu )
 }
 ULA_ZX48k::~ULA_ZX48k(){ }
 
-int ULA_ZX48k::getCpuReg( QString reg ) // Called by Mcu Monitor to get Integer values
+int ULA_ZX48k::getIntReg( QString reg ) // Called by Mcu Monitor to get Integer values
 {
     int value = -1;
     if     ( reg == "Horizontal Counter") value = m_C;

@@ -9,17 +9,18 @@
 
 #include "ui_valuewidget.h"
 
-class CoreBase;
+class Watched;
 
 class ValueWidget : public QWidget, private Ui::ValueWidget
 {
     Q_OBJECT
 
     public:
-        ValueWidget( QString name, QString type, CoreBase* core, QWidget* parent=0 );
+        ValueWidget( QString name, QString type, Watched* core, QWidget* parent=0 );
 
         void updateValue();
 
+        void setValueDbl( double val );
         void setValueInt( int val );
         void setValueStr( QString str );
 
@@ -30,5 +31,5 @@ class ValueWidget : public QWidget, private Ui::ValueWidget
         QString m_strVal;
         int m_intVal;
 
-        CoreBase* m_core;
+        Watched* m_watched;
 };

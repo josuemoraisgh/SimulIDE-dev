@@ -35,7 +35,7 @@ class ULA_ZX48k : public Cpu8bits, public eElement
 
         virtual void runStep() override;
 
-        virtual int getCpuReg( QString reg ) override;
+        virtual int getIntReg( QString reg ) override;
 
         QString type() { return m_types.at((int)m_type); }
         void setType( QString producer );

@@ -28,7 +28,7 @@ class Mcs65Cpu : public Mcs65Interface
         Mcs65Cpu( eMcu* mcu );
         ~Mcs65Cpu();
 
-        int     getCpuReg( QString reg ) override;
+        int     getIntReg( QString reg ) override;
         QString getStrReg( QString reg ) override;
 
         void stamp() override;

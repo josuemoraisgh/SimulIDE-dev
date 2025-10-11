@@ -39,7 +39,7 @@ MCUMonitor::MCUMonitor( QWidget* parent, eMcu* mcu )
     horizontalLayout->setStretchFactor( byteButton, 20 );
     QSplitter* spl = nullptr;
 
-    m_watcher = m_processor->getWatcher();
+    m_watcher = m_processor->cpu()->getWatcher();
     if( m_watcher )
     {
         if( mcu->ramSize() )
