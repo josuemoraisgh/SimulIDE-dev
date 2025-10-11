@@ -53,6 +53,7 @@ void ValueWidget::updateValue()
 void ValueWidget::setValueDbl( double val )
 {
     m_strVal = QString::number(val);
+    valueLine->setText( m_strVal );
 }
 
 void ValueWidget::setValueInt( int val )
