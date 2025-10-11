@@ -15,14 +15,13 @@
 
 #define tr(str) simulideTr("Esp32",str)
 
-enum actions{
-    GPIO_OUT = 1,
-    GPIO_DIR,
-    GPIO_IN,
-    IOMUX,
-    MATRIX_IN,
-    MATRIX_OUT,
-    I2C,
+enum ESP32Actions{
+    ESP_GPIO_OUT = 1,
+    ESP_GPIO_DIR,
+    ESP_GPIO_IN,
+    ESP_IOMUX,
+    ESP_MATRIX_IN,
+    ESP_MATRIX_OUT,
 };
 
 
@@ -275,7 +274,7 @@ void Esp32::doAction()
 {
     switch( m_arena->action )
     {
-        case GPIO_OUT:       // Set Output
+        case ESP_GPIO_OUT:       // Set Output
         {
             //qDebug() << "i"<<m_arena->nextState<<eventEnter;
             uint32_t state = m_arena->data32;
@@ -293,7 +292,7 @@ void Esp32::doAction()
             m_state = m_arena->data32;
             //qDebug() << "o"<<m_state<<eventEnter;
         } break;
-        case GPIO_DIR:       // Set Direction
+        case ESP_GPIO_DIR:       // Set Direction
         {
             for( uint i=0; i<32; ++i )
             {
@@ -313,12 +312,12 @@ void Esp32::doAction()
             }
             m_direc = m_arena->data32;
         } break;
-        case GPIO_IN:                  // Read Inputs
+        case ESP_GPIO_IN:                  // Read Inputs
         {
             readInputs();
             //m_arena->action = 0;
         } break;
-        case IOMUX:
+        case ESP_IOMUX:
         {
             // Sleep bits 0-6
             // PD bit 7
@@ -362,7 +361,7 @@ void Esp32::doAction()
                 m_inputEn  |= inEn;
             }
         } break;
-        case MATRIX_IN:
+        case ESP_MATRIX_IN:
         {
             uint32_t value = m_arena->data32;
             int pin  = value & 0x3F;
@@ -392,7 +391,7 @@ void Esp32::doAction()
                 break;
             }
         } break;
-        case MATRIX_OUT:
+        case ESP_MATRIX_OUT:
         {
             uint32_t value = m_arena->data32;
             int pin  = value & 0x3F;
@@ -516,7 +515,7 @@ void Esp32::doAction()
             }
 
         } break;
-        case I2C:
+        case SIM_I2C:
         {
             //qDebug() << "---";
             //qDebug() << m_arena->time/1000000 << "Esp32::doAction";
