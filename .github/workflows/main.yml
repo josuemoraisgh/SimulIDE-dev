@@ -47,10 +47,12 @@ jobs:
           pip install "aqtinstall==3.1.*"
 
       - name: Ensure Qt sources present
+        shell: pwsh
         run: |
-          if not exist "C:\qt-src\5.15.2\Src" (
-            python -m aqt install-src windows desktop 5.15.2 --outputdir "C:\qt-src"
-          )
+          if (-not (Test-Path 'C:\qt-src\5.15.2\Src')) {
+            pip install "aqtinstall==3.1.*"
+            python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
+          }
 
       - name: Configure + Build + Install Qt (static + /MT) if not cached
         if: steps.cache-qt.outputs.cache-hit != 'true'
