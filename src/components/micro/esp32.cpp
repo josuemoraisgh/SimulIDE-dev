@@ -393,9 +393,9 @@ void Esp32::doAction()
         } break;
         case ESP_MATRIX_OUT:
         {
-            uint32_t value = m_arena->data32;
-            int pin  = value & 0x3F;
-            IoPin* ioPin = m_ioPin.at( pin );
+            //uint32_t value = m_arena->data32;
+            //int pin  = value & 0x3F;
+            //IoPin* ioPin = m_ioPin.at( pin );
 
             uint8_t function = m_arena->data8;
 
@@ -519,7 +519,7 @@ void Esp32::doAction()
         {
             //qDebug() << "---";
             //qDebug() << m_arena->time/1000000 << "Esp32::doAction";
-            int         id = m_arena->data16;
+            uint16_t    id = m_arena->data16;
             uint8_t   data = m_arena->data8;
             uint32_t event = m_arena->data32;
 

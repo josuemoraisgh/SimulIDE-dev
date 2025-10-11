@@ -14,7 +14,7 @@
 
 #define tr(str) simulideTr("Stm32",str)
 
-enum arm32Actions{
+enum ArmActions{
     ARM_GPIO_OUT = 1,
     ARM_GPIO_CRx,
     ARM_GPIO_IN,
@@ -249,7 +249,7 @@ void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
         uint32_t cfgMask = 0b1111 << cfgShift;
         uint32_t cfgBits = (config & cfgMask) >> cfgShift;
 
-        uint8_t isOutput = cfgBits & 0b0011;  // 1 = output
+        uint8_t isOutput = cfgBits & 0b0011;  // 0 = Input
 
         if( isOutput ) // Output
         {

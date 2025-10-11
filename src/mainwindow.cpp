@@ -266,8 +266,8 @@ void MainWindow::createWidgets()
     listLayout->addLayout( searchLayout );
 
     m_installer = new Installer( this );
-    m_fileTree = new FileWidget( this );
-    m_circuitW = new CircuitWidget( this );
+    m_fileTree  = new FileWidget( this );
+    m_circuitW  = new CircuitWidget( this );
 
     m_components = new ComponentList( m_sidepanel );
     listLayout->addWidget( m_components );
