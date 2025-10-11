@@ -5,8 +5,7 @@
 
 #pragma once
 
-#include <QStringList>
-#include <QHash>
+#include <QString>
 
 class Display;
 
@@ -23,11 +22,10 @@ class CoreBase
 
         virtual void command( QString c ){;}
 
-        virtual int getCpuReg( QString reg );
-        virtual QString getStrReg( QString ){ return "";}
+        virtual int getCpuReg( QString reg ) { return 0; }
+        virtual QString getStrReg( QString ){ return ""; }
 
     protected:
-        QHash<QString, uint8_t*> m_cpuRegs;
 
         Display* m_display; // Find a place for this
 };

@@ -28,16 +28,17 @@ class Mcs65Cpu : public Mcs65Interface
         Mcs65Cpu( eMcu* mcu );
         ~Mcs65Cpu();
 
-        virtual QString getStrReg( QString reg ) override;
+        int     getCpuReg( QString reg ) override;
+        QString getStrReg( QString reg ) override;
 
-        virtual void stamp() override;
-        virtual void runEvent() override;
+        void stamp() override;
+        void runEvent() override;
 
-        virtual void reset() override;
-        virtual void runStep() override;
-        virtual void extClock( bool clkState ) override;
+        void reset() override;
+        void runStep() override;
+        void extClock( bool clkState ) override;
 
-        virtual uint getPC() override { return m_debugPC; }
+        uint getPC() override { return m_debugPC; }
 
         enum { C=0,Z,I,D,B,O,V,N }; // STATUS bits
 
@@ -108,6 +109,8 @@ class Mcs65Cpu : public Mcs65Interface
         IoPin* m_rdyPin;
         IoPin* m_soPin;
         IoPin* m_dbePin;
+
+        QMap<QString, uint8_t*> m_cpuRegs;
 
         uint8_t m_P;   // status
         uint8_t m_SP;

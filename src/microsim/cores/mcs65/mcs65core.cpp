@@ -57,6 +57,16 @@ new BoolProp<Mcu>( "Ext_Osc", tr("External Clock"),"", this, &Mcu::extOscEnabled
 }
 Mcs65Cpu::~Mcs65Cpu() {}
 
+int Mcs65Cpu::getCpuReg( QString reg )
+{
+    if( m_cpuRegs.contains( reg ) )
+    {
+        uint8_t* regPtr = m_cpuRegs.value( reg );
+        return *regPtr;
+    }
+    return -1;
+}
+
 QString Mcs65Cpu::getStrReg( QString reg ) // Called by Mcu Monitor to get String values
 {
     QString value = "";

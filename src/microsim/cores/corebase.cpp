@@ -11,12 +11,4 @@ CoreBase::CoreBase()
 }
 CoreBase::~CoreBase() {}
 
-int CoreBase::getCpuReg( QString reg )
-{
-    if( m_cpuRegs.contains( reg ) )
-    {
-        uint8_t* regPtr = m_cpuRegs.value( reg );
-        return *regPtr;
-    }
-    return -1;
-}
+
