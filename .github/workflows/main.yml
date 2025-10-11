@@ -1,96 +1,19 @@
-name: Windows MSVC (Qt5 qmake)
-
-on:
-  push:
-    branches: [ "master" ]
-    tags: [ "v*", "V*", "release-*" ]
-  pull_request:
-    branches: [ "master" ]
-
-jobs:
-  build-msvc:
-    runs-on: windows-latest
-
-    env:
-      # Nome da pasta de build usada pelo SimulIDE
-      BUILD_DIR: build_XX
-      CONFIG: release
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+      # ... (suas etapas anteriores)
 
-      - name: Setup MSVC (VS 2022)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Install Qt 5.15.2 (msvc2019_64) + modules
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '5.15.2'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc2019_64'
-          modules: 'qtserialport qtmultimedia qtsvg'
-          cache: true
-          aqtversion: '==3.1.*'
-      # install-qt-action docs: https://github.com/marketplace/actions/install-qt
-
-      - name: Show Qt paths (debug)
+      - name: Compute vars
+        id: vars
         shell: pwsh
         run: |
-          Get-ChildItem env:* | Where-Object { $_.Name -like 'Qt*' -or $_.Name -match 'QTDIR|QT_ROOT_DIR' } | Sort-Object Name
-
-      - name: qmake generate Makefiles (Release)
-        shell: cmd
-        run: |
-          cd %BUILD_DIR%
-          qmake ..\SimulIDE.pro -r -spec win32-msvc "CONFIG+=release"
-          echo Done qmake
-
-      - name: Build with nmake (Release)
-        shell: cmd
-        run: |
-          cd %BUILD_DIR%
-          nmake /NOLOGO
-          echo Done nmake
-
-      - name: Locate output folder
-        id: outdir
-        shell: pwsh
-        run: |
-          $dir = Get-ChildItem ".\${env:BUILD_DIR}\executables" -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $dir) { throw "Output folder not found under build_XX\\executables" }
-          echo "dir=$($dir.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Deploy Qt runtime (windeployqt)
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem "${{ steps.outdir.outputs.dir }}" -Filter "*.exe" | Select-Object -First 1
-          if (-not $exe) { throw "Executable not found in ${{ steps.outdir.outputs.dir }}" }
-          Write-Host "Deploying $($exe.FullName)"
-          & windeployqt --release --compiler-runtime --no-translations `
-            --multimedia --svg --serialport `
-            "$($exe.FullName)"
-        # windeployqt automatiza dependências Qt: libs, plugins, etc. (Qt docs) :contentReference[oaicite:1]{index=1}
-
-      - name: Copy extra runtime files (se necessário)
-        if: always()
-        shell: pwsh
-        run: |
-          # Adapte se precisar incluir pastas/data adicionais
-          # Ex.: Copy-Item -Recurse -Force .\resources\*  "${{ steps.outdir.outputs.dir }}\resources" 
-          Write-Host "Extra files step (optional)."
+          $short = $env:GITHUB_SHA.Substring(0,7)
+          "short_sha=$short" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Make ZIP artifact
         shell: pwsh
         run: |
-          $zip = "SimulIDE-MSVC-${{ github.sha.Substring(0,7) }}.zip"
+          $zip = "SimulIDE-MSVC-${{ steps.vars.outputs.short_sha }}.zip"
           Compress-Archive -Path "${{ steps.outdir.outputs.dir }}\*" -DestinationPath "$zip"
-          echo "ZIP=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "ZIP=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -98,7 +21,6 @@ jobs:
           name: SimulIDE-MSVC
           path: ./*.zip
           if-no-files-found: error
-          retention-days: 14
 
       - name: Create GitHub Release (on tags)
         if: startsWith(github.ref, 'refs/tags/')
