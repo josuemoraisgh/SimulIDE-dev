@@ -1,11 +1,23 @@
-name: Windows MSVC (Qt5 Static One-EXE)
+name: Windows MSVC Static (Qt5 one-exe) + Tag/Release
 
 on:
   push:
     branches: [ "master" ]
-    tags: [ "v*", "V*", "release-*"]
-  pull_request:
-    branches: [ "master" ]
+    tags: [ "v*", "V*", "release-*" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão (ex.: v2.0.0-RC1)"
+        required: false
+        type: string
+      publish_release:
+        description: "Publicar Release?"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   qt-static-build:
@@ -50,7 +62,6 @@ jobs:
         shell: pwsh
         run: |
           if (-not (Test-Path 'C:\qt-src\5.15.2\Src')) {
-            pip install "aqtinstall==3.1.*"
             python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
           }
 
@@ -69,7 +80,6 @@ jobs:
           nmake /NOLOGO
           nmake /NOLOGO install
 
-      # Garante módulos SEMPRE: recompila/instala se faltar lib OU .pri
       - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
         shell: cmd
         env:
@@ -78,15 +88,12 @@ jobs:
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
-
           set MOD_BUILD=C:\qt-build-mods
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
 
           goto after_functions
           :ensure_module
-          rem %1 = modulo (ex.: qtmultimedia)
-          rem %2 = lib base (ex.: Qt5Multimedia)
-          rem %3 = pri base (ex.: qt_lib_multimedia)
+          rem %1 modulo, %2 lib base, %3 pri base
           set MOD=%1
           set LIBBASE=%2
           set PRIBASE=%3
@@ -123,7 +130,7 @@ jobs:
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
 
   build-app:
-    name: Build App (Static, One EXE)
+    name: Build App (Static, One EXE) + Tag/Release
     needs: qt-static-build
     runs-on: windows-latest
     env:
@@ -137,6 +144,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: true
 
       - name: Setup MSVC (VS 2022, x64)
@@ -150,12 +158,47 @@ jobs:
           path: "${{ env.QT_INSTALL_PREFIX }}"
           key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
 
+      # Define APP_VER e cria tag automaticamente se veio por workflow_dispatch com version
+      - name: Compute version + optionally create tag
+        id: ver
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ev = context.eventName;
+            let ver = '';
+            if (ev === 'workflow_dispatch' && core.getInput('version')) {
+              ver = core.getInput('version');
+            } else if (context.ref && context.ref.startsWith('refs/tags/')) {
+              ver = context.ref.replace('refs/tags/','');
+            } else {
+              ver = `dev${context.runNumber}`;
+            }
+            ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
+            core.exportVariable('APP_VER', ver);
+            core.info(`>> Versão: ${ver}`);
+
+            // cria tag se foi manual com version e se nao existir
+            if (ev === 'workflow_dispatch' && core.getInput('version')) {
+              const tagRef = `refs/tags/${ver}`;
+              try {
+                await github.rest.git.getRef({ owner: context.repo.owner, repo: context.repo.repo, ref: tagRef });
+                core.info(`Tag ${ver} já existe.`);
+              } catch (e) {
+                if (e.status === 404) {
+                  const sha = context.sha;
+                  await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: tagRef, sha });
+                  core.info(`Criada tag ${ver} em ${sha}`);
+                } else {
+                  throw e;
+                }
+              }
+            }
+
       - name: Prepare build directory (out-of-source)
         shell: pwsh
         run: |
           if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
-      # (Opcional, mas útil) Debug: conferir se multimedia está realmente instalado
       - name: Debug installed Qt modules
         shell: pwsh
         run: |
@@ -164,12 +207,11 @@ jobs:
           Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
           Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
 
-      # Reforço CRT estático antes do qmake
-      - name: Force static CRT (/MT) in .pro
+      - name: Force static CRT (/MT) in .pro (before qmake)
         shell: pwsh
         run: |
           $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
-          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço de /MT."; exit 0 }
+          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço /MT."; exit 0 }
           Add-Content $proPath "QMAKE_CFLAGS_RELEASE += /MT`n"
           Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
           Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
@@ -181,8 +223,12 @@ jobs:
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
+          set QMAKEPATH=%QTDIR%\mkspecs
+          "%QTDIR%\bin\qmake.exe" -query
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+          dir /b "%QTDIR%\lib\Qt5*.lib"
           cd %BUILD_DIR%
-          qmake "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
+          "%QTDIR%\bin\qmake.exe" "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
 
       - name: Build with nmake
         shell: cmd
@@ -208,33 +254,23 @@ jobs:
           "EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "EXE encontrado: $($exe.FullName)"
 
-      - name: Compute vars (short sha)
-        id: vars
-        shell: pwsh
-        run: |
-          $short = $env:GITHUB_SHA.Substring(0,7)
-          "short_sha=$short" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Make ZIP artifact
-        id: pack
-        shell: pwsh
-        run: |
-          $zip = "SimulIDE-MSVC-STATIC-${{ steps.vars.outputs.short_sha }}.zip"
-          Compress-Archive -Path "${{ steps.out.outputs.EXE }}" -DestinationPath "$zip" -Force
-          "ZIP=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $zip = "SimulIDE-${env:APP_VER}-win64-MSVC-STATIC.zip"
+          Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
+          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "ZIP criado: $zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SimulIDE-MSVC-STATIC
-          path: "${{ steps.pack.outputs.ZIP }}"
+          name: SimulIDE-${{ env.APP_VER }}-win64-MSVC-STATIC
+          path: "${{ steps.out.outputs.ZIP_NAME }}"
           if-no-files-found: error
           retention-days: 14
 
-      - name: Create GitHub Release (on tags)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)
         uses: softprops/action-gh-release@v2
         with:
-          files: "${{ steps.pack.outputs.ZIP }}"
+          tag_name: ${{ env.APP_VER }}
+          files: "${{ steps.out.outputs.ZIP_NAME }}"
           generate_release_notes: true
