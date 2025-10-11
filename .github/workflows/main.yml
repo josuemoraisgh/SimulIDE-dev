@@ -1,7 +1,77 @@
-    steps:
-      # ... (suas etapas anteriores)
+name: Windows MSVC (Qt5 qmake)
 
-      - name: Compute vars
+on:
+  push:
+    branches: [ "master" ]
+    tags: [ "v*", "V*", "release-*" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-msvc:
+    runs-on: windows-latest
+    env:
+      BUILD_DIR: build_XX
+      CONFIG: release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup MSVC (VS 2022, x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Qt 5.15.2 (msvc2019_64) + modules
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtserialport qtmultimedia qtsvg'
+          cache: true
+          aqtversion: '==3.1.*'
+
+      - name: Prepare build directory
+        shell: pwsh
+        run: |
+          if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
+
+      - name: qmake (Release)
+        shell: cmd
+        run: |
+          cd %BUILD_DIR%
+          qmake ..\SimulIDE.pro -r -spec win32-msvc "CONFIG+=release"
+
+      - name: Build with nmake
+        shell: cmd
+        run: |
+          cd %BUILD_DIR%
+          nmake /NOLOGO
+
+      - name: Locate output folder
+        id: outdir
+        shell: pwsh
+        run: |
+          $dir = Get-ChildItem ".\${env:BUILD_DIR}\executables" -Directory -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $dir) { throw "Output folder not found under build_XX\executables" }
+          "dir=$($dir.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Deploy Qt runtime (windeployqt)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "${{ steps.outdir.outputs.dir }}" -Filter "*.exe" | Select-Object -First 1
+          if (-not $exe) { throw "Executable not found in ${{ steps.outdir.outputs.dir }}" }
+          & windeployqt --release --compiler-runtime --no-translations `
+            --multimedia --svg --serialport `
+            "$($exe.FullName)"
+
+      - name: Compute vars (short sha)
         id: vars
         shell: pwsh
         run: |
@@ -21,6 +91,7 @@
           name: SimulIDE-MSVC
           path: ./*.zip
           if-no-files-found: error
+          retention-days: 14
 
       - name: Create GitHub Release (on tags)
         if: startsWith(github.ref, 'refs/tags/')
