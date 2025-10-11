@@ -128,8 +128,15 @@ jobs:
     needs: qt-static-build
     runs-on: windows-latest
     env:
-      BUILD_DIR: "build_XX"
+      # Pasta do .pro no repositório (já existente no seu repo)
+      PRO_DIR: "build_XX"
+      PRO_FILE: "SimulIDE_Build.pro"
+
+      # Pasta de build fora da árvore de fontes do repo
+      BUILD_DIR: "out_msvc"
       CONFIG: "release"
+
+      # Qt estático compilado no job anterior
       QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
 
     steps:
@@ -149,12 +156,12 @@ jobs:
           path: "${{ env.QT_INSTALL_PREFIX }}"
           key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
 
-      - name: Prepare build directory
+      - name: Prepare build directory (out-of-source)
         shell: pwsh
         run: |
           if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
-      - name: qmake (Static Release)
+      - name: qmake (Static Release) usando build_XX/SimulIDE_Build.pro
         shell: cmd
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
@@ -162,15 +169,16 @@ jobs:
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
           cd %BUILD_DIR%
-          qmake ..\SimulIDE.pro -r -spec win32-msvc "CONFIG+=release static"
+          qmake "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
 
-      - name: Force static CRT (/MT)
+      - name: Forçar CRT estático (/MT)
         shell: pwsh
         run: |
-          if (-not (Test-Path ".\SimulIDE.pro")) { Write-Host "Aviso: SimulIDE.pro não encontrado na raiz. Pule este reforço."; exit 0 }
-          Add-Content ".\SimulIDE.pro" "QMAKE_CFLAGS_RELEASE += /MT`n"
-          Add-Content ".\SimulIDE.pro" "QMAKE_CXXFLAGS_RELEASE += /MT`n"
-          Add-Content ".\SimulIDE.pro" "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
+          $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
+          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço de /MT."; exit 0 }
+          Add-Content $proPath "QMAKE_CFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
 
       - name: Build with nmake
         shell: cmd
@@ -188,7 +196,12 @@ jobs:
         run: |
           $exe = Get-ChildItem ".\${env:BUILD_DIR}" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
                  Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $exe) { throw "Nenhum .exe encontrado no diretório de build." }
+          if (-not $exe) {
+            # Fallback: procura em todo o workspace se o .pro gerar em outra pasta
+            $exe = Get-ChildItem "$env:GITHUB_WORKSPACE" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
+                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          }
+          if (-not $exe) { throw "Nenhum .exe encontrado após o build." }
           "EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "EXE encontrado: $($exe.FullName)"
 
