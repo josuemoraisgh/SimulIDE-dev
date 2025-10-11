@@ -3,10 +3,10 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#include "cpubase.h"
+#include "cpu8bits.h"
 
-CpuBase::CpuBase( eMcu* mcu )
-       : CoreBase()
+Cpu8bits::Cpu8bits( eMcu* mcu )
+        : Watched()
 {
     m_mcu = mcu;
 
@@ -16,9 +16,9 @@ CpuBase::CpuBase( eMcu* mcu )
     m_sph = nullptr;
     m_STATUS = nullptr;
 }
-CpuBase::~CpuBase() {}
+Cpu8bits::~Cpu8bits() {}
 
-void CpuBase::reset()
+void Cpu8bits::reset()
 {
     m_PC = 0;
     m_RET_ADDR = 0;

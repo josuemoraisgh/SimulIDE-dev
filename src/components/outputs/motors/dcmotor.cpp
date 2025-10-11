@@ -5,12 +5,14 @@
 
 #include <QPainter>
 #include <math.h>
+#include <QMenu>
 
 #include "dcmotor.h"
 #include "itemlibrary.h"
 #include "simulator.h"
 #include "pin.h"
 #include "label.h"
+#include "watcher.h"
 
 #include "doubleprop.h"
 #include "intprop.h"
@@ -33,6 +35,7 @@ LibraryItem* DcMotor::libraryItem()
 DcMotor::DcMotor( QString type, QString id )
        : LinkerComponent( type, id )
        , eResistor( id )
+       , Watched()
 {
     m_graphical = true;
     
@@ -120,6 +123,8 @@ void DcMotor::updateStep()
         else          val = -val;
         for( Component* comp : m_linkedComp ) comp->setLinkedValue( val ); // angle 0-1000
     }
+    if( m_watcher ) m_watcher->updateValues();
+
     m_delta = 0;
     m_updtTime = 0;
     update();
@@ -145,6 +150,35 @@ void DcMotor::setRpm( int rpm )
     m_motStPs = 16*360*rpm/60;
 
     update();
+}
+
+void DcMotor::openWatcher()
+{
+    if( !m_watcher )
+    {
+        createWatcher();
+        m_watcher->addRegister( "Current" , "double" );
+        m_watcher->addRegister( "RPM"     , "double" );
+    }
+    m_watcher->show();
+}
+
+double DcMotor::getDblReg( QString reg )
+{
+    if( reg == "Current" ) return eResistor::current();
+    if( reg == "RPM"     ) return -m_speed*m_rpm;
+
+    return 0;
+}
+
+void DcMotor::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu )
+{
+    QAction* watcherAction = menu->addAction( QIcon(":/terminal.svg"),tr("Open Monitor") );
+    QObject::connect( watcherAction, &QAction::triggered, [=](){ openWatcher(); } );
+
+    menu->addSeparator();
+
+    LinkerComponent::contextMenu( event, menu );
 }
 
 void DcMotor::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )

@@ -6,7 +6,7 @@
 #include "mcumonitor.h"
 #include "simulator.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "memtable.h"
 #include "mainwindow.h"
 #include "utils.h"
@@ -39,7 +39,7 @@ MCUMonitor::MCUMonitor( QWidget* parent, eMcu* mcu )
     horizontalLayout->setStretchFactor( byteButton, 20 );
     QSplitter* spl = nullptr;
 
-    m_watcher = m_processor->getWatcher();
+    m_watcher = m_processor->cpu()->getWatcher();
     if( m_watcher )
     {
         if( mcu->ramSize() )

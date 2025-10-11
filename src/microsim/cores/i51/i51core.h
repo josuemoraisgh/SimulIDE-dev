@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "mcucpu.h"
+#include "mcu8bits.h"
 
 /*enum EM8051_EXCEPTION
 {
@@ -17,7 +17,7 @@
     EXCEPTION_ILLEGAL_OPCODE     // for the single 'reserved' opcode in the architecture
 };*/
 
-class I51Core : public McuCpu, public eElement
+class I51Core : public Mcu8bits, public eElement
 {
     public:
         I51Core( eMcu* mcu );
@@ -154,7 +154,7 @@ class I51Core : public McuCpu, public eElement
         inline uint8_t readInd( uint16_t addr )
         {
             addr = checkAddr( addr );
-            return McuCpu::GET_RAM( addr );
+            return Mcu8bits::GET_RAM( addr );
         }
 
         inline void writeInd( uint16_t addr, uint8_t val )

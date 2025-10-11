@@ -11,11 +11,11 @@
 #include "headerwidget.h"
 #include "mainwindow.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "watched.h"
 #include "console.h"
 #include "scriptcpu.h"
 
-Watcher::Watcher( QWidget* parent, CoreBase* cpu )
+Watcher::Watcher( QWidget* parent, Watched* cpu )
        : QWidget( parent )
 {
     setupUi(this);

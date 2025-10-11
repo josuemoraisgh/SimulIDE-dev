@@ -6,21 +6,24 @@
 #pragma once
 
 #include "e_mcu.h"
-#include "corebase.h"
+#include "watched.h"
 
 #define REG_SPL      m_spl[0]
 #define REG_SPH      m_sph[0]
 #define STATUS(bit) (*m_STATUS & (1<<bit))
 
-class CpuBase : public CoreBase
+class Cpu8bits : public Watched
 {
         friend class McuCreator;
 
     public:
-        CpuBase( eMcu* mcu );
-        virtual ~CpuBase();
+        Cpu8bits( eMcu* mcu );
+        virtual ~Cpu8bits();
 
-        virtual void reset() override;
+        virtual void reset();
+        virtual void runStep(){;}
+        virtual void extClock( bool clkState ){;}
+        virtual void updateStep(){;}
 
         uint8_t* getStatus() { return m_STATUS; }  // Used my Monitor: All CPUs must use m_STATUS
 

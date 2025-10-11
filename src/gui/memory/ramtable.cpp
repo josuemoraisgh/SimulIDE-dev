@@ -14,7 +14,7 @@
 
 #include "ramtable.h"
 #include "e_mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "circuit.h"
 #include "basedebugger.h"
 #include "mainwindow.h"
@@ -391,7 +391,7 @@ void RamTable::updateValues()
         {
             if( type == "string" ) strVal = m_processor->cpu()->getStrReg( name );
             else{
-                value = m_processor->cpu()->getCpuReg( name );
+                value = m_processor->cpu()->getIntReg( name );
                 if( value < 0 ) continue;
             }
         }else{

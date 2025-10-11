@@ -14,7 +14,7 @@
 #define RX_ADDR ( (m_opcode & 7) + 8*BANK )
 
 I51Core::I51Core( eMcu* mcu  )
-       : McuCpu( mcu  )
+       : Mcu8bits( mcu  )
        , eElement( mcu->getId()+"-I51Core" )
 {
     m_eaPin = mcu->getIoPin("EA");
@@ -38,7 +38,7 @@ void I51Core::stamp()
 
 void I51Core::reset()
 {
-    CpuBase::reset();
+    Cpu8bits::reset();
     m_readPC = 0;
     m_readCycle = 0;
     m_cpuState = cpu_RESET;

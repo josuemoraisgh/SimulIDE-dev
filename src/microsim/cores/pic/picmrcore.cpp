@@ -8,7 +8,7 @@
 #include "regwatcher.h"
 
 PicMrCore::PicMrCore( eMcu* mcu )
-         : McuCpu( mcu )
+         : Mcu8bits( mcu )
 {
     m_sp = 0;
     m_bank = 0;
@@ -20,7 +20,7 @@ PicMrCore::~PicMrCore() {}
 
 void PicMrCore::reset()
 {
-    CpuBase::reset();
+    Cpu8bits::reset();
 
     *m_Wreg = 0;
 }

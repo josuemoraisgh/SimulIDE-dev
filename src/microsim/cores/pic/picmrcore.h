@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include "mcucpu.h"
+#include "mcu8bits.h"
 
 enum {
     C=0,DC,Z,PD,TO,RP0,RP1,IRP
 };
 
-class PicMrCore : public McuCpu
+class PicMrCore : public Mcu8bits
 {
     public:
         PicMrCore( eMcu* mcu );

@@ -8,14 +8,14 @@
 #include <QTextCursor>
 
 #include "console.h"
-#include "corebase.h"
+#include "watched.h"
 #include "mainwindow.h"
 #include "simulator.h"
 
-Console::Console( CoreBase* cpu, QWidget* parent )
+Console::Console( Watched* cpu, QWidget* parent )
        : QPlainTextEdit( parent )
 {
-    m_cpu = cpu;
+    m_watched = cpu;
     m_sendCommand = false;
     m_command = "";
 
@@ -59,7 +59,7 @@ void Console::updateStep()
     {
         m_sendCommand = false;
         if( !m_command.isEmpty() ){
-            m_cpu->command( m_command );
+            m_watched->command( m_command );
             m_command = "";
         }
     }

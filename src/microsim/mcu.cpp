@@ -12,7 +12,7 @@
 #include <QSettings>
 
 #include "mcu.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "mcuport.h"
 #include "mcupin.h"
 #include "mcuwdt.h"
@@ -408,16 +408,16 @@ void Mcu::setVarList( QString vl )
 
 QString Mcu::cpuRegs()
 {
-    Watcher* watcher = m_eMcu.getWatcher();
+    Watcher* watcher = m_eMcu.cpu()->getWatcher();
     if( !watcher ) return "";
     return watcher->getVarSet().join(",");
 }
 
 void Mcu::setCpuRegs( QString vl )
 {
-    Watcher* watcher = m_eMcu.getWatcher();
+    Watcher* watcher = m_eMcu.cpu()->getWatcher();
     if( !watcher ) return;
-    m_eMcu.getWatcher()->loadVarSet( vl.split(",") );
+    m_eMcu.cpu()->getWatcher()->loadVarSet( vl.split(",") );
 }
 
 QString Mcu::getPGM()

@@ -5,29 +5,29 @@
 
 #pragma once
 
-#include <QStringList>
-#include <QHash>
+#include <QString>
 
 class Display;
+class Watcher;
 
-class CoreBase
+class Watched
 {
     public:
-        CoreBase();
-        virtual ~CoreBase();
-
-        virtual void reset(){;}
-        virtual void runStep(){;}
-        virtual void extClock( bool clkState ){;}
-        virtual void updateStep(){;}
+        Watched();
+        virtual ~Watched();
 
         virtual void command( QString c ){;}
 
-        virtual int getCpuReg( QString reg );
-        virtual QString getStrReg( QString ){ return "";}
+        virtual double  getDblReg( QString reg ) { return 0; }
+        virtual int     getIntReg( QString reg ) { return -1; }
+        virtual QString getStrReg( QString reg ) { return ""; }
+
+        Watcher* getWatcher() { return m_watcher; }
+        void createWatcher();
 
     protected:
-        QHash<QString, uint8_t*> m_cpuRegs;
 
         Display* m_display; // Find a place for this
+
+        Watcher* m_watcher;
 };

@@ -11,10 +11,10 @@
 
 #pragma once
 
-#include "mcucpu.h"
+#include "mcu8bits.h"
 #include "mcutypes.h"
 
-class AvrCore : public McuCpu
+class AvrCore : public Mcu8bits
 {
     public:
         AvrCore( eMcu* mcu );

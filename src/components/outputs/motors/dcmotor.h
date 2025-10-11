@@ -7,25 +7,25 @@
 
 #include "linkercomponent.h"
 #include "e-resistor.h"
-
+#include "watched.h"
 
 class LibraryItem;
 
-class DcMotor : public LinkerComponent, public eResistor
+class DcMotor : public LinkerComponent, public eResistor, public Watched
 {
     public:
         DcMotor( QString type, QString id );
         ~DcMotor();
 
-        virtual QString getPropStr( QString prop ) override;
+        QString getPropStr( QString prop ) override;
 
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
 
-        virtual void initialize() override;
-        virtual void stamp() override;
-        virtual void voltChanged() override;
-        virtual void updateStep() override;
+        void initialize() override;
+        void stamp() override;
+        void voltChanged() override;
+        void updateStep() override;
 
         int rpm() { return m_rpm; }
         void setRpm( int rpm );
@@ -33,9 +33,15 @@ class DcMotor : public LinkerComponent, public eResistor
         double volt() { return m_voltNom; }
         void setVolt( double v ) { m_voltNom = v; }
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        void openWatcher();
+
+        double getDblReg( QString reg ) override;
+
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     protected:
+        void contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu ) override;
+
         void updatePos();
 
         int m_rpm;

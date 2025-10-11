@@ -42,7 +42,7 @@ class CpuBase;
 class eMcu : public DataSpace, public eIou
 {
         friend class McuCreator;
-        friend class McuCpu;
+        friend class Mcu8bits;
         friend class Mcu;
 
     public:

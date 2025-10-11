@@ -6,7 +6,7 @@
 #include <QDebug>
 
 #include "mcuinterrupts.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "mcupin.h"
 #include "e_mcu.h"
 #include "datautils.h"

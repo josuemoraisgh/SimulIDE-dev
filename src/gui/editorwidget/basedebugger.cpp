@@ -8,7 +8,7 @@
 #include "basedebugger.h"
 #include "editorwindow.h"
 #include "simulator.h"
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "mcu.h"
 #include "utils.h"
 

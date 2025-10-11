@@ -47,7 +47,7 @@ int ULA_ZX48k::m_colours[16] = { 0x000000, 0x00007f, 0x7f0000, 0x7f007f,\
                                  0x00ff00, 0x00ffff, 0xffff00, 0xffffff };
 
 ULA_ZX48k::ULA_ZX48k( eMcu* mcu )
-         : CpuBase( mcu )
+         : Cpu8bits( mcu )
          , eElement( mcu->getId()+"-Z80Core" )
 {
     m_type = ula6c001e7;                                            // default type
@@ -60,15 +60,14 @@ ULA_ZX48k::ULA_ZX48k( eMcu* mcu )
         <<"ULA 6C001E7"
         <<"ULA 6C011E";
 
-    mcu->createWatcher( this );
-    Watcher* watcher = mcu->getWatcher();
+   createWatcher();
 
-    watcher->addRegister( "Horizontal Counter", "uint16" );
-    watcher->addRegister( "Vertical Counter", "uint16" );
-    watcher->addRegister( "Border Colour"  , "uint8" );
-    watcher->addRegister( "Data Latch"     , "uint8" );
-    watcher->addRegister( "Atr. Data Latch", "uint8" );
-    watcher->addRegister( "Shift Register" , "uint8" );
+    m_watcher->addRegister( "Horizontal Counter", "uint16" );
+    m_watcher->addRegister( "Vertical Counter", "uint16" );
+    m_watcher->addRegister( "Border Colour"  , "uint8" );
+    m_watcher->addRegister( "Data Latch"     , "uint8" );
+    m_watcher->addRegister( "Atr. Data Latch", "uint8" );
+    m_watcher->addRegister( "Shift Register" , "uint8" );
 
     m_rasPin    = mcu->getIoPin("RAS");
     m_casPin    = mcu->getIoPin("CAS");
@@ -104,7 +103,7 @@ ULA_ZX48k::ULA_ZX48k( eMcu* mcu )
 }
 ULA_ZX48k::~ULA_ZX48k(){ }
 
-int ULA_ZX48k::getCpuReg( QString reg ) // Called by Mcu Monitor to get Integer values
+int ULA_ZX48k::getIntReg( QString reg ) // Called by Mcu Monitor to get Integer values
 {
     int value = -1;
     if     ( reg == "Horizontal Counter") value = m_C;

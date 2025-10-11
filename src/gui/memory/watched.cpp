@@ -3,20 +3,17 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#include "corebase.h"
+#include "watched.h"
+#include "watcher.h"
 
-CoreBase::CoreBase()
+Watched::Watched()
 {
     m_display = nullptr;
+    m_watcher = nullptr;
 }
-CoreBase::~CoreBase() {}
+Watched::~Watched() {}
 
-int CoreBase::getCpuReg( QString reg )
+void Watched::createWatcher()
 {
-    if( m_cpuRegs.contains( reg ) )
-    {
-        uint8_t* regPtr = m_cpuRegs.value( reg );
-        return *regPtr;
-    }
-    return -1;
+    if( !m_watcher ) m_watcher = new Watcher( nullptr, this );
 }

@@ -3,10 +3,10 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#include "mcucpu.h"
+#include "mcu8bits.h"
 
-McuCpu::McuCpu( eMcu* mcu )
-      : CpuBase( mcu )
+Mcu8bits::Mcu8bits( eMcu* mcu )
+      : Cpu8bits( mcu )
 {
     m_dataMem    = mcu->getRam();
     m_dataMemEnd = mcu->ramSize();
@@ -27,9 +27,9 @@ McuCpu::McuCpu( eMcu* mcu )
     else if( m_progSize <= 0xFFFF )   m_progAddrSize = 2;
     else if( m_progSize <= 0xFFFFFF ) m_progAddrSize = 3;
 }
-McuCpu::~McuCpu() {}
+Mcu8bits::~Mcu8bits() {}
 
-void McuCpu::CALL_ADDR( uint32_t addr ) // Used by MCU Interrupts:: All MCUs should use or override this
+void Mcu8bits::CALL_ADDR( uint32_t addr ) // Used by MCU Interrupts:: All MCUs should use or override this
 {
     PUSH_STACK( m_PC );
     setPC( addr );

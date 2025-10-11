@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "cpubase.h"
+#include "cpu8bits.h"
 #include "e-element.h"
 
-class ULA_ZX48k : public CpuBase, public eElement
+class ULA_ZX48k : public Cpu8bits, public eElement
 {
     public:
         ULA_ZX48k( eMcu* mcu );
@@ -35,7 +35,7 @@ class ULA_ZX48k : public CpuBase, public eElement
 
         virtual void runStep() override;
 
-        virtual int getCpuReg( QString reg ) override;
+        virtual int getIntReg( QString reg ) override;
 
         QString type() { return m_types.at((int)m_type); }
         void setType( QString producer );
