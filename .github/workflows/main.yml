@@ -67,8 +67,8 @@ jobs:
             -no-icu -no-dbus -no-angle -mp
           nmake /NOLOGO
           nmake /NOLOGO install
-
-      - name: Build Qt modules (SVG, Multimedia, SerialPort)
+          
+      - name: Build Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
         if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: cmd
         env:
@@ -77,14 +77,51 @@ jobs:
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
-          for %%M in (%QT_MODULES%) do (
-            if exist %QT_SRC_ROOT%\%%M (
-              cd /d %QT_SRC_ROOT%\%%M
-              %QTDIR%\bin\qmake -r
-              nmake /NOLOGO
-              nmake /NOLOGO install
-            )
-          )
+
+          rem === Diretório de build fora da árvore de fontes ===
+          set MOD_BUILD=C:\qt-build-mods
+          if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
+
+          rem ======================
+          rem  qtsvg (somente src)
+          rem ======================
+          set MOD=qtsvg
+          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
+          set MOD_BLD=%MOD_BUILD%\%MOD%
+          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
+          cd /d "%MOD_BLD%"
+          rem disponibiliza features do módulo (se necessário)
+          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
+          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+          nmake /NOLOGO
+          nmake /NOLOGO install
+
+          rem ==========================
+          rem  qtmultimedia (somente src)
+          rem  IMPORTANTE: expor features (wasapi, etc.)
+          rem ==========================
+          set MOD=qtmultimedia
+          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
+          set MOD_BLD=%MOD_BUILD%\%MOD%
+          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
+          cd /d "%MOD_BLD%"
+          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
+          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+          nmake /NOLOGO
+          nmake /NOLOGO install
+
+          rem ==========================
+          rem  qtserialport (somente src)
+          rem ==========================
+          set MOD=qtserialport
+          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
+          set MOD_BLD=%MOD_BUILD%\%MOD%
+          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
+          cd /d "%MOD_BLD%"
+          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
+          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+          nmake /NOLOGO
+          nmake /NOLOGO install
 
   build-app:
     name: Build App (Static, One EXE)
