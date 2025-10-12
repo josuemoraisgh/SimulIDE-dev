@@ -129,7 +129,7 @@ jobs:
           "%QTDIR%\bin\qmake.exe" -v
           dir /b "%QT_SRC_ROOT%\qtmultimedia\src\multimedia"
           rem Passa features e configs explicitamente
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r -feature-wmf -feature-wasapi CONFIG+=wmf CONFIG+=wasapi
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r CONFIG+=wmf CONFIG+=wasapi
           if errorlevel 1 (
             echo ERROR: qmake qtmultimedia failed
             if exist config.log type config.log
