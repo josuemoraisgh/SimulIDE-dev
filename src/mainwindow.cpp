@@ -106,6 +106,13 @@ MainWindow::MainWindow()
 }
 MainWindow::~MainWindow(){ }
 
+void MainWindow::hideGui()
+{
+    m_sidepanel->hide();
+    m_editor->hide();
+    m_circuitW->hideGui();
+}
+
 void MainWindow::keyPressEvent( QKeyEvent* event)
 {
     if( event->key() == Qt::Key_F5 )
@@ -116,7 +123,9 @@ void MainWindow::keyPressEvent( QKeyEvent* event)
 
 void MainWindow::closeEvent( QCloseEvent *event )
 {
-    if( !m_editor->close() )      { event->ignore(); return; }
+    if( CircuitWidget::self()->isHiddenGui() ) return;
+
+    if( !m_editor->close() )       { event->ignore(); return; }
     if( !m_circuitW->newCircuit()) { event->ignore(); return; }
 
     writeSettings();

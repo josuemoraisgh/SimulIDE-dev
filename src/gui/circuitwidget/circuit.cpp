@@ -23,7 +23,6 @@
 #include "subcircuit.h"
 #include "subpackage.h"
 #include "mcu.h"
-#include "simulator.h"
 #include "e-node.h"
 #include "shield.h"
 #include "linker.h"
@@ -35,6 +34,7 @@ Circuit* Circuit::m_pSelf = nullptr;
 Circuit::Circuit( int width, int height, CircuitView* parent )
        : QGraphicsScene( parent )
 {
+    m_pSelf = this;
     m_simulator = new Simulator();
     Tunnel::clearTunnels();
 
@@ -45,8 +45,6 @@ Circuit::Circuit( int width, int height, CircuitView* parent )
     m_sceneWidth  = width;
     m_sceneHeight = height;
     setSize( width, height );
-
-    m_pSelf = this;
 
     m_busy       = false;
     m_undo       = false;
@@ -489,20 +487,6 @@ bool Circuit::saveCircuit( QString filePath )
 
     QString oldFilePath = m_filePath;
     m_filePath = filePath;
-
-    /*if( m_circRev < 240000 ) // Older circuit: Save backup copy
-    {
-        QString circCopy = oldFilePath;
-        circCopy = circCopy.replace(".sim1", "_copy.sim1");
-        m_circRev = MainWindow::self()->revision();
-
-        qDebug() << "Saving Circuit copy" << circCopy;
-
-        if( !QFile::rename( oldFilePath, circCopy ) )
-        {
-            qDebug() << "Copy Error" << oldFilePath << circCopy;
-        }
-    }*/
 
     bool saved = saveString( filePath, circuitToString() );
 
@@ -1020,6 +1004,8 @@ void Circuit::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
 
 void Circuit::keyPressEvent( QKeyEvent* event )
 {
+    if( CircuitWidget::self()->isHiddenGui() ) return;
+
     if( !m_acceptKeys )  // Text Component
     {
         QGraphicsScene::keyPressEvent( event );
@@ -1129,6 +1115,8 @@ void Circuit::keyPressEvent( QKeyEvent* event )
 
 void Circuit::keyReleaseEvent( QKeyEvent* event )
 {
+    if( CircuitWidget::self()->isHiddenGui() ) return;
+
     if( !event->isAutoRepeat()
      && !( event->modifiers() & Qt::ControlModifier ) )  // Deliver Key events ( switches )
     {

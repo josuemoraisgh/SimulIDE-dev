@@ -94,6 +94,10 @@ int main( int argc, char *argv[] )
         }
         else if( arg.endsWith(".sim2") || arg.endsWith(".sim1"))
         {
+            if( argc > 2 ){
+                QString arg2 = QString::fromStdString( argv[2] );
+                if( arg2 == "-nogui") window.hideGui();
+            }
             QString file = "file://";
             if( arg.startsWith( file ) ) arg.replace( file, "" ).replace("\r\n", "" ).replace("%20", " ");
         #ifdef _WIN32

@@ -30,6 +30,8 @@ class CircuitWidget : public QWidget
  static CircuitWidget* self() { return m_pSelf; }
 
         void clear();
+        void hideGui();
+        bool isHiddenGui() { return m_hideGui; }
 
         void setError( QString error );
         void setMsg(QString msg , int type);
@@ -75,6 +77,7 @@ class CircuitWidget : public QWidget
         void updateRecentFileActions();
 
         bool m_paused;
+        bool m_hideGui;
 
         QVBoxLayout  m_verticalLayout;
         CircuitView  m_circView;
