@@ -15,7 +15,7 @@
 #include "console.h"
 #include "scriptcpu.h"
 
-Watcher::Watcher( QWidget* parent, Watched* cpu )
+Watcher::Watcher( QWidget* parent, Watched* cpu, bool showHead )
        : QWidget( parent )
 {
     setupUi(this);
@@ -26,6 +26,7 @@ Watcher::Watcher( QWidget* parent, Watched* cpu )
     m_core = cpu;
     m_console= nullptr;
     m_header = false;
+    m_showHeader = showHead;
 
     QFont font;
     float scale = MainWindow::self()->fontScale();
@@ -41,23 +42,23 @@ Watcher::Watcher( QWidget* parent, Watched* cpu )
     valuesWidget->setLayout( m_valuesLayout );
 
     m_registerModel = new QStandardItemModel( this );
-    registers->setEditTriggers( QAbstractItemView::NoEditTriggers );
-    registers->setModel( m_registerModel );
-    registers->setFont( font );
+    regView->setEditTriggers( QAbstractItemView::NoEditTriggers );
+    regView->setModel( m_registerModel );
+    regView->setFont( font );
 
     m_variableModel = new QStandardItemModel( this );
-    variables->setEditTriggers( QAbstractItemView::NoEditTriggers );
-    variables->setFont( font );
-    variables->setModel( m_variableModel );
+    varView->setEditTriggers( QAbstractItemView::NoEditTriggers );
+    varView->setFont( font );
+    varView->setModel( m_variableModel );
 
     splitter->setSizes( {{50,320}} );
     splitter_2->setSizes( {100,30} );
 
-    connect( variables, &QListView::activated,
-             this,      &Watcher::VarDoubleClick );
+    connect( varView, &QListView::activated,
+             this,    &Watcher::VarDoubleClick );
 
-    connect( registers, &QListView::activated,
-             this,      &Watcher::RegDoubleClick );
+    connect( regView, &QListView::activated,
+             this,    &Watcher::RegDoubleClick );
 }
 
 void Watcher::addHeader()
@@ -66,6 +67,12 @@ void Watcher::addHeader()
     HeaderWidget* header = new HeaderWidget("Name","Type", this );
     int i = m_valuesLayout->count();
     m_valuesLayout->insertWidget( i, header );
+}
+
+void Watcher::updtWidget()
+{
+    if( m_registerModel->rowCount() == 0 ) regView->hide();
+    if( m_variableModel->rowCount() == 0 ) varView->hide();
 }
 
 void Watcher::updateValues()
@@ -80,10 +87,11 @@ void Watcher::setRegisters( QStringList regs )
     for( QString reg : regs ) addRegister( reg, "uint8" );
 }
 
-void Watcher::addRegister( QString name, QString type )
+void Watcher::addRegister( QString name, QString type, QString unit )
 {
     if( m_typeTable.keys().contains( name ) ) return;
     m_typeTable[ name ] = type;
+    m_unitTable[ name ] = unit;
     m_registerModel->appendRow( new QStandardItem(name) );
 }
 
@@ -94,10 +102,11 @@ void Watcher::setVariables( QStringList vars )
     for( QString var : vars ) m_variableModel->appendRow( new QStandardItem(var) );
 }
 
-void Watcher::addVariable( QString name, QString type )
+void Watcher::addVariable( QString name, QString type, QString unit )
 {
     if( m_typeTable.keys().contains( name ) ) return;
     m_typeTable[ name ] = type;
+    m_unitTable[ name ] = unit;
     m_variableModel->appendRow( new QStandardItem(name) );
 }
 
@@ -152,11 +161,12 @@ void Watcher::VarDoubleClick( const QModelIndex& index )
 void Watcher::insertValue( QString name )
 {
     if( m_values.keys().contains( name ) ) return;
-    if( !m_header ) addHeader();
+    if( m_showHeader && !m_header ) addHeader();
 
     QString type = m_typeTable.value( name );
+    QString unit = m_unitTable.value( name );
 
-    ValueWidget* valwid = new ValueWidget( name, type, m_core, this );
+    ValueWidget* valwid = new ValueWidget( name, type, unit, m_core, this );
     m_values[name] = valwid;
 
     int last = m_console ? 1 : 0;

@@ -46,6 +46,8 @@ class MainWindow : public QMainWindow
 
         QSettings* settings();
         QSettings* compSettings();
+
+        void hideGui();
         
         void readSettings();
         
@@ -117,7 +119,6 @@ class MainWindow : public QMainWindow
         QString m_userDir;
 
         QHash<QString, QString> m_help;
-        
 
         Installer*     m_installer;
         CircuitWidget* m_circuitW;

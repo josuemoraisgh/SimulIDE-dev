@@ -36,6 +36,8 @@ CircuitWidget::CircuitWidget( QWidget *parent  )
     setObjectName( "CircuitWidget" );
     m_pSelf = this;
 
+    m_hideGui = false;
+
     m_appPropW = nullptr;
     m_about = nullptr;
 
@@ -96,6 +98,14 @@ CircuitWidget::CircuitWidget( QWidget *parent  )
     m_infoWidget->setRate();
 }
 CircuitWidget::~CircuitWidget() { }
+
+void CircuitWidget::hideGui()
+{
+    m_circToolBar.hide();
+    m_outPane.hide();
+    m_panelSplitter->hide();
+    m_hideGui = true;
+}
 
 void CircuitWidget::clear()
 {
@@ -328,6 +338,8 @@ void CircuitWidget::loadCirc( QString path )
     m_curCirc = path;
     m_lastCircDir = path;
     MainWindow::self()->setFile(path.split("/").last());
+
+    if( m_hideGui ) return;
 
     QSettings* settings = MainWindow::self()->settings();
     settings->setValue( "lastCircDir", m_lastCircDir );

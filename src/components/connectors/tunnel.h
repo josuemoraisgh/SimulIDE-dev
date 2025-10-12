@@ -72,5 +72,5 @@ class Tunnel : public Component
         bool m_packed;
 
 
- static QHash<QString, QList<Tunnel*>*> m_tunnels;
+ static QMap<QString, QList<Tunnel*>*> m_tunnels;
 };

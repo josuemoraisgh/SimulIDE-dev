@@ -45,6 +45,8 @@ class SubCircuit : public Chip
 
         void addMainCompsMenu( QMenu* menu );
 
+        void openCircuit();
+
         Pin* findPin( QString pinId );
 
         virtual Pin* addPin( QString id, QString type, QString label,

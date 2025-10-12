@@ -3,6 +3,8 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+#include <QProcess>
+
 #include "subcircuit.h"
 #include "itemlibrary.h"
 #include "mainwindow.h"
@@ -439,7 +441,23 @@ void SubCircuit::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu
 {
     if( event ) event->accept();
     addMainCompsMenu( menu );
+
+    QAction* openAction = menu->addAction( QIcon(":/upload.svg"),tr("Open Subcircuit") );
+    QObject::connect( openAction, &QAction::triggered, [=](){ openCircuit(); } );
+
+    menu->addSeparator();
     Component::contextMenu( event, menu );
+}
+
+void SubCircuit::openCircuit()
+{
+    QString executable = QCoreApplication::applicationDirPath()+"/simulide";
+#ifndef Q_OS_UNIX
+    executable += ".exe";
+#endif
+    executable += " "+m_dataFile+" -nogui";
+    QProcess openProc;
+    openProc.startDetached( executable );
 }
 
 void SubCircuit::addMainCompsMenu( QMenu* menu )

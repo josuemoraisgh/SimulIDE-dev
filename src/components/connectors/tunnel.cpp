@@ -21,7 +21,7 @@
 
 #define tr(str) simulideTr("Tunnel",str)
 
-QHash<QString, QList<Tunnel*>*> Tunnel::m_tunnels;
+QMap<QString, QList<Tunnel*>*> Tunnel::m_tunnels;
 
 Component* Tunnel::construct( QString type, QString id )
 { return new Tunnel( type, id ); }
@@ -72,10 +72,10 @@ Tunnel::~Tunnel() {}
 eNode* Tunnel::getEnode( QString n ) // Static
 {
     QList<Tunnel*>* list = m_tunnels.value( n );
-    if( !list ) return NULL;
+    if( !list ) return nullptr;
     Tunnel* tunnel= list->first();
     if( tunnel ) return tunnel->getPin()->getEnode();
-    return NULL;
+    return nullptr;
 }
 
 void Tunnel::clearTunnels() // Static

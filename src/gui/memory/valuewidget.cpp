@@ -11,7 +11,7 @@
 #include "watched.h"
 #include "utils.h"
 
-ValueWidget::ValueWidget( QString name, QString type, Watched* core, QWidget* parent )
+ValueWidget::ValueWidget( QString name, QString type, QString unit, Watched* core, QWidget* parent )
            : QWidget( parent )
 {
     setupUi(this);
@@ -19,6 +19,8 @@ ValueWidget::ValueWidget( QString name, QString type, Watched* core, QWidget* pa
     m_name = name;
     m_type = type.toLower();
     m_watched = core;
+
+    if( unit.isEmpty() )unit = m_type;
 
     float scale = MainWindow::self()->fontScale();
     QFont fontS;
@@ -35,7 +37,7 @@ ValueWidget::ValueWidget( QString name, QString type, Watched* core, QWidget* pa
     nameLabel->setText( m_name );
 
     typeLabel->setFont( fontS );
-    typeLabel->setText( m_type );
+    typeLabel->setText( unit );
 
     valueLine->setFixedWidth( round(120*scale) );
     valueLine->setReadOnly( true );

@@ -231,6 +231,8 @@ void CircuitView::overrideCursor( const QCursor &cursor )
 
 void CircuitView::contextMenuEvent( QContextMenuEvent* event )
 {
+    if( CircuitWidget::self()->isHiddenGui() ) return;
+
     if( Linker::m_selecComp ){ // Cancel link to components
         Linker::stopLinking();
         return;
