@@ -80,6 +80,7 @@ jobs:
           nmake /NOLOGO
           nmake /NOLOGO install
 
+      # Garante módulos SEMPRE; para qtmultimedia força CONFIG+=wmf wasapi
       - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
         shell: cmd
         env:
@@ -93,10 +94,11 @@ jobs:
 
           goto after_functions
           :ensure_module
-          rem %1 modulo, %2 lib base, %3 pri base
+          rem %1 modulo, %2 lib base, %3 pri base, %4 extra CONFIG (opcional)
           set MOD=%1
           set LIBBASE=%2
           set PRIBASE=%3
+          set EXTRACFG=%4
           set MOD_SRC=%QT_SRC_ROOT%\%MOD%
           set MOD_BLD=%MOD_BUILD%\%MOD%
 
@@ -113,15 +115,30 @@ jobs:
           if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
           cd /d "%MOD_BLD%"
           set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
-          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+          if "%EXTRACFG%"=="" (
+            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+          ) else (
+            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r "CONFIG+=%EXTRACFG%"
+          )
           nmake /NOLOGO
           nmake /NOLOGO install
           echo === %MOD% instalado. ===
+
+          rem valida de novo após instalar
+          if not exist "%QTDIR%\lib\%LIBBASE%.lib" (
+            echo ERRO: %LIBBASE%.lib nao encontrado apos build de %MOD%.
+            exit /b 2
+          )
+          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" (
+            echo ERRO: %PRIBASE%.pri nao encontrado apos build de %MOD%.
+            exit /b 2
+          )
           goto :eof
           :after_functions
 
           call :ensure_module qtsvg Qt5Svg qt_lib_svg
-          call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia
+          rem Para Multimedia forçamos backend WMF + wasapi
+          call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia "wmf wasapi"
           call :ensure_module qtserialport Qt5SerialPort qt_lib_serialport
 
           echo ----- Present Qt libs -----
@@ -158,7 +175,7 @@ jobs:
           path: "${{ env.QT_INSTALL_PREFIX }}"
           key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
 
-      # Define APP_VER e cria tag automaticamente se veio por workflow_dispatch com version
+      # Define APP_VER e cria tag se veio por workflow_dispatch com version
       - name: Compute version + optionally create tag
         id: ver
         uses: actions/github-script@v7
@@ -176,8 +193,6 @@ jobs:
             ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
             core.exportVariable('APP_VER', ver);
             core.info(`>> Versão: ${ver}`);
-
-            // cria tag se foi manual com version e se nao existir
             if (ev === 'workflow_dispatch' && core.getInput('version')) {
               const tagRef = `refs/tags/${ver}`;
               try {
@@ -207,6 +222,7 @@ jobs:
           Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
           Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
 
+      # Reforço CRT estático antes do qmake
       - name: Force static CRT (/MT) in .pro (before qmake)
         shell: pwsh
         run: |
@@ -240,7 +256,7 @@ jobs:
           cd %BUILD_DIR%
           nmake /NOLOGO
 
-      - name: Locate EXE (single-file)
+      - name: Locate EXE (single-file) + Package ZIP
         id: out
         shell: pwsh
         run: |
