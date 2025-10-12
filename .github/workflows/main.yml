@@ -87,10 +87,8 @@ jobs:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
-          @echo off
+          @echo on
           setlocal EnableExtensions EnableDelayedExpansion
-      
-          rem --- env & prerequisites ---
           set "QTDIR=%QT_INSTALL_PREFIX%"
           set "PATH=%QTDIR%\bin;%PATH%"
           where perl.exe >nul 2>&1 || ( echo ERROR: perl.exe not found in PATH & exit /b 2 )
@@ -98,51 +96,75 @@ jobs:
           set "MOD_BUILD=C:\qt-build-mods"
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
       
-          rem --- call ensure for each module (keeps full functionality) ---
-          call :ensure_module_srcpro qtsvg Qt5Svg qt_lib_svg
-          call :ensure_qtmultimedia_explicit
-          call :ensure_module_srcpro qtserialport Qt5SerialPort qt_lib_serialport
+          rem ==== qtsvg (src\src.pro) ====
+          if not exist "%QTDIR%\lib\Qt5Svg.lib"  goto build_qtsvg
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" goto build_qtsvg
+          echo Qt5Svg present. Skipping qtsvg.
+          goto check_qtmultimedia
+          :build_qtsvg
+          echo --- Building qtsvg ---
+          if not exist "%MOD_BUILD%\qtsvg" mkdir "%MOD_BUILD%\qtsvg"
+          cd /d "%MOD_BUILD%\qtsvg"
+          set "QMAKEFEATURES=%QT_SRC_ROOT%\qtsvg\mkspecs\features"
+          "%QTDIR%\bin\qmake.exe" -v
+          dir /b "%QT_SRC_ROOT%\qtsvg\src"
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtsvg\src\src.pro" -r
+          if errorlevel 1 ( echo ERROR: qmake qtsvg failed & type config.log & exit /b 2 )
+          nmake /NOLOGO || ( echo ERROR: nmake qtsvg failed & exit /b 2 )
+          nmake /NOLOGO install || ( echo ERROR: nmake install qtsvg failed & exit /b 2 )
+          if not exist "%QTDIR%\lib\Qt5Svg.lib" ( echo ERROR: Qt5Svg.lib missing & exit /b 2 )
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" ( echo ERROR: qt_lib_svg.pri missing & exit /b 2 )
       
+          :check_qtmultimedia
+          rem ==== qtmultimedia (subtarget: src\multimedia\multimedia.pro) ====
+          if not exist "%QTDIR%\lib\Qt5Multimedia.lib"  goto build_qtmultimedia
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" goto build_qtmultimedia
+          echo Qt5Multimedia present. Skipping qtmultimedia.
+          goto check_qtserialport
+          :build_qtmultimedia
+          echo --- Building qtmultimedia (WMF + WASAPI) ---
+          if not exist "%MOD_BUILD%\qtmultimedia-multimedia" mkdir "%MOD_BUILD%\qtmultimedia-multimedia"
+          cd /d "%MOD_BUILD%\qtmultimedia-multimedia"
+          set "QMAKEFEATURES=%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
+          "%QTDIR%\bin\qmake.exe" -v
+          dir /b "%QT_SRC_ROOT%\qtmultimedia\src\multimedia"
+          rem Passa features e configs explicitamente
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r -feature-wmf -feature-wasapi CONFIG+=wmf CONFIG+=wasapi
+          if errorlevel 1 (
+            echo ERROR: qmake qtmultimedia failed
+            if exist config.log type config.log
+            exit /b 2
+          )
+          nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
+          nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
+          if not exist "%QTDIR%\lib\Qt5Multimedia.lib" ( echo ERROR: Qt5Multimedia.lib missing after install & exit /b 2 )
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" ( echo ERROR: qt_lib_multimedia.pri missing after install & exit /b 2 )
+      
+          :check_qtserialport
+          rem ==== qtserialport (src\src.pro) ====
+          if not exist "%QTDIR%\lib\Qt5SerialPort.lib"  goto build_qtserialport
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" goto build_qtserialport
+          echo Qt5SerialPort present. Skipping qtserialport.
+          goto list_installed
+          :build_qtserialport
+          echo --- Building qtserialport ---
+          if not exist "%MOD_BUILD%\qtserialport" mkdir "%MOD_BUILD%\qtserialport"
+          cd /d "%MOD_BUILD%\qtserialport"
+          set "QMAKEFEATURES=%QT_SRC_ROOT%\qtserialport\mkspecs\features"
+          "%QTDIR%\bin\qmake.exe" -v
+          dir /b "%QT_SRC_ROOT%\qtserialport\src"
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtserialport\src\src.pro" -r
+          if errorlevel 1 ( echo ERROR: qmake qtserialport failed & type config.log & exit /b 2 )
+          nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
+          nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
+          if not exist "%QTDIR%\lib\Qt5SerialPort.lib" ( echo ERROR: Qt5SerialPort.lib missing & exit /b 2 )
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" ( echo ERROR: qt_lib_serialport.pri missing & exit /b 2 )
+      
+          :list_installed
           echo ----- Present Qt libs -----
           dir /b "%QTDIR%\lib\Qt5*.lib"
           echo ----- Present Qt module PRIs -----
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
-      
-          goto :eof
-      
-          rem =========================
-          rem  Generic: build src\src.pro
-          rem  %1 = module (e.g., qtsvg)
-          rem  %2 = lib base (e.g., Qt5Svg)
-          rem  %3 = pri base (e.g., qt_lib_svg)
-          rem  %4 = extra config (optional, e.g., "wmf wasapi")
-          rem =========================
-          :ensure_module_srcpro
-          set "MOD=%~1"
-          set "LIBBASE=%~2"
-          set "PRIBASE=%~3"
-          set "EXTRACFG_RAW=%~4"
-      
-          set "MOD_SRC=%QT_SRC_ROOT%\%MOD%"
-          set "MOD_BLD=%MOD_BUILD%\%MOD%"
-      
-          set NEED=0
-          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
-          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
-          if "!NEED!"=="0" (
-            echo %LIBBASE% and %PRIBASE%.pri present - skipping %MOD%.
-            goto :eof
-          )
-      
-          echo Building %MOD% ...
-          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
-          cd /d "%MOD_BLD%"
-          set "QMAKEFEATURES=%MOD_SRC%\mkspecs\features"
-      
-          if defined EXTRACFG_RAW (
-            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r CONFIG+=!EXTRACFG_RAW!
-          ) else (
-            "%QTDIR%\bin\qmake" "%MOD_SR_
 
 
 
