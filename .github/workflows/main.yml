@@ -91,40 +91,52 @@ jobs:
           set PATH=%QTDIR%\bin;%PATH%
           set MOD_BUILD=C:\qt-build-mods
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
-
+      
           goto after_functions
+      
           :ensure_module
-          rem %1 modulo, %2 lib base, %3 pri base, %4 extra CONFIG (opcional)
-          set MOD=%1
-          set LIBBASE=%2
-          set PRIBASE=%3
-          set EXTRACFG=%4
+          rem %1 = modulo (ex.: qtmultimedia)
+          rem %2 = lib base (ex.: Qt5Multimedia)
+          rem %3 = pri base (ex.: qt_lib_multimedia)
+          rem %4 = extra cfg (opcional, ex.: wmf wasapi)  -> será expandido para CONFIG+=wmf CONFIG+=wasapi
+          set MOD=%~1
+          set LIBBASE=%~2
+          set PRIBASE=%~3
+          set "EXTRACFG_RAW=%~4"
+          set "EXTRACFG="
+          if not "%EXTRACFG_RAW%"=="" set "EXTRACFG=%EXTRACFG_RAW%"
+      
           set MOD_SRC=%QT_SRC_ROOT%\%MOD%
           set MOD_BLD=%MOD_BUILD%\%MOD%
-
+      
           set NEED=0
           if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
           if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
-
+      
           if "%NEED%"=="0" (
             echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD%.
             goto :eof
           )
-
+      
           echo === Construindo %MOD% (faltava lib ou pri) ===
           if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
           cd /d "%MOD_BLD%"
           set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
-          if "%EXTRACFG%"=="" (
-            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+      
+          if defined EXTRACFG (
+            rem divide "wmf wasapi" em dois CONFIG+= (evita erro de parser)
+            for %%F in (%EXTRACFG%) do (
+              set "EXTRA_ARGS=!EXTRA_ARGS! CONFIG+=%%F"
+            )
+            call "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r %EXTRA_ARGS%
           ) else (
-            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r "CONFIG+=%EXTRACFG%"
+            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
           )
+      
           nmake /NOLOGO
           nmake /NOLOGO install
           echo === %MOD% instalado. ===
-
-          rem valida de novo após instalar
+      
           if not exist "%QTDIR%\lib\%LIBBASE%.lib" (
             echo ERRO: %LIBBASE%.lib nao encontrado apos build de %MOD%.
             exit /b 2
@@ -134,18 +146,19 @@ jobs:
             exit /b 2
           )
           goto :eof
+      
           :after_functions
-
+      
           call :ensure_module qtsvg Qt5Svg qt_lib_svg
-          rem Para Multimedia forçamos backend WMF + wasapi
+          rem Força backend WMF + WASAPI para Multimedia
           call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia "wmf wasapi"
           call :ensure_module qtserialport Qt5SerialPort qt_lib_serialport
-
+      
           echo ----- Present Qt libs -----
           dir /b "%QTDIR%\lib\Qt5*.lib"
           echo ----- Present Qt module PRIs -----
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
-
+      
   build-app:
     name: Build App (Static, One EXE) + Tag/Release
     needs: qt-static-build
