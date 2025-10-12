@@ -87,102 +87,18 @@ jobs:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
-          set QTDIR=%QT_INSTALL_PREFIX%
-          set PATH=%QTDIR%\bin;%PATH%
-          rem garante perl no PATH (necessário para syncqt)
-          for %%I in (perl.exe) do ( if "%%~$PATH:I"=="" ( echo ERRO: Perl nao encontrado no PATH & exit /b 2 ) )
+          @echo off
+          setlocal EnableExtensions EnableDelayedExpansion
       
-          set MOD_BUILD=C:\qt-build-mods
+          rem --- env & prerequisites ---
+          set "QTDIR=%QT_INSTALL_PREFIX%"
+          set "PATH=%QTDIR%\bin;%PATH%"
+          where perl.exe >nul 2>&1 || ( echo ERROR: perl.exe not found in PATH & exit /b 2 )
+      
+          set "MOD_BUILD=C:\qt-build-mods"
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
       
-          goto after_functions
-      
-          :ensure_module_srcpro
-          rem %1 modulo, %2 lib base, %3 pri base, %4 extra CONFIG (opcional, ex.: "wmf wasapi")
-          set MOD=%~1
-          set LIBBASE=%~2
-          set PRIBASE=%~3
-          set "EXTRACFG_RAW=%~4"
-      
-          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
-          set MOD_BLD=%MOD_BUILD%\%MOD%
-      
-          set NEED=0
-          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
-          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
-          if "%NEED%"=="0" (
-            echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD%.
-            goto :eof
-          )
-      
-          echo === Construindo %MOD% (faltava lib ou pri) ===
-          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
-          cd /d "%MOD_BLD%"
-          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
-      
-          if defined EXTRACFG_RAW (
-            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r CONFIG+=%EXTRACFG_RAW%
-          ) else (
-            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
-          )
-          if errorlevel 1 ( echo ERRO: qmake falhou em %MOD% & exit /b 2 )
-          nmake /NOLOGO
-          if errorlevel 1 ( echo ERRO: nmake falhou em %MOD% & exit /b 2 )
-          nmake /NOLOGO install
-          if errorlevel 1 ( echo ERRO: nmake install falhou em %MOD% & exit /b 2 )
-      
-          if not exist "%QTDIR%\lib\%LIBBASE%.lib" (
-            echo ERRO: %LIBBASE%.lib nao encontrado apos instalar %MOD%.
-            exit /b 2
-          )
-          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" (
-            echo ERRO: %PRIBASE%.pri nao encontrado apos instalar %MOD%.
-            exit /b 2
-          )
-          echo === %MOD% instalado com sucesso. ===
-          goto :eof
-      
-          :ensure_qtmultimedia_explicit
-          rem Build explicito do subalvo 'src\multimedia\multimedia.pro' com WMF+WASAPI
-          set MOD=qtmultimedia
-          set LIBBASE=Qt5Multimedia
-          set PRIBASE=qt_lib_multimedia
-          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
-          set MOD_BLD=%MOD_BUILD%\%MOD%-multimedia
-      
-          set NEED=0
-          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
-          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
-          if "%NEED%"=="0" (
-            echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD% (subalvo).
-            goto :eof
-          )
-      
-          echo === Construindo %MOD% (subalvo multimedia.pro) com WMF+WASAPI ===
-          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
-          cd /d "%MOD_BLD%"
-          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
-      
-          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\multimedia\multimedia.pro" -r CONFIG+=wmf CONFIG+=wasapi
-          if errorlevel 1 ( echo ERRO: qmake falhou em qtmultimedia/multimedia.pro & exit /b 2 )
-          nmake /NOLOGO
-          if errorlevel 1 ( echo ERRO: nmake falhou em qtmultimedia/multimedia.pro & exit /b 2 )
-          nmake /NOLOGO install
-          if errorlevel 1 ( echo ERRO: nmake install falhou em qtmultimedia/multimedia.pro & exit /b 2 )
-      
-          if not exist "%QTDIR%\lib\Qt5Multimedia.lib" (
-            echo ERRO: Qt5Multimedia.lib nao encontrado apos instalar qtmultimedia.
-            exit /b 2
-          )
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" (
-            echo ERRO: qt_lib_multimedia.pri nao encontrado apos instalar qtmultimedia.
-            exit /b 2
-          )
-          echo === qtmultimedia instalado com sucesso. ===
-          goto :eof
-      
-          :after_functions
-      
+          rem --- call ensure for each module (keeps full functionality) ---
           call :ensure_module_srcpro qtsvg Qt5Svg qt_lib_svg
           call :ensure_qtmultimedia_explicit
           call :ensure_module_srcpro qtserialport Qt5SerialPort qt_lib_serialport
@@ -191,6 +107,43 @@ jobs:
           dir /b "%QTDIR%\lib\Qt5*.lib"
           echo ----- Present Qt module PRIs -----
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+      
+          goto :eof
+      
+          rem =========================
+          rem  Generic: build src\src.pro
+          rem  %1 = module (e.g., qtsvg)
+          rem  %2 = lib base (e.g., Qt5Svg)
+          rem  %3 = pri base (e.g., qt_lib_svg)
+          rem  %4 = extra config (optional, e.g., "wmf wasapi")
+          rem =========================
+          :ensure_module_srcpro
+          set "MOD=%~1"
+          set "LIBBASE=%~2"
+          set "PRIBASE=%~3"
+          set "EXTRACFG_RAW=%~4"
+      
+          set "MOD_SRC=%QT_SRC_ROOT%\%MOD%"
+          set "MOD_BLD=%MOD_BUILD%\%MOD%"
+      
+          set NEED=0
+          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
+          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
+          if "!NEED!"=="0" (
+            echo %LIBBASE% and %PRIBASE%.pri present - skipping %MOD%.
+            goto :eof
+          )
+      
+          echo Building %MOD% ...
+          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
+          cd /d "%MOD_BLD%"
+          set "QMAKEFEATURES=%MOD_SRC%\mkspecs\features"
+      
+          if defined EXTRACFG_RAW (
+            "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r CONFIG+=!EXTRACFG_RAW!
+          ) else (
+            "%QTDIR%\bin\qmake" "%MOD_SR_
+
 
 
   build-app:
