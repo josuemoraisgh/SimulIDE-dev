@@ -23,7 +23,7 @@ class Watched
         virtual QString getStrReg( QString reg ) { return ""; }
 
         Watcher* getWatcher() { return m_watcher; }
-        void createWatcher();
+        void createWatcher( bool showHead=true );
 
     protected:
 

@@ -20,15 +20,16 @@ class Watcher : public QWidget, private Ui::Watcher
     Q_OBJECT
 
     public:
-        Watcher( QWidget* parent=0, Watched* cpu=nullptr );
+        Watcher( QWidget* parent=0, Watched* cpu=nullptr, bool showHead=true );
 
+        void updtWidget();
         void updateValues();
 
         void setRegisters( QStringList regs );
-        void addRegister( QString name, QString type );
+        void addRegister( QString name, QString type, QString unit="" );
 
         void setVariables( QStringList vars );
-        void addVariable( QString name, QString type );
+        void addVariable( QString name, QString type, QString unit="" );
 
         void loadVarSet( QStringList varSet );
         QStringList getVarSet();
@@ -47,6 +48,7 @@ class Watcher : public QWidget, private Ui::Watcher
         void insertValue( QString name );
 
         bool m_header;
+        bool m_showHeader;
 
         Watched* m_core;
         Console* m_console;
@@ -54,8 +56,9 @@ class Watcher : public QWidget, private Ui::Watcher
         QStandardItemModel* m_registerModel;
         QStandardItemModel* m_variableModel;
 
-        QHash<QString, QString> m_typeTable;
-        QHash<QString, ValueWidget*> m_values;
+        QMap<QString, QString> m_typeTable;
+        QMap<QString, QString> m_unitTable;
+        QMap<QString, ValueWidget*> m_values;
 
         QBoxLayout* m_valuesLayout;
 };

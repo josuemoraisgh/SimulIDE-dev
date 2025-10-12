@@ -156,17 +156,22 @@ void DcMotor::openWatcher()
 {
     if( !m_watcher )
     {
-        createWatcher();
-        m_watcher->addRegister( "Current" , "double" );
-        m_watcher->addRegister( "RPM"     , "double" );
+        createWatcher( false );
+
+        m_watcher->addRegister( "Voltage" , "double", "V" );
+        m_watcher->addRegister( "Current" , "double", "A" );
+        m_watcher->addRegister( "Speed"   , "double", "RPM" );
+        m_watcher->setWindowTitle( this->idLabel() );
+        m_watcher->updtWidget();
     }
     m_watcher->show();
 }
 
 double DcMotor::getDblReg( QString reg )
 {
+    if( reg == "Voltage" ) return -m_LastVolt;
     if( reg == "Current" ) return eResistor::current();
-    if( reg == "RPM"     ) return -m_speed*m_rpm;
+    if( reg == "Speed"   ) return -m_speed*m_rpm;
 
     return 0;
 }

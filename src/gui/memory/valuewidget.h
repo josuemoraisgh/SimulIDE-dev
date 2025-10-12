@@ -16,7 +16,7 @@ class ValueWidget : public QWidget, private Ui::ValueWidget
     Q_OBJECT
 
     public:
-        ValueWidget( QString name, QString type, Watched* core, QWidget* parent=0 );
+        ValueWidget( QString name, QString type, QString unit, Watched* core, QWidget* parent=0 );
 
         void updateValue();
 

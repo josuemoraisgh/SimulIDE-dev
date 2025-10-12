@@ -11,9 +11,12 @@ Watched::Watched()
     m_display = nullptr;
     m_watcher = nullptr;
 }
-Watched::~Watched() {}
-
-void Watched::createWatcher()
+Watched::~Watched()
 {
-    if( !m_watcher ) m_watcher = new Watcher( nullptr, this );
+    if( m_watcher ) m_watcher->deleteLater();
+}
+
+void Watched::createWatcher( bool showHead )
+{
+    if( !m_watcher ) m_watcher = new Watcher( nullptr, this, showHead );
 }
