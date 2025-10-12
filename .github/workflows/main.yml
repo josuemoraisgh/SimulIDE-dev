@@ -91,6 +91,7 @@ jobs:
           setlocal EnableExtensions EnableDelayedExpansion
           set "QTDIR=%QT_INSTALL_PREFIX%"
           set "PATH=%QTDIR%\bin;%PATH%"
+          set "QMAKEPATH=%QTDIR%\mkspecs"
           where perl.exe >nul 2>&1 || ( echo ERROR: perl.exe not found in PATH & exit /b 2 )
       
           set "MOD_BUILD=C:\qt-build-mods"
@@ -107,8 +108,7 @@ jobs:
           cd /d "%MOD_BUILD%\qtsvg"
           set "QMAKEFEATURES=%QT_SRC_ROOT%\qtsvg\mkspecs\features"
           "%QTDIR%\bin\qmake.exe" -v
-          dir /b "%QT_SRC_ROOT%\qtsvg\src"
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtsvg\src\src.pro" -r
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtsvg\src\src.pro" -r -spec win32-msvc -cache "%CD%\.qmake.cache"
           if errorlevel 1 ( echo ERROR: qmake qtsvg failed & type config.log & exit /b 2 )
           nmake /NOLOGO || ( echo ERROR: nmake qtsvg failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtsvg failed & exit /b 2 )
@@ -127,9 +127,7 @@ jobs:
           cd /d "%MOD_BUILD%\qtmultimedia-multimedia"
           set "QMAKEFEATURES=%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
           "%QTDIR%\bin\qmake.exe" -v
-          dir /b "%QT_SRC_ROOT%\qtmultimedia\src\multimedia"
-          rem Passa features e configs explicitamente
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r CONFIG+=wmf CONFIG+=wasapi
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r -spec win32-msvc -cache "%CD%\.qmake.cache" CONFIG+=wmf CONFIG+=wasapi
           if errorlevel 1 (
             echo ERROR: qmake qtmultimedia failed
             if exist config.log type config.log
@@ -152,8 +150,7 @@ jobs:
           cd /d "%MOD_BUILD%\qtserialport"
           set "QMAKEFEATURES=%QT_SRC_ROOT%\qtserialport\mkspecs\features"
           "%QTDIR%\bin\qmake.exe" -v
-          dir /b "%QT_SRC_ROOT%\qtserialport\src"
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtserialport\src\src.pro" -r
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtserialport\src\src.pro" -r -spec win32-msvc -cache "%CD%\.qmake.cache"
           if errorlevel 1 ( echo ERROR: qmake qtserialport failed & type config.log & exit /b 2 )
           nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
@@ -165,7 +162,6 @@ jobs:
           dir /b "%QTDIR%\lib\Qt5*.lib"
           echo ----- Present Qt module PRIs -----
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
-
 
 
   build-app:
