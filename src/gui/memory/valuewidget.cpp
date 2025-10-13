@@ -7,7 +7,6 @@
 
 #include "valuewidget.h"
 #include "mainwindow.h"
-#include "e_mcu.h"
 #include "watched.h"
 #include "utils.h"
 
@@ -20,26 +19,25 @@ ValueWidget::ValueWidget( QString name, QString type, QString unit, Watched* cor
     m_type = type.toLower();
     m_watched = core;
 
-    if( unit.isEmpty() )unit = m_type;
+    if( unit.isEmpty() ) unit = m_type;
 
     float scale = MainWindow::self()->fontScale();
-    QFont fontS;
-    fontS.setFamily("Ubuntu Mono");
-    fontS.setBold( true );
-    fontS.setPixelSize( round(12.5*scale) );
+    int fontSize = round(12.5*scale);
+    int valueWidth = round(120*scale);
 
     QFont font;
     font.setFamily("Ubuntu Mono");
     font.setBold( true );
-    font.setPixelSize( round(12.5*scale) );
+    font.setPixelSize( fontSize );
 
     nameLabel->setFont( font );
     nameLabel->setText( m_name );
 
-    typeLabel->setFont( fontS );
+    typeLabel->setFont( font );
     typeLabel->setText( unit );
 
-    valueLine->setFixedWidth( round(120*scale) );
+    valueLine->setFont( font );
+    valueLine->setFixedWidth( valueWidth );
     valueLine->setReadOnly( true );
 }
 

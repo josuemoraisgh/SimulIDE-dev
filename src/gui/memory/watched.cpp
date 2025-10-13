@@ -16,7 +16,7 @@ Watched::~Watched()
     if( m_watcher ) m_watcher->deleteLater();
 }
 
-void Watched::createWatcher( bool showHead )
+void Watched::createWatcher( bool proxy )
 {
-    if( !m_watcher ) m_watcher = new Watcher( nullptr, this, showHead );
+    if( !m_watcher ) m_watcher = new Watcher( nullptr, this, proxy );
 }

@@ -4,18 +4,23 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include <QStandardItemModel>
+#include <QGraphicsProxyWidget>
 #include <math.h>
+#include <QDebug>
+#include <QSizeGrip>
 
 #include "watcher.h"
 #include "valuewidget.h"
+#include "vallabelwidget.h"
 #include "headerwidget.h"
 #include "mainwindow.h"
+#include "circuitview.h"
 #include "e_mcu.h"
 #include "watched.h"
 #include "console.h"
 #include "scriptcpu.h"
 
-Watcher::Watcher( QWidget* parent, Watched* cpu, bool showHead )
+Watcher::Watcher( QWidget* parent, Watched* cpu, bool proxy )
        : QWidget( parent )
 {
     setupUi(this);
@@ -24,22 +29,27 @@ Watcher::Watcher( QWidget* parent, Watched* cpu, bool showHead )
                    | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint );
 
     m_core = cpu;
-    m_console= nullptr;
+    m_console = nullptr;
+    m_proxy   = nullptr;
     m_header = false;
-    m_showHeader = showHead;
 
-    QFont font;
-    float scale = MainWindow::self()->fontScale();
-    font.setFamily("Ubuntu Mono");
-    font.setBold( true );
-    font.setPixelSize( round(12.5*scale) );
+    int spacing = proxy ? 0 : 2;
 
     m_valuesLayout = new QBoxLayout( QBoxLayout::TopToBottom, this );
     m_valuesLayout->setMargin( 0 );
-    m_valuesLayout->setSpacing( 2 );
-    m_valuesLayout->setContentsMargins( 0, 0, 0, 0 );
+    m_valuesLayout->setSpacing( spacing );
+    m_valuesLayout->setContentsMargins( 0, 0, 0, 2 );
     m_valuesLayout->addStretch();
     valuesWidget->setLayout( m_valuesLayout );
+
+    if( proxy ) return;
+
+    float scale = MainWindow::self()->fontScale();
+
+    QFont font;
+    font.setFamily("Ubuntu Mono");
+    font.setBold( true );
+    font.setPixelSize( round(12.5*scale) );
 
     m_registerModel = new QStandardItemModel( this );
     regView->setEditTriggers( QAbstractItemView::NoEditTriggers );
@@ -54,11 +64,25 @@ Watcher::Watcher( QWidget* parent, Watched* cpu, bool showHead )
     splitter->setSizes( {{50,320}} );
     splitter_2->setSizes( {100,30} );
 
-    connect( varView, &QListView::activated,
-             this,    &Watcher::VarDoubleClick );
+    connect( varView, &QListView::activated, this, &Watcher::VarDoubleClick );
+    connect( regView, &QListView::activated, this, &Watcher::RegDoubleClick );
+}
 
-    connect( regView, &QListView::activated,
-             this,    &Watcher::RegDoubleClick );
+void Watcher::setProxy( QGraphicsProxyWidget* p )
+{
+    m_proxy = p;
+    this->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    this->horizontalLayout->setContentsMargins( 0, 0, 0, 0 );
+    //regView->setHidden( true );
+    //varView->setHidden( true );
+    //splitter->setHidden( true );
+    splitter_2->setHidden( true );
+
+    regView->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    varView->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    splitter->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    splitter_2->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    //this->resize( 100, 50 );
 }
 
 void Watcher::addHeader()
@@ -69,16 +93,11 @@ void Watcher::addHeader()
     m_valuesLayout->insertWidget( i, header );
 }
 
-void Watcher::updtWidget()
-{
-    if( m_registerModel->rowCount() == 0 ) regView->hide();
-    if( m_variableModel->rowCount() == 0 ) varView->hide();
-}
-
 void Watcher::updateValues()
 {
     if( !m_core ) return;
     for( ValueWidget* vw : m_values ) vw->updateValue();
+    for( ValLabelWidget* vw : m_valLabels ) vw->updateValue();
 }
 
 void Watcher::setRegisters( QStringList regs )
@@ -92,7 +111,8 @@ void Watcher::addRegister( QString name, QString type, QString unit )
     if( m_typeTable.keys().contains( name ) ) return;
     m_typeTable[ name ] = type;
     m_unitTable[ name ] = unit;
-    m_registerModel->appendRow( new QStandardItem(name) );
+    if( m_proxy ) insertValue( name );
+    else          m_registerModel->appendRow( new QStandardItem(name) );
 }
 
 void Watcher::setVariables( QStringList vars )
@@ -107,7 +127,8 @@ void Watcher::addVariable( QString name, QString type, QString unit )
     if( m_typeTable.keys().contains( name ) ) return;
     m_typeTable[ name ] = type;
     m_unitTable[ name ] = unit;
-    m_variableModel->appendRow( new QStandardItem(name) );
+    if( m_proxy ) insertValue( name );
+    else          m_variableModel->appendRow( new QStandardItem(name) );
 }
 
 void Watcher::loadVarSet( QStringList varSet )
@@ -161,14 +182,77 @@ void Watcher::VarDoubleClick( const QModelIndex& index )
 void Watcher::insertValue( QString name )
 {
     if( m_values.keys().contains( name ) ) return;
-    if( m_showHeader && !m_header ) addHeader();
+    if( !m_proxy && !m_header ) addHeader();
 
     QString type = m_typeTable.value( name );
     QString unit = m_unitTable.value( name );
 
-    ValueWidget* valwid = new ValueWidget( name, type, unit, m_core, this );
-    m_values[name] = valwid;
-
     int last = m_console ? 1 : 0;
-    m_valuesLayout->insertWidget( m_valuesLayout->count()-last, valwid );
+
+    if( m_proxy )
+    {
+        ValLabelWidget* valwid = new ValLabelWidget( name, type, unit, m_core, this );
+        m_valuesLayout->insertWidget( m_valuesLayout->count()-last, valwid );
+
+        m_valLabels[name] = valwid;
+
+        int sizeH = m_valLabels.size()*11;
+        //if( sizeH < this->height() ) sizeH = this->height();
+        qDebug() << sizeH;
+        this->setMinimumHeight( sizeH );
+        this->resize( 130, sizeH );
+    }
+    else
+    {
+        ValueWidget* valwid = new ValueWidget( name, type, unit, m_core, this );
+        m_values[name] = valwid;
+        m_valuesLayout->insertWidget( m_valuesLayout->count()-last, valwid );
+    }
+}
+
+void Watcher::mousePressEvent( QMouseEvent* event )
+{
+    if( m_proxy && event->button() == Qt::LeftButton )
+    {
+        m_mousePos = CircuitView::self()->mapToScene(
+                     CircuitView::self()->mapFromGlobal( event->globalPos() ) );
+
+        QPoint evPos = event->pos();
+        m_resizing = evPos.x() > width()-10 && evPos.y() > height()-10;
+
+        setCursor( Qt::ClosedHandCursor );
+    }
+    else QWidget::mousePressEvent( event );
+}
+
+void Watcher::mouseMoveEvent( QMouseEvent* event )
+{
+    if( !m_proxy )
+    {
+        QWidget::mouseMoveEvent( event );
+        return;
+    }
+    QPointF pos = CircuitView::self()->mapToScene(
+                     CircuitView::self()->mapFromGlobal( event->globalPos() ) );
+
+    QPointF deltaF = pos-m_mousePos;
+    QPoint delta = deltaF.toPoint();
+    if( delta == QPoint(0,0) ) return;
+
+    if( m_resizing ) this->resize( size().width()+delta.x(), size().height()+delta.y() );
+    else             m_proxy->setPos( m_proxy->pos() + delta );
+
+    qDebug() << this->size();
+
+    m_mousePos = pos;
+}
+
+void Watcher::mouseReleaseEvent( QMouseEvent* event )
+{
+    if( !m_proxy )
+    {
+        QWidget::mouseMoveEvent( event );
+        return;
+    }
+    setCursor( Qt::ArrowCursor );
 }
