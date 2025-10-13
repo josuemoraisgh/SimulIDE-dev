@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v2"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v3"
 
       - name: Install Python (for aqt) if building qtbase
         if: steps.cache-qt.outputs.cache-hit != 'true'
@@ -79,7 +79,7 @@ jobs:
           nmake /NOLOGO
           nmake /NOLOGO install
 
-      # --- ROBUSTO: build dos módulos pelos .pro-raiz, com stubs e cache local ---
+      # ===== GARANTE qtsvg, qtmultimedia (forçando WMF/WASAPI/DS) e qtserialport =====
       - name: Ensure Qt modules (qtsvg, qtmultimedia, qtserialport)
         shell: cmd
         env:
@@ -96,11 +96,8 @@ jobs:
           set "MOD_BUILD=C:\qt-build-mods"
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
 
-          rem ===== helper: prepara cache local e QMAKEFEATURES (com stubs) =====
+          rem ===== helper: prepara cache local e QMAKEFEATURES =====
           rem uso: call :prep_env <build_dir> <features_dir_or_EMPTY>
-          rem - cria HOME, QMAKECACHE no build_dir
-          rem - garante STUBFEAT com pulseaudio/gstreamer/openal/resourcepolicy
-          rem - QMAKEFEATURES = STUBFEAT; <features_dir>; %QMAKEPATH%\features
           goto after_helpers
           :prep_env
           set "BLD=%~1"
@@ -111,16 +108,10 @@ jobs:
           set "LOCALCACHE=%CD%\.qmake.cache"
           if not exist "%LOCALCACHE%" type NUL > "%LOCALCACHE%"
           set "QMAKECACHE=%LOCALCACHE%"
-          set "STUBFEAT=%MOD_BUILD%\features-stub"
-          if not exist "%STUBFEAT%" mkdir "%STUBFEAT%"
-          type NUL > "%STUBFEAT%\pulseaudio.prf"
-          type NUL > "%STUBFEAT%\gstreamer.prf"
-          type NUL > "%STUBFEAT%\openal.prf"
-          type NUL > "%STUBFEAT%\resourcepolicy.prf"
           if not "%FEATDIR%"=="" (
-            set "QMAKEFEATURES=%STUBFEAT%;%FEATDIR%;%QMAKEPATH%\features"
+            set "QMAKEFEATURES=%FEATDIR%;%QMAKEPATH%\features"
           ) else (
-            set "QMAKEFEATURES=%STUBFEAT%;%QMAKEPATH%\features"
+            set "QMAKEFEATURES=%QMAKEPATH%\features"
           )
           "%QTDIR%\bin\qmake.exe" -v
           echo QMAKEFEATURES=!QMAKEFEATURES!
@@ -145,17 +136,21 @@ jobs:
           if exist "%QTDIR%\lib\Qt5Multimedia.lib" if exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" (
             echo Qt5Multimedia present. Skipping qtmultimedia.
           ) else (
+            rem === qtmultimedia (build pelo .pro RAIZ; desliga Linux, força Windows) ===
             call :prep_env "%MOD_BUILD%\qtmultimedia" "%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
+
             "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\qtmultimedia.pro" -r -spec win32-msvc ^
               QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests ^
-              CONFIG+=wmf CONFIG+=wasapi CONFIG+=directshow ^
-              CONFIG-=pulseaudio CONFIG-=gstreamer CONFIG-=openal CONFIG-=resourcepolicy ^
-              DEFINES+=QT_NO_PULSEAUDIO
+              "QT_CONFIG-=pulseaudio gstreamer openal resourcepolicy" ^
+              QT_FEATURE_pulseaudio=0 QT_FEATURE_gstreamer=0 QT_FEATURE_openal=0 QT_FEATURE_resourcepolicy=0 ^
+              CONFIG+=wmf CONFIG+=wasapi CONFIG+=directshow
             if errorlevel 1 ( echo ERROR: qmake qtmultimedia failed & if exist config.log type config.log & exit /b 2 )
+
             nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
             nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
-            if not exist "%QTDIR%\lib\Qt5Multimedia.lib" ( echo ERROR: Qt5Multimedia.lib missing & exit /b 2 )
-            if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" ( echo ERROR: qt_lib_multimedia.pri missing & exit /b 2 )
+
+            if not exist "%QTDIR%\lib\Qt5Multimedia.lib" ( echo ERROR: Qt5Multimedia.lib missing after install & exit /b 2 )
+            if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" ( echo ERROR: qt_lib_multimedia.pri missing after install & exit /b 2 )
           )
 
           rem ============== qtserialport (raiz) =================
@@ -204,7 +199,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v2"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v3"
 
       - name: Compute version + optionally create tag
         id: ver
@@ -243,14 +238,6 @@ jobs:
         shell: pwsh
         run: |
           if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
-
-      - name: Debug installed Qt modules
-        shell: pwsh
-        run: |
-          Write-Host "Libraries in $env:QT_INSTALL_PREFIX\lib:"
-          Get-ChildItem "$env:QT_INSTALL_PREFIX\lib" -Filter "Qt5*.lib" | Sort-Object Name | Select-Object -ExpandProperty Name
-          Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
-          Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
 
       - name: Force static CRT (/MT) in .pro (before qmake)
         shell: pwsh
