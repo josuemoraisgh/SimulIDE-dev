@@ -41,6 +41,8 @@ class Watcher : public QWidget, private Ui::Watcher
 
         void setProxy( QGraphicsProxyWidget* p );
 
+        void paintEvent( QPaintEvent *event ) override;
+
     public slots:
         void RegDoubleClick( const QModelIndex& index );
         void VarDoubleClick( const QModelIndex& index );
@@ -68,7 +70,6 @@ class Watcher : public QWidget, private Ui::Watcher
 
         QBoxLayout* m_valuesLayout;
 
-        bool m_resizing;
         QPointF m_mousePos;
         QGraphicsProxyWidget* m_proxy;
 };

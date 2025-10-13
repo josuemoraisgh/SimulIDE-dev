@@ -38,7 +38,7 @@ Watcher::Watcher( QWidget* parent, Watched* cpu, bool proxy )
     m_valuesLayout = new QBoxLayout( QBoxLayout::TopToBottom, this );
     m_valuesLayout->setMargin( 0 );
     m_valuesLayout->setSpacing( spacing );
-    m_valuesLayout->setContentsMargins( 0, 0, 0, 2 );
+    m_valuesLayout->setContentsMargins( 0, 0, 0, 4 );
     m_valuesLayout->addStretch();
     valuesWidget->setLayout( m_valuesLayout );
 
@@ -71,18 +71,20 @@ Watcher::Watcher( QWidget* parent, Watched* cpu, bool proxy )
 void Watcher::setProxy( QGraphicsProxyWidget* p )
 {
     m_proxy = p;
-    this->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
-    this->horizontalLayout->setContentsMargins( 0, 0, 0, 0 );
-    //regView->setHidden( true );
-    //varView->setHidden( true );
-    //splitter->setHidden( true );
-    splitter_2->setHidden( true );
 
+    setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    horizontalLayout->setContentsMargins( 0, 0, 0, 0 );
+    setStyleSheet("background-color: rgba(0,0,0,0)");
+
+    splitter_2->setHidden( true );
     regView->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
     varView->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
     splitter->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
     splitter_2->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
     //this->resize( 100, 50 );
+
+    setCursor( Qt::OpenHandCursor );
+    m_proxy->setCursor( Qt::OpenHandCursor );
 }
 
 void Watcher::addHeader()
@@ -196,11 +198,11 @@ void Watcher::insertValue( QString name )
 
         m_valLabels[name] = valwid;
 
-        int sizeH = m_valLabels.size()*11;
+        int sizeH = m_valLabels.size()*11+7;
         //if( sizeH < this->height() ) sizeH = this->height();
-        qDebug() << sizeH;
+
         this->setMinimumHeight( sizeH );
-        this->resize( 130, sizeH );
+        this->resize( 120, sizeH );
     }
     else
     {
@@ -217,10 +219,7 @@ void Watcher::mousePressEvent( QMouseEvent* event )
         m_mousePos = CircuitView::self()->mapToScene(
                      CircuitView::self()->mapFromGlobal( event->globalPos() ) );
 
-        QPoint evPos = event->pos();
-        m_resizing = evPos.x() > width()-10 && evPos.y() > height()-10;
-
-        setCursor( Qt::ClosedHandCursor );
+        m_proxy->setCursor( Qt::ClosedHandCursor );
     }
     else QWidget::mousePressEvent( event );
 }
@@ -239,20 +238,25 @@ void Watcher::mouseMoveEvent( QMouseEvent* event )
     QPoint delta = deltaF.toPoint();
     if( delta == QPoint(0,0) ) return;
 
-    if( m_resizing ) this->resize( size().width()+delta.x(), size().height()+delta.y() );
-    else             m_proxy->setPos( m_proxy->pos() + delta );
-
-    qDebug() << this->size();
+    m_proxy->setPos( m_proxy->pos() + delta );
 
     m_mousePos = pos;
 }
 
 void Watcher::mouseReleaseEvent( QMouseEvent* event )
 {
-    if( !m_proxy )
-    {
-        QWidget::mouseMoveEvent( event );
-        return;
-    }
-    setCursor( Qt::ArrowCursor );
+    if( m_proxy ) m_proxy->setCursor( Qt::OpenHandCursor );
+    else          QWidget::mouseMoveEvent( event );
+}
+
+void Watcher::paintEvent( QPaintEvent *event )
+{
+    QPainter painter( this );
+    painter.setRenderHint( QPainter::Antialiasing ); // smooth borders
+    painter.setBrush( QBrush(Qt::transparent)) ; // visible color of background
+    painter.setPen( Qt::darkGray ); // thin border color
+
+    painter.drawRoundedRect( 2, 2, width()-4, height()-4, 5, 5 );
+
+    QWidget::paintEvent( event );
 }
