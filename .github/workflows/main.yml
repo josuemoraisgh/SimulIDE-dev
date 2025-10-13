@@ -48,7 +48,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Perl is required for syncqt used by modules. Install ALWAYS.
       - name: Install Perl (required)
         uses: shogo82148/actions-setup-perl@v1
         with:
@@ -80,8 +79,6 @@ jobs:
           nmake /NOLOGO
           nmake /NOLOGO install
 
-      # Ensure modules: qtsvg, qtmultimedia (WMF+WASAPI), qtserialport
-      # Fixes qmake cache issue by setting HOME and QMAKECACHE locally.
       - name: Ensure Qt modules (SVG, Multimedia, SerialPort)
         shell: cmd
         env:
@@ -98,7 +95,7 @@ jobs:
           set "MOD_BUILD=C:\qt-build-mods"
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
 
-          rem ==== qtsvg (src\src.pro) ====
+          rem ==== qtsvg ====
           if not exist "%QTDIR%\lib\Qt5Svg.lib"  goto build_qtsvg
           if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" goto build_qtsvg
           echo Qt5Svg present. Skipping qtsvg.
@@ -121,13 +118,13 @@ jobs:
           if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" ( echo ERROR: qt_lib_svg.pri missing & exit /b 2 )
 
           :check_qtmultimedia
-          rem ==== qtmultimedia (subtarget: src\multimedia\multimedia.pro) ====
+          rem ==== qtmultimedia ====
           if not exist "%QTDIR%\lib\Qt5Multimedia.lib"  goto build_qtmultimedia
           if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" goto build_qtmultimedia
           echo Qt5Multimedia present. Skipping qtmultimedia.
           goto check_qtserialport
           :build_qtmultimedia
-          echo --- Building qtmultimedia (WMF + WASAPI) ---
+          echo --- Building qtmultimedia (WMF + WASAPI; disable Linux backends) ---
           if not exist "%MOD_BUILD%\qtmultimedia-multimedia" mkdir "%MOD_BUILD%\qtmultimedia-multimedia"
           cd /d "%MOD_BUILD%\qtmultimedia-multimedia"
           set "HOME=%CD%"
@@ -136,7 +133,10 @@ jobs:
           set "QMAKECACHE=%LOCALCACHE%"
           set "QMAKEFEATURES=%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
           "%QTDIR%\bin\qmake.exe" -v
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r -spec win32-msvc CONFIG+=wmf CONFIG+=wasapi
+          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r -spec win32-msvc ^
+            CONFIG+=wmf CONFIG+=wasapi CONFIG+=directshow ^
+            CONFIG-=pulseaudio CONFIG-=gstreamer CONFIG-=openal CONFIG-=resourcepolicy ^
+            DEFINES+=QT_NO_PULSEAUDIO
           if errorlevel 1 (
             echo ERROR: qmake qtmultimedia failed
             if exist config.log type config.log
@@ -148,7 +148,7 @@ jobs:
           if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" ( echo ERROR: qt_lib_multimedia.pri missing after install & exit /b 2 )
 
           :check_qtserialport
-          rem ==== qtserialport (src\src.pro) ====
+          rem ==== qtserialport ====
           if not exist "%QTDIR%\lib\Qt5SerialPort.lib"  goto build_qtserialport
           if not exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" goto build_qtserialport
           echo Qt5SerialPort present. Skipping qtserialport.
@@ -205,7 +205,6 @@ jobs:
           path: "${{ env.QT_INSTALL_PREFIX }}"
           key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
 
-      # Compute version and optionally create tag on manual dispatch
       - name: Compute version + optionally create tag
         id: ver
         uses: actions/github-script@v7
