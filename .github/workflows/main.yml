@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v1"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v2"
 
       - name: Install Python (for aqt) if building qtbase
         if: steps.cache-qt.outputs.cache-hit != 'true'
@@ -79,7 +79,8 @@ jobs:
           nmake /NOLOGO
           nmake /NOLOGO install
 
-      - name: Ensure Qt modules (SVG, Multimedia, SerialPort)
+      # --- ROBUSTO: build dos módulos pelos .pro-raiz, com stubs e cache local ---
+      - name: Ensure Qt modules (qtsvg, qtmultimedia, qtserialport)
         shell: cmd
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
@@ -91,109 +92,90 @@ jobs:
           set "PATH=%QTDIR%\bin;%PATH%"
           set "QMAKEPATH=%QTDIR%\mkspecs"
           where perl.exe >nul 2>&1 || ( echo ERROR: perl.exe not found in PATH & exit /b 2 )
-      
+
           set "MOD_BUILD=C:\qt-build-mods"
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
-      
-          rem ==== qtsvg ====
-          if not exist "%QTDIR%\lib\Qt5Svg.lib"  goto build_qtsvg
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" goto build_qtsvg
-          echo Qt5Svg present. Skipping qtsvg.
-          goto check_qtmultimedia
-          :build_qtsvg
-          echo --- Building qtsvg ---
-          if not exist "%MOD_BUILD%\qtsvg" mkdir "%MOD_BUILD%\qtsvg"
-          cd /d "%MOD_BUILD%\qtsvg"
+
+          rem ===== helper: prepara cache local e QMAKEFEATURES (com stubs) =====
+          rem uso: call :prep_env <build_dir> <features_dir_or_EMPTY>
+          rem - cria HOME, QMAKECACHE no build_dir
+          rem - garante STUBFEAT com pulseaudio/gstreamer/openal/resourcepolicy
+          rem - QMAKEFEATURES = STUBFEAT; <features_dir>; %QMAKEPATH%\features
+          goto after_helpers
+          :prep_env
+          set "BLD=%~1"
+          set "FEATDIR=%~2"
+          if not exist "%BLD%" mkdir "%BLD%"
+          cd /d "%BLD%"
           set "HOME=%CD%"
           set "LOCALCACHE=%CD%\.qmake.cache"
           if not exist "%LOCALCACHE%" type NUL > "%LOCALCACHE%"
           set "QMAKECACHE=%LOCALCACHE%"
-          set "QMAKEFEATURES=%QT_SRC_ROOT%\qtsvg\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" -v
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtsvg\src\src.pro" -r -spec win32-msvc
-          if errorlevel 1 ( echo ERROR: qmake qtsvg failed & if exist config.log type config.log & exit /b 2 )
-          nmake /NOLOGO || ( echo ERROR: nmake qtsvg failed & exit /b 2 )
-          nmake /NOLOGO install || ( echo ERROR: nmake install qtsvg failed & exit /b 2 )
-          if not exist "%QTDIR%\lib\Qt5Svg.lib" ( echo ERROR: Qt5Svg.lib missing & exit /b 2 )
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" ( echo ERROR: qt_lib_svg.pri missing & exit /b 2 )
-      
-          :check_qtmultimedia
-          rem ==== qtmultimedia ====
-          if not exist "%QTDIR%\lib\Qt5Multimedia.lib"  goto build_qtmultimedia
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" goto build_qtmultimedia
-          echo Qt5Multimedia present. Skipping qtmultimedia.
-          goto check_qtserialport
-      
-          :build_qtmultimedia
-          echo --- Building qtmultimedia (WMF + WASAPI; stub Linux features) ---
-          if not exist "%MOD_BUILD%\qtmultimedia-multimedia" mkdir "%MOD_BUILD%\qtmultimedia-multimedia"
-          cd /d "%MOD_BUILD%\qtmultimedia-multimedia"
-      
-          rem cache/stash local
-          set "HOME=%CD%"
-          set "LOCALCACHE=%CD%\.qmake.cache"
-          if not exist "%LOCALCACHE%" type NUL > "%LOCALCACHE%"
-          set "QMAKECACHE=%LOCALCACHE%"
-      
-          rem ==== CRIA STUBS DAS FEATURES QUE NAO EXISTEM NO WINDOWS ====
           set "STUBFEAT=%MOD_BUILD%\features-stub"
           if not exist "%STUBFEAT%" mkdir "%STUBFEAT%"
           type NUL > "%STUBFEAT%\pulseaudio.prf"
           type NUL > "%STUBFEAT%\gstreamer.prf"
           type NUL > "%STUBFEAT%\openal.prf"
           type NUL > "%STUBFEAT%\resourcepolicy.prf"
-      
-          rem IMPORTANTE: colocar STUBFEAT primeiro no QMAKEFEATURES
-          set "QMAKEFEATURES=%STUBFEAT%;%QT_SRC_ROOT%\qtmultimedia\mkspecs\features;%QMAKEPATH%\features"
-      
+          if not "%FEATDIR%"=="" (
+            set "QMAKEFEATURES=%STUBFEAT%;%FEATDIR%;%QMAKEPATH%\features"
+          ) else (
+            set "QMAKEFEATURES=%STUBFEAT%;%QMAKEPATH%\features"
+          )
           "%QTDIR%\bin\qmake.exe" -v
           echo QMAKEFEATURES=!QMAKEFEATURES!
-          dir /b "%STUBFEAT%"
-      
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\src\multimedia\multimedia.pro" -r -spec win32-msvc ^
-            CONFIG+=wmf CONFIG+=wasapi CONFIG+=directshow ^
-            CONFIG-=pulseaudio CONFIG-=gstreamer CONFIG-=openal CONFIG-=resourcepolicy ^
-            DEFINES+=QT_NO_PULSEAUDIO
-          if errorlevel 1 (
-            echo ERROR: qmake qtmultimedia failed
-            if exist config.log type config.log
-            exit /b 2
+          goto :eof
+          :after_helpers
+
+          rem =================== qtsvg (raiz) ===================
+          if exist "%QTDIR%\lib\Qt5Svg.lib" if exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" (
+            echo Qt5Svg present. Skipping qtsvg.
+          ) else (
+            call :prep_env "%MOD_BUILD%\qtsvg" "%QT_SRC_ROOT%\qtsvg\mkspecs\features"
+            "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtsvg\qtsvg.pro" -r -spec win32-msvc ^
+              QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests
+            if errorlevel 1 ( echo ERROR: qmake qtsvg failed & if exist config.log type config.log & exit /b 2 )
+            nmake /NOLOGO || ( echo ERROR: nmake qtsvg failed & exit /b 2 )
+            nmake /NOLOGO install || ( echo ERROR: nmake install qtsvg failed & exit /b 2 )
+            if not exist "%QTDIR%\lib\Qt5Svg.lib" ( echo ERROR: Qt5Svg.lib missing & exit /b 2 )
+            if not exist "%QTDIR%\mkspecs\modules\qt_lib_svg.pri" ( echo ERROR: qt_lib_svg.pri missing & exit /b 2 )
           )
-          nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
-          nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
-          if not exist "%QTDIR%\lib\Qt5Multimedia.lib" ( echo ERROR: Qt5Multimedia.lib missing after install & exit /b 2 )
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" ( echo ERROR: qt_lib_multimedia.pri missing after install & exit /b 2 )
-          echo qtmultimedia installed OK.
-      
-          :check_qtserialport
-          rem ==== qtserialport ====
-          if not exist "%QTDIR%\lib\Qt5SerialPort.lib"  goto build_qtserialport
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" goto build_qtserialport
-          echo Qt5SerialPort present. Skipping qtserialport.
-          goto list_installed
-          :build_qtserialport
-          echo --- Building qtserialport ---
-          if not exist "%MOD_BUILD%\qtserialport" mkdir "%MOD_BUILD%\qtserialport"
-          cd /d "%MOD_BUILD%\qtserialport"
-          set "HOME=%CD%"
-          set "LOCALCACHE=%CD%\.qmake.cache"
-          if not exist "%LOCALCACHE%" type NUL > "%LOCALCACHE%"
-          set "QMAKECACHE=%LOCALCACHE%"
-          set "QMAKEFEATURES=%QT_SRC_ROOT%\qtserialport\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" -v
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtserialport\src\src.pro" -r -spec win32-msvc
-          if errorlevel 1 ( echo ERROR: qmake qtserialport failed & if exist config.log type config.log & exit /b 2 )
-          nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
-          nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
-          if not exist "%QTDIR%\lib\Qt5SerialPort.lib" ( echo ERROR: Qt5SerialPort.lib missing & exit /b 2 )
-          if not exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" ( echo ERROR: qt_lib_serialport.pri missing & exit /b 2 )
-      
-          :list_installed
+
+          rem ============== qtmultimedia (raiz) =================
+          if exist "%QTDIR%\lib\Qt5Multimedia.lib" if exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" (
+            echo Qt5Multimedia present. Skipping qtmultimedia.
+          ) else (
+            call :prep_env "%MOD_BUILD%\qtmultimedia" "%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
+            "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\qtmultimedia.pro" -r -spec win32-msvc ^
+              QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests ^
+              CONFIG+=wmf CONFIG+=wasapi CONFIG+=directshow ^
+              CONFIG-=pulseaudio CONFIG-=gstreamer CONFIG-=openal CONFIG-=resourcepolicy ^
+              DEFINES+=QT_NO_PULSEAUDIO
+            if errorlevel 1 ( echo ERROR: qmake qtmultimedia failed & if exist config.log type config.log & exit /b 2 )
+            nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
+            nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
+            if not exist "%QTDIR%\lib\Qt5Multimedia.lib" ( echo ERROR: Qt5Multimedia.lib missing & exit /b 2 )
+            if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" ( echo ERROR: qt_lib_multimedia.pri missing & exit /b 2 )
+          )
+
+          rem ============== qtserialport (raiz) =================
+          if exist "%QTDIR%\lib\Qt5SerialPort.lib" if exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" (
+            echo Qt5SerialPort present. Skipping qtserialport.
+          ) else (
+            call :prep_env "%MOD_BUILD%\qtserialport" "%QT_SRC_ROOT%\qtserialport\mkspecs\features"
+            "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtserialport\qtserialport.pro" -r -spec win32-msvc ^
+              QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests
+            if errorlevel 1 ( echo ERROR: qmake qtserialport failed & if exist config.log type config.log & exit /b 2 )
+            nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
+            nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
+            if not exist "%QTDIR%\lib\Qt5SerialPort.lib" ( echo ERROR: Qt5SerialPort.lib missing & exit /b 2 )
+            if not exist "%QTDIR%\mkspecs\modules\qt_lib_serialport.pri" ( echo ERROR: qt_lib_serialport.pri missing & exit /b 2 )
+          )
+
           echo ----- Present Qt libs -----
           dir /b "%QTDIR%\lib\Qt5*.lib"
           echo ----- Present Qt module PRIs -----
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
-
 
   build-app:
     name: Build App (Static, One EXE) + Tag/Release
@@ -222,7 +204,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v2"
 
       - name: Compute version + optionally create tag
         id: ver
