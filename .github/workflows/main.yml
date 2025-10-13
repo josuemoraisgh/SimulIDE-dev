@@ -92,12 +92,11 @@ jobs:
           set "PATH=%QTDIR%\bin;%PATH%"
           set "QMAKEPATH=%QTDIR%\mkspecs"
           where perl.exe >nul 2>&1 || ( echo ERROR: perl.exe not found in PATH & exit /b 2 )
-
+      
           set "MOD_BUILD=C:\qt-build-mods"
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
-
+      
           rem helper: cache/stash local + QMAKEFEATURES
-          rem uso: call :prep_env <build_dir> <features_dir_or_EMPTY>
           goto after_helpers
           :prep_env
           set "BLD=%~1"
@@ -117,35 +116,47 @@ jobs:
           echo QMAKEFEATURES=!QMAKEFEATURES!
           goto :eof
           :after_helpers
-
-          rem ===== qtsvg (.pro raiz) — sempre recompilar/instalar =====
+      
+          rem ===== qtsvg (.pro raiz) =====
           call :prep_env "%MOD_BUILD%\qtsvg" "%QT_SRC_ROOT%\qtsvg\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtsvg\qtsvg.pro" -r -spec win32-msvc ^
+          "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtsvg\qtsvg.pro" -r -spec win32-msvc ^
             QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests
-          if errorlevel 1 ( echo ERROR: qmake qtsvg failed & if exist config.log type config.log & exit /b 2 )
+          if errorlevel 1 (
+            echo ERROR: qmake qtsvg failed
+            for /r %%F in (config.log) do ( echo --- %%F --- & type "%%F" )
+            exit /b 2
+          )
           nmake /NOLOGO || ( echo ERROR: nmake qtsvg failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtsvg failed & exit /b 2 )
-
-          rem ===== qtserialport (.pro raiz) — sempre recompilar/instalar =====
+      
+          rem ===== qtserialport (.pro raiz) =====
           call :prep_env "%MOD_BUILD%\qtserialport" "%QT_SRC_ROOT%\qtserialport\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtserialport\qtserialport.pro" -r -spec win32-msvc ^
+          "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtserialport\qtserialport.pro" -r -spec win32-msvc ^
             QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests
-          if errorlevel 1 ( echo ERROR: qmake qtserialport failed & if exist config.log type config.log & exit /b 2 )
+          if errorlevel 1 (
+            echo ERROR: qmake qtserialport failed
+            for /r %%F in (config.log) do ( echo --- %%F --- & type "%%F" )
+            exit /b 2
+          )
           nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
-
-          rem ===== qtmultimedia (.pro raiz) — força Windows, desliga Linux =====
+      
+          rem ===== qtmultimedia (.pro raiz) — força WMF/WASAPI, desliga Linux, (sem DirectShow por enquanto) =====
           call :prep_env "%MOD_BUILD%\qtmultimedia" "%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" "%QT_SRC_ROOT%\qtmultimedia\qtmultimedia.pro" -r -spec win32-msvc ^
+          "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtmultimedia\qtmultimedia.pro" -r -spec win32-msvc ^
             QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests ^
             "QT_CONFIG-=pulseaudio gstreamer openal resourcepolicy" ^
             QT_FEATURE_pulseaudio=0 QT_FEATURE_gstreamer=0 QT_FEATURE_openal=0 QT_FEATURE_resourcepolicy=0 ^
-            CONFIG+=wmf CONFIG+=wasapi CONFIG+=directshow
-          if errorlevel 1 ( echo ERROR: qmake qtmultimedia failed & if exist config.log type config.log & exit /b 2 )
+            CONFIG+=wmf CONFIG+=wasapi
+          if errorlevel 1 (
+            echo ERROR: qmake qtmultimedia failed
+            for /r %%F in (config.log) do ( echo --- %%F --- & type "%%F" )
+            exit /b 2
+          )
           nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
-
-          rem ===== valida instalação dos 3 módulos =====
+      
+          rem ===== valida =====
           set "MSPECS=%QTDIR%\mkspecs\modules"
           set "LIBS=%QTDIR%\lib"
           for %%F in (Qt5Svg.lib Qt5SerialPort.lib Qt5Multimedia.lib) do (
@@ -154,11 +165,12 @@ jobs:
           for %%P in (qt_lib_svg.pri qt_lib_serialport.pri qt_lib_multimedia.pri) do (
             if not exist "%MSPECS%\%%P" ( echo ERROR: missing %%P in %MSPECS% & exit /b 3 )
           )
-
+      
           echo ----- Installed Qt libs -----
           dir /b "%LIBS%\Qt5*.lib"
           echo ----- Installed module PRIs -----
           dir /b "%MSPECS%\qt_lib_*.pri"
+
 
   build-app:
     name: Build App (Static, One EXE) + Tag/Release
