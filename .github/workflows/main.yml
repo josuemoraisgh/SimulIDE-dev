@@ -141,12 +141,17 @@ jobs:
           nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
       
-          rem ===== qtmultimedia (.pro raiz) — força WMF/WASAPI, desliga Linux, (sem DirectShow por enquanto) =====
+          rem ===== qtmultimedia (.pro raiz) — força WMF/WASAPI, desliga Linux/GStreamer =====
           call :prep_env "%MOD_BUILD%\qtmultimedia" "%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
+          
           "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtmultimedia\qtmultimedia.pro" -r -spec win32-msvc ^
             QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests ^
-            "QT_CONFIG-=pulseaudio gstreamer openal resourcepolicy" ^
-            QT_FEATURE_pulseaudio=0 QT_FEATURE_gstreamer=0 QT_FEATURE_openal=0 QT_FEATURE_resourcepolicy=0 ^
+            "QT_CONFIG-=pulseaudio gstreamer gstreamer_1_0 gstreamer_0_10 openal resourcepolicy directshow" ^
+            QT_FEATURE_pulseaudio=0 QT_FEATURE_openal=0 QT_FEATURE_resourcepolicy=0 ^
+            QT_FEATURE_gstreamer=0 QT_FEATURE_gstreamer_1_0=0 QT_FEATURE_gstreamer_0_10=0 ^
+            QT_FEATURE_directshow=0 ^
+            QT_FEATURE_wmf=1 QT_FEATURE_wasapi=1 ^
+            DEFINES+=QT_NO_PULSEAUDIO DEFINES+=QT_NO_OPENAL DEFINES+=QT_NO_GSTREAMER ^
             CONFIG+=wmf CONFIG+=wasapi
           if errorlevel 1 (
             echo ERROR: qmake qtmultimedia failed
@@ -155,6 +160,7 @@ jobs:
           )
           nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
           nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
+
       
           rem ===== valida =====
           set "MSPECS=%QTDIR%\mkspecs\modules"
