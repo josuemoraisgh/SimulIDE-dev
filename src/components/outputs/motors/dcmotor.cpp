@@ -6,10 +6,12 @@
 #include <QPainter>
 #include <math.h>
 #include <QMenu>
+#include <QGraphicsProxyWidget>
 
 #include "dcmotor.h"
 #include "itemlibrary.h"
 #include "simulator.h"
+#include "circuit.h"
 #include "pin.h"
 #include "label.h"
 #include "watcher.h"
@@ -156,13 +158,18 @@ void DcMotor::openWatcher()
 {
     if( !m_watcher )
     {
-        createWatcher( false );
+        createWatcher( true );
+
+        QGraphicsProxyWidget* proxy = Circuit::self()->addWidget( m_watcher );
+        proxy->setParentItem( this );
+        proxy->setPos(-65,40 );
+        //proxy->setTransformOriginPoint( proxy->boundingRect().center() );
+        m_watcher->setProxy( proxy );
 
         m_watcher->addRegister( "Voltage" , "double", "V" );
         m_watcher->addRegister( "Current" , "double", "A" );
         m_watcher->addRegister( "Speed"   , "double", "RPM" );
         m_watcher->setWindowTitle( this->idLabel() );
-        m_watcher->updtWidget();
     }
     m_watcher->show();
 }

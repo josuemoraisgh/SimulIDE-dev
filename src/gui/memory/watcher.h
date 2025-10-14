@@ -11,6 +11,7 @@
 
 class Watched;
 class ValueWidget;
+class ValLabelWidget;
 class QStandardItemModel;
 class ScriptCpu;
 class Console;
@@ -20,9 +21,8 @@ class Watcher : public QWidget, private Ui::Watcher
     Q_OBJECT
 
     public:
-        Watcher( QWidget* parent=0, Watched* cpu=nullptr, bool showHead=true );
+        Watcher( QWidget* parent=0, Watched* cpu=nullptr, bool proxy=false );
 
-        void updtWidget();
         void updateValues();
 
         void setRegisters( QStringList regs );
@@ -39,16 +39,23 @@ class Watcher : public QWidget, private Ui::Watcher
 
         void addWidget( QWidget* widget );
 
+        void setProxy( QGraphicsProxyWidget* p );
+
+        void paintEvent( QPaintEvent *event ) override;
+
     public slots:
         void RegDoubleClick( const QModelIndex& index );
         void VarDoubleClick( const QModelIndex& index );
 
-    private:
+    protected:
+        void mousePressEvent( QMouseEvent* event );
+        void mouseMoveEvent( QMouseEvent* event );
+        void mouseReleaseEvent( QMouseEvent* event );
+
         void addHeader();
         void insertValue( QString name );
 
         bool m_header;
-        bool m_showHeader;
 
         Watched* m_core;
         Console* m_console;
@@ -59,6 +66,11 @@ class Watcher : public QWidget, private Ui::Watcher
         QMap<QString, QString> m_typeTable;
         QMap<QString, QString> m_unitTable;
         QMap<QString, ValueWidget*> m_values;
+        QMap<QString, ValLabelWidget*> m_valLabels;
 
         QBoxLayout* m_valuesLayout;
+
+        QPointF m_mousePos;
+        QGraphicsProxyWidget* m_proxy;
 };
+
