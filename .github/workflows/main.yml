@@ -40,16 +40,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          # v5 => força rebuild do qtbase com -qt-zlib
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v5"
+          # v6 => invalida caches antigos sem zlib
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v6"
 
-      - name: Install Python (for aqt) if building qtbase
-        if: steps.cache-qt.outputs.cache-hit != 'true'
+      - name: Install Python (for aqt) if sources missing
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Perl (required)
+      - name: Install Perl (required by Qt build)
         uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: "5.32"
@@ -65,13 +64,39 @@ jobs:
             python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
           }
 
-      - name: Configure + Build + Install Qt (static + /MT) if not cached
-        if: steps.cache-qt.outputs.cache-hit != 'true'
+      - name: Detect if qtbase has zlib; mark rebuild if missing
+        id: needrebuild
+        shell: pwsh
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          $qmake = Join-Path $env:QT_INSTALL_PREFIX 'bin\qmake.exe'
+          if (Test-Path $qmake) {
+            $cfg = & $qmake -query QT_CONFIG
+            Write-Host "QT_CONFIG=$cfg"
+            if ($cfg -notmatch '\bzlib\b') {
+              Write-Host ">> zlib ausente — será necessário rebuild do qtbase."
+              "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            } else {
+              Write-Host ">> zlib presente — sem rebuild."
+              "rebuild=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            }
+          } else {
+            Write-Host ">> qmake não existe — será necessário rebuild do qtbase."
+            "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Configure + Build + Install qtbase (static + /MT + zlib)
+        if: steps.cache-qt.outputs.cache-hit != 'true' || steps.needrebuild.outputs.rebuild == '1'
         shell: cmd
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
+          rem limpa prefixo se existir, para evitar mistura de configs
+          if exist "%QT_INSTALL_PREFIX%" rmdir /S /Q "%QT_INSTALL_PREFIX%"
+          mkdir "%QT_INSTALL_PREFIX%"
+
           cd /d %QT_SRC_ROOT%\qtbase
           call configure.bat -prefix "%QT_INSTALL_PREFIX%" -platform win32-msvc ^
             -release -static -static-runtime -opensource -confirm-license ^
@@ -93,7 +118,6 @@ jobs:
           echo === Modules present ===
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
 
-      # ===== Sempre: build/instalar qtsvg, qtserialport, qtmultimedia =====
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
         env:
@@ -105,7 +129,7 @@ jobs:
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
 
-          # --- 0) Patch qtmultimedia/configure.json (desliga Linux, liga WMF/WASAPI)
+          # 0) Patch qtmultimedia/configure.json (desliga Linux, liga WMF/WASAPI)
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
@@ -124,7 +148,7 @@ jobs:
           Set-Content $cfgPath $cfg -Encoding UTF8
           Write-Host ">> Patched $cfgPath (disable: gst/pulse/openal/resourcepolicy/dshow; enable: wmf/wasapi)"
 
-          # --- helpers
+          # helpers
           function Prep-Env([string]$BuildDir,[string]$FeatDir){
             if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
             New-Item -ItemType Directory -Path $BuildDir | Out-Null
@@ -156,7 +180,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # --- 1) Patch qtsvg: trocar 'qtConfig(system-zlib)' -> 'qtConfig(zlib)'
+          # 1) Patch qtsvg: 'system-zlib' -> 'zlib'
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
@@ -168,19 +192,19 @@ jobs:
             Write-Host ">> svg.pro já não exige system-zlib (nada a mudar)."
           }
 
-          # --- 2) qtsvg ---
+          # 2) qtsvg
           Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
           Run-NMake
           Pop-Location
 
-          # --- 3) qtserialport ---
+          # 3) qtserialport
           Prep-Env -BuildDir 'C:\qt-build-mods\qtserialport' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtserialport\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtserialport\qtserialport.pro')
           Run-NMake
           Pop-Location
 
-          # --- 4) qtmultimedia ---
+          # 4) qtmultimedia (WMF/WASAPI)
           Prep-Env -BuildDir 'C:\qt-build-mods\qtmultimedia' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\mkspecs\features')
           & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\qtmultimedia.pro') -r -spec win32-msvc `
             "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
@@ -197,7 +221,7 @@ jobs:
           Run-NMake
           Pop-Location
 
-          # --- 5) valida instalação dos 3 módulos ---
+          # 5) valida
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
           $needLibs = 'Qt5Svg.lib','Qt5SerialPort.lib','Qt5Multimedia.lib'
@@ -233,9 +257,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v5"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v6"
 
-      # Hard-check: abort early if modules are missing
       - name: Assert required Qt modules exist
         shell: pwsh
         run: |
@@ -252,7 +275,7 @@ jobs:
             throw "Required Qt modules not installed in $root"
           }
 
-      - name: Compute version (env.APP_VER)
+      - name: Compute version (env.APP_VER) & ensure tag on dispatch
         id: ver
         uses: actions/github-script@v7
         with:
@@ -269,29 +292,22 @@ jobs:
             ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
             core.exportVariable('APP_VER', ver);
 
-      - name: Ensure tag exists (on dispatch with version)
+      - name: Ensure tag exists (dispatch with version)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
         uses: actions/github-script@v7
         with:
           script: |
             const ver = process.env.APP_VER;
             const owner = context.repo.owner;
-            const repo = context.repo.repo;
+            const repo  = context.repo.repo;
             try {
               await github.rest.git.getRef({ owner, repo, ref: `tags/${ver}` });
               core.info(`Tag ${ver} already exists`);
             } catch (e) {
               if (e.status === 404) {
-                const commit = context.sha;
-                await github.rest.git.createRef({
-                  owner, repo,
-                  ref: `refs/tags/${ver}`,
-                  sha: commit
-                });
-                core.info(`Created tag ${ver} at ${commit}`);
-              } else {
-                throw e;
-              }
+                await github.rest.git.createRef({ owner, repo, ref: `refs/tags/${ver}`, sha: context.sha });
+                core.info(`Created tag ${ver}`);
+              } else { throw e; }
             }
 
       - name: Prepare build directory (out-of-source)
