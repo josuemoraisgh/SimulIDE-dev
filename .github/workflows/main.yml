@@ -81,101 +81,111 @@ jobs:
 
       # ===== (SEMPRE) build/instala módulos qtsvg, qtserialport, qtmultimedia =====
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
-        shell: cmd
+        shell: pwsh
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
-          @echo on
-          setlocal EnableExtensions EnableDelayedExpansion
-          set "QTDIR=%QT_INSTALL_PREFIX%"
-          set "PATH=%QTDIR%\bin;%PATH%"
-          set "QMAKEPATH=%QTDIR%\mkspecs"
-          where perl.exe >nul 2>&1 || ( echo ERROR: perl.exe not found in PATH & exit /b 2 )
+          $ErrorActionPreference = 'Stop'
+          $env:QTDIR = $env:QT_INSTALL_PREFIX
+          $env:Path = "$($env:QTDIR)\bin;$env:Path"
+          $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
       
-          set "MOD_BUILD=C:\qt-build-mods"
-          if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
+          # --- 1) Patch configure.json do qtmultimedia para DISABLE Linux backends e ENABLE WMF/WASAPI
+          $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
+          if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
+          $cfg = Get-Content $cfgPath -Raw
       
-          rem helper: cache/stash local + QMAKEFEATURES
-          goto after_helpers
-          :prep_env
-          set "BLD=%~1"
-          set "FEATDIR=%~2"
-          if not exist "%BLD%" mkdir "%BLD%"
-          cd /d "%BLD%"
-          set "HOME=%CD%"
-          set "LOCALCACHE=%CD%\.qmake.cache"
-          if not exist "%LOCALCACHE%" type NUL > "%LOCALCACHE%"
-          set "QMAKECACHE=%LOCALCACHE%"
-          if not "%FEATDIR%"=="" (
-            set "QMAKEFEATURES=%FEATDIR%;%QMAKEPATH%\features"
-          ) else (
-            set "QMAKEFEATURES=%QMAKEPATH%\features"
-          )
-          "%QTDIR%\bin\qmake.exe" -v
-          echo QMAKEFEATURES=!QMAKEFEATURES!
-          goto :eof
-          :after_helpers
+          function Disable-Feature([string]$name){
+            # substitui qualquer bloco "name": { ... } por "name": { "condition": "false" }
+            $pattern = '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}'
+            $replacement = '"'+$name+'": { "condition": "false" }'
+            $script:cfg = [regex]::Replace($script:cfg, $pattern, $replacement, 'Singleline')
+          }
+          function Enable-Feature([string]$name){
+            $pattern = '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}'
+            $replacement = '"'+$name+'": { "condition": "true" }'
+            $script:cfg = [regex]::Replace($script:cfg, $pattern, $replacement, 'Singleline')
+          }
       
-          rem ===== qtsvg (.pro raiz) =====
-          call :prep_env "%MOD_BUILD%\qtsvg" "%QT_SRC_ROOT%\qtsvg\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtsvg\qtsvg.pro" -r -spec win32-msvc ^
-            QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests
-          if errorlevel 1 (
-            echo ERROR: qmake qtsvg failed
-            for /r %%F in (config.log) do ( echo --- %%F --- & type "%%F" )
-            exit /b 2
-          )
-          nmake /NOLOGO || ( echo ERROR: nmake qtsvg failed & exit /b 2 )
-          nmake /NOLOGO install || ( echo ERROR: nmake install qtsvg failed & exit /b 2 )
+          # Desliga tudo de Linux/GStreamer/DirectShow
+          'gstreamer','gstreamer_1_0','gstreamer_0_10','pulseaudio','openal','resourcepolicy','directshow' | ForEach-Object { Disable-Feature $_ }
+          # Liga WMF/WASAPI
+          'wmf','wasapi' | ForEach-Object { Enable-Feature $_ }
       
-          rem ===== qtserialport (.pro raiz) =====
-          call :prep_env "%MOD_BUILD%\qtserialport" "%QT_SRC_ROOT%\qtserialport\mkspecs\features"
-          "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtserialport\qtserialport.pro" -r -spec win32-msvc ^
-            QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests
-          if errorlevel 1 (
-            echo ERROR: qmake qtserialport failed
-            for /r %%F in (config.log) do ( echo --- %%F --- & type "%%F" )
-            exit /b 2
-          )
-          nmake /NOLOGO || ( echo ERROR: nmake qtserialport failed & exit /b 2 )
-          nmake /NOLOGO install || ( echo ERROR: nmake install qtserialport failed & exit /b 2 )
+          Set-Content $cfgPath $cfg -Encoding UTF8
+          Write-Host ">> Patched $cfgPath (disable: gst/pulse/openal/resourcepolicy/dshow; enable: wmf/wasapi)"
       
-          rem ===== qtmultimedia (.pro raiz) — força WMF/WASAPI, desliga Linux/GStreamer =====
-          call :prep_env "%MOD_BUILD%\qtmultimedia" "%QT_SRC_ROOT%\qtmultimedia\mkspecs\features"
-          
-          "%QTDIR%\bin\qmake.exe" -d "%QT_SRC_ROOT%\qtmultimedia\qtmultimedia.pro" -r -spec win32-msvc ^
-            QT_BUILD_EXAMPLES=0 QT_BUILD_TESTS=0 CONFIG-=examples CONFIG-=tests ^
-            "QT_CONFIG-=pulseaudio gstreamer gstreamer_1_0 gstreamer_0_10 openal resourcepolicy directshow" ^
-            QT_FEATURE_pulseaudio=0 QT_FEATURE_openal=0 QT_FEATURE_resourcepolicy=0 ^
-            QT_FEATURE_gstreamer=0 QT_FEATURE_gstreamer_1_0=0 QT_FEATURE_gstreamer_0_10=0 ^
-            QT_FEATURE_directshow=0 ^
-            QT_FEATURE_wmf=1 QT_FEATURE_wasapi=1 ^
-            DEFINES+=QT_NO_PULSEAUDIO DEFINES+=QT_NO_OPENAL DEFINES+=QT_NO_GSTREAMER ^
-            CONFIG+=wmf CONFIG+=wasapi
-          if errorlevel 1 (
-            echo ERROR: qmake qtmultimedia failed
-            for /r %%F in (config.log) do ( echo --- %%F --- & type "%%F" )
-            exit /b 2
-          )
-          nmake /NOLOGO || ( echo ERROR: nmake qtmultimedia failed & exit /b 2 )
-          nmake /NOLOGO install || ( echo ERROR: nmake install qtmultimedia failed & exit /b 2 )
-
+          # helper p/ build out-of-source com cache local
+          function Prep-Env([string]$BuildDir,[string]$FeatDir){
+            if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
+            New-Item -ItemType Directory -Path $BuildDir | Out-Null
+            Push-Location $BuildDir
+            $env:HOME = (Get-Location).Path
+            $cache = Join-Path (Get-Location) '.qmake.cache'
+            Set-Content $cache '' -Encoding ASCII
+            $env:QMAKECACHE = $cache
+            if ($FeatDir) {
+              $env:QMAKEFEATURES = "$FeatDir;$($env:QMAKEPATH)\features"
+            } else {
+              $env:QMAKEFEATURES = "$($env:QMAKEPATH)\features"
+            }
+            & "$env:QTDIR\bin\qmake.exe" -v
+            Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
+          }
+          function Run-QMake([string]$pro){
+            & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "ERROR: qmake failed for $pro"
+              Get-ChildItem -Recurse -Filter config.log | ForEach-Object { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
+              throw "qmake failed"
+            }
+          }
+          function Run-NMake(){
+            & nmake /NOLOGO
+            if ($LASTEXITCODE -ne 0) { throw "nmake failed" }
+            & nmake /NOLOGO install
+            if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
+          }
       
-          rem ===== valida =====
-          set "MSPECS=%QTDIR%\mkspecs\modules"
-          set "LIBS=%QTDIR%\lib"
-          for %%F in (Qt5Svg.lib Qt5SerialPort.lib Qt5Multimedia.lib) do (
-            if not exist "%LIBS%\%%F" ( echo ERROR: missing %%F in %LIBS% & exit /b 3 )
-          )
-          for %%P in (qt_lib_svg.pri qt_lib_serialport.pri qt_lib_multimedia.pri) do (
-            if not exist "%MSPECS%\%%P" ( echo ERROR: missing %%P in %MSPECS% & exit /b 3 )
-          )
+          # --- 2) qtsvg ---
+          Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
+          Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
+          Run-NMake
+          Pop-Location
       
-          echo ----- Installed Qt libs -----
-          dir /b "%LIBS%\Qt5*.lib"
-          echo ----- Installed module PRIs -----
-          dir /b "%MSPECS%\qt_lib_*.pri"
+          # --- 3) qtserialport ---
+          Prep-Env -BuildDir 'C:\qt-build-mods\qtserialport' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtserialport\mkspecs\features')
+          Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtserialport\qtserialport.pro')
+          Run-NMake
+          Pop-Location
+      
+          # --- 4) qtmultimedia (já com configure.json patcheado) ---
+          Prep-Env -BuildDir 'C:\qt-build-mods\qtmultimedia' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\mkspecs\features')
+          # força apenas WMF/WASAPI nas configs também (belt & suspenders)
+          & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\qtmultimedia.pro') -r -spec win32-msvc `
+            "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
+            "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
+            "QT_FEATURE_gstreamer=0" "QT_FEATURE_gstreamer_1_0=0" "QT_FEATURE_gstreamer_0_10=0" `
+            "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
+            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow" `
+            "CONFIG+=wmf" "CONFIG+=wasapi"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: qmake qtmultimedia failed"
+            Get-ChildItem -Recurse -Filter config.log | ForEach-Object { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
+            throw "qmake qtmultimedia failed"
+          }
+          Run-NMake
+          Pop-Location
+      
+          # --- 5) valida instalação dos 3 módulos ---
+          $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
+          $lib   = Join-Path $env:QTDIR 'lib'
+          $needLibs = 'Qt5Svg.lib','Qt5SerialPort.lib','Qt5Multimedia.lib'
+          $needPris = 'qt_lib_svg.pri','qt_lib_serialport.pri','qt_lib_multimedia.pri'
+          foreach ($f in $needLibs) { if (-not (Test-Path (Join-Path $lib $f))) { throw "Missing $f in $lib" } }
+          foreach ($p in $needPris) { if (-not (Test-Path (Join-Path $mspec $p))) { throw "Missing $p in $mspec" } }
+          Write-Host ">> OK: módulos instalados"
 
 
   build-app:
