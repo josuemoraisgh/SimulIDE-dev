@@ -40,7 +40,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v4"
+          # v5 => força rebuild do qtbase com -qt-zlib
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v5"
 
       - name: Install Python (for aqt) if building qtbase
         if: steps.cache-qt.outputs.cache-hit != 'true'
@@ -75,11 +76,24 @@ jobs:
           call configure.bat -prefix "%QT_INSTALL_PREFIX%" -platform win32-msvc ^
             -release -static -static-runtime -opensource -confirm-license ^
             -opengl desktop -nomake tests -nomake examples ^
-            -no-icu -no-dbus -no-angle -mp
+            -no-icu -no-dbus -no-angle -mp ^
+            -qt-zlib
           nmake /NOLOGO
           nmake /NOLOGO install
 
-      # ===== (SEMPRE) build/instala módulos qtsvg, qtserialport, qtmultimedia =====
+      - name: Assert zlib enabled
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          echo === QT_CONFIG ===
+          qmake -query QT_CONFIG
+          echo === Modules present ===
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
+
+      # ===== Sempre: build/instalar qtsvg, qtserialport, qtmultimedia =====
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
         env:
@@ -90,14 +104,12 @@ jobs:
           $env:QTDIR = $env:QT_INSTALL_PREFIX
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
-          
-          # --- 1) Patch configure.json do qtmultimedia para DISABLE Linux backends e ENABLE WMF/WASAPI
+
+          # --- 0) Patch qtmultimedia/configure.json (desliga Linux, liga WMF/WASAPI)
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
-      
           function Disable-Feature([string]$name){
-            # substitui qualquer bloco "name": { ... } por "name": { "condition": "false" }
             $pattern = '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}'
             $replacement = '"'+$name+'": { "condition": "false" }'
             $script:cfg = [regex]::Replace($script:cfg, $pattern, $replacement, 'Singleline')
@@ -107,16 +119,12 @@ jobs:
             $replacement = '"'+$name+'": { "condition": "true" }'
             $script:cfg = [regex]::Replace($script:cfg, $pattern, $replacement, 'Singleline')
           }
-      
-          # Desliga tudo de Linux/GStreamer/DirectShow
           'gstreamer','gstreamer_1_0','gstreamer_0_10','pulseaudio','openal','resourcepolicy','directshow' | ForEach-Object { Disable-Feature $_ }
-          # Liga WMF/WASAPI
           'wmf','wasapi' | ForEach-Object { Enable-Feature $_ }
-      
           Set-Content $cfgPath $cfg -Encoding UTF8
           Write-Host ">> Patched $cfgPath (disable: gst/pulse/openal/resourcepolicy/dshow; enable: wmf/wasapi)"
-      
-          # helper p/ build out-of-source com cache local
+
+          # --- helpers
           function Prep-Env([string]$BuildDir,[string]$FeatDir){
             if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
             New-Item -ItemType Directory -Path $BuildDir | Out-Null
@@ -148,7 +156,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # --- Patch qtsvg: substituir 'qtConfig(system-zlib)' por 'qtConfig(zlib)'
+          # --- 1) Patch qtsvg: trocar 'qtConfig(system-zlib)' -> 'qtConfig(zlib)'
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
@@ -159,22 +167,21 @@ jobs:
           } else {
             Write-Host ">> svg.pro já não exige system-zlib (nada a mudar)."
           }
-          
+
           # --- 2) qtsvg ---
           Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
           Run-NMake
           Pop-Location
-      
+
           # --- 3) qtserialport ---
           Prep-Env -BuildDir 'C:\qt-build-mods\qtserialport' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtserialport\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtserialport\qtserialport.pro')
           Run-NMake
           Pop-Location
-      
-          # --- 4) qtmultimedia (já com configure.json patcheado) ---
+
+          # --- 4) qtmultimedia ---
           Prep-Env -BuildDir 'C:\qt-build-mods\qtmultimedia' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\mkspecs\features')
-          # força apenas WMF/WASAPI nas configs também (belt & suspenders)
           & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\qtmultimedia.pro') -r -spec win32-msvc `
             "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
             "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
@@ -189,7 +196,7 @@ jobs:
           }
           Run-NMake
           Pop-Location
-      
+
           # --- 5) valida instalação dos 3 módulos ---
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
@@ -198,7 +205,6 @@ jobs:
           foreach ($f in $needLibs) { if (-not (Test-Path (Join-Path $lib $f))) { throw "Missing $f in $lib" } }
           foreach ($p in $needPris) { if (-not (Test-Path (Join-Path $mspec $p))) { throw "Missing $p in $mspec" } }
           Write-Host ">> OK: módulos instalados"
-
 
   build-app:
     name: Build App (Static, One EXE) + Tag/Release
@@ -227,7 +233,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v4"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v5"
 
       # Hard-check: abort early if modules are missing
       - name: Assert required Qt modules exist
@@ -246,7 +252,7 @@ jobs:
             throw "Required Qt modules not installed in $root"
           }
 
-      - name: Compute version + optionally create tag
+      - name: Compute version (env.APP_VER)
         id: ver
         uses: actions/github-script@v7
         with:
@@ -262,6 +268,31 @@ jobs:
             }
             ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
             core.exportVariable('APP_VER', ver);
+
+      - name: Ensure tag exists (on dispatch with version)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ver = process.env.APP_VER;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            try {
+              await github.rest.git.getRef({ owner, repo, ref: `tags/${ver}` });
+              core.info(`Tag ${ver} already exists`);
+            } catch (e) {
+              if (e.status === 404) {
+                const commit = context.sha;
+                await github.rest.git.createRef({
+                  owner, repo,
+                  ref: `refs/tags/${ver}`,
+                  sha: commit
+                });
+                core.info(`Created tag ${ver} at ${commit}`);
+              } else {
+                throw e;
+              }
+            }
 
       - name: Prepare build directory (out-of-source)
         shell: pwsh
