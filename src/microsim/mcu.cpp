@@ -364,6 +364,7 @@ void Mcu::updateStep()
 
 void Mcu::voltChanged() // Reset Pin callBack
 {
+    if( !m_resetPin ) return;
     m_eMcu.hardReset( m_resetPin->getInpState() == m_resetPol );
 }
 
