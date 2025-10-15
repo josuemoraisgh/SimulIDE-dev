@@ -90,7 +90,7 @@ jobs:
           $env:QTDIR = $env:QT_INSTALL_PREFIX
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
-      
+          
           # --- 1) Patch configure.json do qtmultimedia para DISABLE Linux backends e ENABLE WMF/WASAPI
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
@@ -147,7 +147,19 @@ jobs:
             & nmake /NOLOGO install
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
-      
+
+          # --- Patch qtsvg: substituir 'qtConfig(system-zlib)' por 'qtConfig(zlib)'
+          $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
+          if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
+          $txt = Get-Content $svgPro -Raw
+          $txt2 = $txt -replace 'qtConfig\(system-zlib\)', 'qtConfig(zlib)'
+          if ($txt2 -ne $txt) {
+            Set-Content $svgPro $txt2 -Encoding UTF8
+            Write-Host ">> Patched svg.pro para usar qtConfig(zlib)."
+          } else {
+            Write-Host ">> svg.pro já não exige system-zlib (nada a mudar)."
+          }
+          
           # --- 2) qtsvg ---
           Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
