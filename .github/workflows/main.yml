@@ -117,7 +117,7 @@ jobs:
           qmake -query QT_CONFIG
           echo === Modules present ===
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
-          
+
       - name: Force-enable zlib feature in module .pri (last resort)
         shell: pwsh
         env:
@@ -127,7 +127,6 @@ jobs:
           $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
 
-          # Alvos que o qt_functions.prf consulta
           $targets = @(
             'qt_lib_global.pri', 'qt_lib_global_private.pri',
             'qt_lib_core.pri',   'qt_lib_core_private.pri',
@@ -139,16 +138,12 @@ jobs:
             $f = Join-Path $mspec $t
             if (-not (Test-Path $f)) { continue }
             $c = Get-Content $f -Raw
-
-            # 1) remove 'zlib' de disabled_features (se estiver)
             $c = $c -replace '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)', {
               param($m)
               $prefix = $m.Groups[1].Value
               $list   = $m.Groups[2].Value -split '\s+' | Where-Object { $_ -and $_ -ne 'zlib' }
               $prefix + ($list -join ' ')
             }
-
-            # 2) adiciona 'zlib' a enabled_features (se faltar)
             if ($c -match '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)') {
               $c = $c -replace '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)', {
                 param($m)
@@ -158,10 +153,8 @@ jobs:
                 $prefix + $uniq
               }
             } else {
-              # cria a linha enabled_features se não existir naquele arquivo
               $c = $c + "`r`nQT.global.enabled_features += zlib`r`n"
             }
-
             Set-Content $f $c -Encoding UTF8
             Write-Host "Patched: $t"
           }
@@ -231,17 +224,23 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # 1) Patch qtsvg: 'system-zlib' -> 'zlib'
+          # 1) Patch qtsvg: 'system-zlib' -> 'zlib' + garantir VERSION/MODULE_VERSION
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
-          $txt2 = $txt -replace 'qtConfig\(system-zlib\)', 'qtConfig(zlib)'
-          if ($txt2 -ne $txt) {
-            Set-Content $svgPro $txt2 -Encoding UTF8
-            Write-Host ">> Patched svg.pro para usar qtConfig(zlib)."
+          $txt = $txt -replace 'qtConfig\(system-zlib\)', 'qtConfig(zlib)'
+          $needsVersion = ($txt -notmatch '(?m)^\s*VERSION\s*=')
+          $needsModVer  = ($txt -notmatch '(?m)^\s*MODULE_VERSION\s*=')
+          if ($needsVersion -or $needsModVer) {
+            $header = @()
+            if ($needsVersion) { $header += 'VERSION = $$QT_VERSION' }
+            if ($needsModVer)  { $header += 'MODULE_VERSION = $$QT_VERSION' }
+            $txt = ($header -join "`r`n") + "`r`n" + $txt
+            Write-Host ">> Patched svg.pro: adicionadas VERSION/MODULE_VERSION e zlib."
           } else {
-            Write-Host ">> svg.pro já não exige system-zlib (nada a mudar)."
+            Write-Host ">> svg.pro já define VERSION/MODULE_VERSION; apenas zlib verificado."
           }
+          Set-Content $svgPro $txt -Encoding UTF8
 
           # 2) qtsvg
           Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
