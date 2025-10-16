@@ -117,6 +117,57 @@ jobs:
           qmake -query QT_CONFIG
           echo === Modules present ===
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
+          
+      - name: Force-enable zlib feature in module .pri (last resort)
+        shell: pwsh
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
+          if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
+
+          # Alvos que o qt_functions.prf consulta
+          $targets = @(
+            'qt_lib_global.pri', 'qt_lib_global_private.pri',
+            'qt_lib_core.pri',   'qt_lib_core_private.pri',
+            'qt_lib_gui.pri',    'qt_lib_gui_private.pri',
+            'qt_lib_widgets.pri','qt_lib_widgets_private.pri'
+          )
+
+          foreach ($t in $targets) {
+            $f = Join-Path $mspec $t
+            if (-not (Test-Path $f)) { continue }
+            $c = Get-Content $f -Raw
+
+            # 1) remove 'zlib' de disabled_features (se estiver)
+            $c = $c -replace '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)', {
+              param($m)
+              $prefix = $m.Groups[1].Value
+              $list   = $m.Groups[2].Value -split '\s+' | Where-Object { $_ -and $_ -ne 'zlib' }
+              $prefix + ($list -join ' ')
+            }
+
+            # 2) adiciona 'zlib' a enabled_features (se faltar)
+            if ($c -match '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)') {
+              $c = $c -replace '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)', {
+                param($m)
+                $prefix = $m.Groups[1].Value
+                $list   = ($m.Groups[2].Value -split '\s+') + @('zlib')
+                $uniq   = [System.Linq.Enumerable]::Distinct($list) -join ' '
+                $prefix + $uniq
+              }
+            } else {
+              # cria a linha enabled_features se não existir naquele arquivo
+              $c = $c + "`r`nQT.global.enabled_features += zlib`r`n"
+            }
+
+            Set-Content $f $c -Encoding UTF8
+            Write-Host "Patched: $t"
+          }
+
+          Write-Host "`n=== After patch, grep zlib in .pri ==="
+          Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | ForEach-Object { $_.Filename + ': ' + $_.Line }
 
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
