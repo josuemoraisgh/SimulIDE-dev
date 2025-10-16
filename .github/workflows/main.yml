@@ -118,7 +118,12 @@ jobs:
         run: |
           $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
-          $targets = @('qt_lib_global.pri','qt_lib_global_private.pri','qt_lib_core.pri','qt_lib_core_private.pri','qt_lib_gui.pri','qt_lib_gui_private.pri','qt_lib_widgets.pri','qt_lib_widgets_private.pri')
+          $targets = @(
+            'qt_lib_global.pri','qt_lib_global_private.pri',
+            'qt_lib_core.pri','qt_lib_core_private.pri',
+            'qt_lib_gui.pri','qt_lib_gui_private.pri',
+            'qt_lib_widgets.pri','qt_lib_widgets_private.pri'
+          )
           foreach ($t in $targets) {
             $f = Join-Path $mspec $t
             if (-not (Test-Path $f)) { continue }
@@ -148,7 +153,6 @@ jobs:
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
 
-          # --- helper: prepara shadow build + .qmake.conf "proxy" (FIX do seu erro) ---
           function Prep-Env([string]$BuildDir,[string]$FeatDir){
             if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
             New-Item -ItemType Directory -Path $BuildDir | Out-Null
@@ -157,14 +161,17 @@ jobs:
             $cache = Join-Path (Get-Location) '.qmake.cache'
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
-            # .qmake.conf "shadow" que aponta para o topo do source tree
+
+            # .qmake.conf "proxy" (single-quoted here-string para não expandir $$)
             $srcRoot = $env:QT_SRC_ROOT -replace '\\','/'
-            $shadowConf = @"
-QT_SOURCE_TREE = $srcRoot
+            $shadowConf = @'
+QT_SOURCE_TREE = REPLACEME_SRC
 QT_BUILD_TREE  = $$PWD
 include($$QT_SOURCE_TREE/.qmake.conf)
-"@
+'@
+            $shadowConf = $shadowConf -replace 'REPLACEME_SRC', $srcRoot
             Set-Content (Join-Path (Get-Location) '.qmake.conf') $shadowConf -Encoding UTF8
+
             if ($FeatDir) {
               $env:QMAKEFEATURES = "$FeatDir;$($env:QMAKEPATH)\features"
             } else {
@@ -188,7 +195,7 @@ include($$QT_SOURCE_TREE/.qmake.conf)
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # 0) Patcheia qtmultimedia: desliga gst/pulse/openal/dshow, liga wmf/wasapi
+          # Patch qtmultimedia: desliga gst/pulse/openal/dshow; liga wmf/wasapi
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
@@ -199,7 +206,7 @@ include($$QT_SOURCE_TREE/.qmake.conf)
           Set-Content $cfgPath $cfg -Encoding UTF8
           Write-Host ">> Patched qtmultimedia configure.json"
 
-          # 1) qtsvg: 'system-zlib' -> 'zlib' + garantir VERSION/MODULE_VERSION
+          # qtsvg: trocar system-zlib -> zlib e garantir VERSION/MODULE_VERSION
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
@@ -209,19 +216,19 @@ include($$QT_SOURCE_TREE/.qmake.conf)
           Set-Content $svgPro $txt -Encoding UTF8
           Write-Host ">> Patched qtsvg/src/svg/svg.pro"
 
-          # 2) qtsvg (shadow .qmake.conf garante _QMAKE_CONF_)
+          # qtsvg
           Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
           Run-NMake
           Pop-Location
 
-          # 3) qtserialport
+          # qtserialport
           Prep-Env -BuildDir 'C:\qt-build-mods\qtserialport' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtserialport\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtserialport\qtserialport.pro')
           Run-NMake
           Pop-Location
 
-          # 4) qtmultimedia (força wmf/wasapi e corta gs/pulse/openal/dshow)
+          # qtmultimedia (força wmf/wasapi e corta gs/pulse/openal/dshow)
           Prep-Env -BuildDir 'C:\qt-build-mods\qtmultimedia' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\mkspecs\features')
           & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\qtmultimedia.pro') -r -spec win32-msvc `
             "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
@@ -238,7 +245,7 @@ include($$QT_SOURCE_TREE/.qmake.conf)
           Run-NMake
           Pop-Location
 
-          # 5) valida instalação dos módulos
+          # valida instalação dos módulos
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
           $needLibs = 'Qt5Svg.lib','Qt5SerialPort.lib','Qt5Multimedia.lib'
