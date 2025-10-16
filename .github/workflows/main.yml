@@ -40,10 +40,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          # v6 => invalida caches antigos sem zlib
           key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v6"
 
-      - name: Install Python (for aqt) if sources missing
+      - name: Install Python (for aqt)
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -75,14 +74,11 @@ jobs:
             $cfg = & $qmake -query QT_CONFIG
             Write-Host "QT_CONFIG=$cfg"
             if ($cfg -notmatch '\bzlib\b') {
-              Write-Host ">> zlib ausente — será necessário rebuild do qtbase."
               "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
             } else {
-              Write-Host ">> zlib presente — sem rebuild."
               "rebuild=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
             }
           } else {
-            Write-Host ">> qmake não existe — será necessário rebuild do qtbase."
             "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           }
 
@@ -93,7 +89,6 @@ jobs:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
-          rem limpa prefixo se existir, para evitar mistura de configs
           if exist "%QT_INSTALL_PREFIX%" rmdir /S /Q "%QT_INSTALL_PREFIX%"
           mkdir "%QT_INSTALL_PREFIX%"
 
@@ -113,9 +108,7 @@ jobs:
         run: |
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
-          echo === QT_CONFIG ===
           qmake -query QT_CONFIG
-          echo === Modules present ===
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
 
       - name: Force-enable zlib feature in module .pri (last resort)
@@ -123,44 +116,26 @@ jobs:
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
         run: |
-          $ErrorActionPreference = 'Stop'
           $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
-
-          $targets = @(
-            'qt_lib_global.pri', 'qt_lib_global_private.pri',
-            'qt_lib_core.pri',   'qt_lib_core_private.pri',
-            'qt_lib_gui.pri',    'qt_lib_gui_private.pri',
-            'qt_lib_widgets.pri','qt_lib_widgets_private.pri'
-          )
-
+          $targets = @('qt_lib_global.pri','qt_lib_global_private.pri','qt_lib_core.pri','qt_lib_core_private.pri','qt_lib_gui.pri','qt_lib_gui_private.pri','qt_lib_widgets.pri','qt_lib_widgets_private.pri')
           foreach ($t in $targets) {
             $f = Join-Path $mspec $t
             if (-not (Test-Path $f)) { continue }
             $c = Get-Content $f -Raw
             $c = $c -replace '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)', {
-              param($m)
-              $prefix = $m.Groups[1].Value
-              $list   = $m.Groups[2].Value -split '\s+' | Where-Object { $_ -and $_ -ne 'zlib' }
-              $prefix + ($list -join ' ')
+              param($m); $m.Groups[1].Value + (($m.Groups[2].Value -split '\s+' | ?{$_ -and $_ -ne 'zlib'}) -join ' ')
             }
             if ($c -match '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)') {
               $c = $c -replace '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)', {
-                param($m)
-                $prefix = $m.Groups[1].Value
-                $list   = ($m.Groups[2].Value -split '\s+') + @('zlib')
-                $uniq   = [System.Linq.Enumerable]::Distinct($list) -join ' '
-                $prefix + $uniq
+                param($m); $m.Groups[1].Value + ([System.Linq.Enumerable]::Distinct(($m.Groups[2].Value -split '\s+') + @('zlib')) -join ' ')
               }
             } else {
-              $c = $c + "`r`nQT.global.enabled_features += zlib`r`n"
+              $c += "`r`nQT.global.enabled_features += zlib`r`n"
             }
             Set-Content $f $c -Encoding UTF8
-            Write-Host "Patched: $t"
           }
-
-          Write-Host "`n=== After patch, grep zlib in .pri ==="
-          Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | ForEach-Object { $_.Filename + ': ' + $_.Line }
+          Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | % { $_.Filename + ': ' + $_.Line }
 
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
@@ -173,26 +148,7 @@ jobs:
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
 
-          # 0) Patch qtmultimedia/configure.json (desliga Linux, liga WMF/WASAPI)
-          $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
-          if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
-          $cfg = Get-Content $cfgPath -Raw
-          function Disable-Feature([string]$name){
-            $pattern = '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}'
-            $replacement = '"'+$name+'": { "condition": "false" }'
-            $script:cfg = [regex]::Replace($script:cfg, $pattern, $replacement, 'Singleline')
-          }
-          function Enable-Feature([string]$name){
-            $pattern = '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}'
-            $replacement = '"'+$name+'": { "condition": "true" }'
-            $script:cfg = [regex]::Replace($script:cfg, $pattern, $replacement, 'Singleline')
-          }
-          'gstreamer','gstreamer_1_0','gstreamer_0_10','pulseaudio','openal','resourcepolicy','directshow' | ForEach-Object { Disable-Feature $_ }
-          'wmf','wasapi' | ForEach-Object { Enable-Feature $_ }
-          Set-Content $cfgPath $cfg -Encoding UTF8
-          Write-Host ">> Patched $cfgPath (disable: gst/pulse/openal/resourcepolicy/dshow; enable: wmf/wasapi)"
-
-          # helpers
+          # --- helper: prepara shadow build + .qmake.conf "proxy" (FIX do seu erro) ---
           function Prep-Env([string]$BuildDir,[string]$FeatDir){
             if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
             New-Item -ItemType Directory -Path $BuildDir | Out-Null
@@ -201,6 +157,14 @@ jobs:
             $cache = Join-Path (Get-Location) '.qmake.cache'
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
+            # .qmake.conf "shadow" que aponta para o topo do source tree
+            $srcRoot = $env:QT_SRC_ROOT -replace '\\','/'
+            $shadowConf = @"
+QT_SOURCE_TREE = $srcRoot
+QT_BUILD_TREE  = $$PWD
+include($$QT_SOURCE_TREE/.qmake.conf)
+"@
+            Set-Content (Join-Path (Get-Location) '.qmake.conf') $shadowConf -Encoding UTF8
             if ($FeatDir) {
               $env:QMAKEFEATURES = "$FeatDir;$($env:QMAKEPATH)\features"
             } else {
@@ -224,25 +188,28 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # 1) Patch qtsvg: 'system-zlib' -> 'zlib' + garantir VERSION/MODULE_VERSION
+          # 0) Patcheia qtmultimedia: desliga gst/pulse/openal/dshow, liga wmf/wasapi
+          $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
+          if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
+          $cfg = Get-Content $cfgPath -Raw
+          function Disable-Feature([string]$name){ $script:cfg = [regex]::Replace($script:cfg, '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}', '"'+$name+'": { "condition": "false" }', 'Singleline') }
+          function Enable-Feature([string]$name){  $script:cfg = [regex]::Replace($script:cfg, '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}', '"'+$name+'": { "condition": "true" }',  'Singleline') }
+          'gstreamer','gstreamer_1_0','gstreamer_0_10','pulseaudio','openal','resourcepolicy','directshow' | % { Disable-Feature $_ }
+          'wmf','wasapi' | % { Enable-Feature $_ }
+          Set-Content $cfgPath $cfg -Encoding UTF8
+          Write-Host ">> Patched qtmultimedia configure.json"
+
+          # 1) qtsvg: 'system-zlib' -> 'zlib' + garantir VERSION/MODULE_VERSION
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
           $txt = $txt -replace 'qtConfig\(system-zlib\)', 'qtConfig(zlib)'
-          $needsVersion = ($txt -notmatch '(?m)^\s*VERSION\s*=')
-          $needsModVer  = ($txt -notmatch '(?m)^\s*MODULE_VERSION\s*=')
-          if ($needsVersion -or $needsModVer) {
-            $header = @()
-            if ($needsVersion) { $header += 'VERSION = $$QT_VERSION' }
-            if ($needsModVer)  { $header += 'MODULE_VERSION = $$QT_VERSION' }
-            $txt = ($header -join "`r`n") + "`r`n" + $txt
-            Write-Host ">> Patched svg.pro: adicionadas VERSION/MODULE_VERSION e zlib."
-          } else {
-            Write-Host ">> svg.pro já define VERSION/MODULE_VERSION; apenas zlib verificado."
-          }
+          if ($txt -notmatch '(?m)^\s*VERSION\s*=') { $txt = "VERSION = $$QT_VERSION`r`n$txt" }
+          if ($txt -notmatch '(?m)^\s*MODULE_VERSION\s*=') { $txt = "MODULE_VERSION = $$QT_VERSION`r`n$txt" }
           Set-Content $svgPro $txt -Encoding UTF8
+          Write-Host ">> Patched qtsvg/src/svg/svg.pro"
 
-          # 2) qtsvg
+          # 2) qtsvg (shadow .qmake.conf garante _QMAKE_CONF_)
           Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
           Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
           Run-NMake
@@ -254,7 +221,7 @@ jobs:
           Run-NMake
           Pop-Location
 
-          # 4) qtmultimedia (WMF/WASAPI)
+          # 4) qtmultimedia (força wmf/wasapi e corta gs/pulse/openal/dshow)
           Prep-Env -BuildDir 'C:\qt-build-mods\qtmultimedia' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\mkspecs\features')
           & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\qtmultimedia.pro') -r -spec win32-msvc `
             "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
@@ -265,13 +232,13 @@ jobs:
             "CONFIG+=wmf" "CONFIG+=wasapi"
           if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: qmake qtmultimedia failed"
-            Get-ChildItem -Recurse -Filter config.log | ForEach-Object { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
+            Get-ChildItem -Recurse -Filter config.log | % { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
             throw "qmake qtmultimedia failed"
           }
           Run-NMake
           Pop-Location
 
-          # 5) valida
+          # 5) valida instalação dos módulos
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
           $needLibs = 'Qt5Svg.lib','Qt5SerialPort.lib','Qt5Multimedia.lib'
@@ -383,9 +350,6 @@ jobs:
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
           set QMAKEPATH=%QTDIR%\mkspecs
-          "%QTDIR%\bin\qmake.exe" -query
-          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
-          dir /b "%QTDIR%\lib\Qt5*.lib"
           cd %BUILD_DIR%
           "%QTDIR%\bin\qmake.exe" "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
 
