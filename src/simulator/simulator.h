@@ -30,6 +30,7 @@ class eElement;
 class Socket;
 class eNode;
 class CircMatrix;
+class QemuDevice;
 
 class Simulator : public QObject
 {
@@ -96,6 +97,9 @@ class Simulator : public QObject
 
         void addToSocketList( Socket* el );
         void remFromSocketList( Socket* el );
+
+        /// FIXME: make a list?
+        QemuDevice* m_qemuDevice;
 
     private:
  static Simulator* m_pSelf;
