@@ -130,8 +130,11 @@ bool Stm32::createArgs()
     //m_arguments << "-accel";
     //m_arguments << "tcg,tb-size=100";
 
+    //m_arguments << "-rtc";
+    //m_arguments <<"clock=vm";
+
     m_arguments << "-icount";
-    m_arguments <<"shift=4,align=off,sleep=off";
+    m_arguments <<"shift=14,align=off,sleep=off";
 
     //m_arguments << "-kernel";
     //m_arguments << m_firmware;

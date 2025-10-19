@@ -10,7 +10,8 @@
 #include "chip.h"
 
 typedef struct qemuArena{
-    uint64_t time;
+    uint64_t simuTime;    // in ps
+    uint64_t qemuTime;    // in ps
     uint32_t data32;
     uint32_t mask32;
     uint16_t data16;
@@ -23,7 +24,8 @@ typedef struct qemuArena{
 
 enum simuAction{
     SIM_I2C=10,
-    SIM_USART
+    SIM_USART,
+    SIM_EVENT=1<<7
 };
 
 
@@ -37,7 +39,7 @@ class QemuDevice : public Chip
 
         void initialize() override;
         void stamp() override;
-        void updateStep() override;
+        //void updateStep() override;
         void voltChanged() override;
         void runEvent() override;
 
@@ -51,7 +53,9 @@ class QemuDevice : public Chip
 
         //void clearData32() { m_arena->data32 = 0; }
 
-        //volatile qemuArena_t* getArena() { return m_arena; }
+        volatile qemuArena_t* getArena() { return m_arena; }
+
+        void runToTime( uint64_t time );
 
     protected:
         virtual bool createArgs(){ return false;}

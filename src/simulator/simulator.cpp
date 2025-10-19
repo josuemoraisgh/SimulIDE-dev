@@ -19,6 +19,8 @@
 #include "e-element.h"
 #include "socket.h"
 
+#include "qemudevice.h"
+
 Simulator* Simulator::m_pSelf = nullptr;
 
 Simulator::Simulator( QObject* parent )
@@ -176,23 +178,73 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     m_guiTime += m_RefTimer.nsecsElapsed()-m_timerTime; // Time in this function
 }
 
+//void Simulator::runCircuit()
+//{
+//    solveCircuit(); // Solve any pending changes
+//    if( m_state < SIM_RUNNING ) return;
+//
+//    eElement* event;
+//    uint64_t endRun = m_circTime + m_psPF; // Run upto next Timer event
+//    uint64_t nextTime;
+//
+//    while( m_firstEvent )                       // Simulator event loop
+//    {
+//        if( m_firstEvent->eventTime > endRun ) break;  // All events for this Timer Tick are done
+//
+//        nextTime = m_circTime;
+//        while( m_circTime == nextTime )         // Run all event with same timeStamp
+//        {
+//            m_circTime = m_firstEvent->eventTime;
+//            event = m_firstEvent;
+//            m_firstEvent = event->nextEvent;
+//
+//            event->nextEvent = nullptr;         // free Event
+//            event->eventTime = 0;
+//            event->runEvent();                  // Run event callback
+//#ifdef DEBUG_EVENTS
+//            m_events--;
+//#endif
+//            if( !m_firstEvent ) break;
+//            if( m_state < SIM_RUNNING ) break;  // Needed for QemuDevice
+//
+//            nextTime = m_firstEvent->eventTime;
+//        }
+//        solveCircuit();
+//        if( m_state < SIM_RUNNING ) break;
+//    }
+//    m_loopTime = m_RefTimer.nsecsElapsed();
+//
+//    if     ( m_state >  SIM_WAITING ) m_circTime = endRun;
+//    //else if( m_state == SIM_WAITING ) m_state = SIM_PAUSED;
+//}
+
 void Simulator::runCircuit()
 {
-    solveCircuit(); // Solve any pending changes
+    solveCircuit();                        // Solve any pending changes
     if( m_state < SIM_RUNNING ) return;
 
     eElement* event;
     uint64_t endRun = m_circTime + m_psPF; // Run upto next Timer event
     uint64_t nextTime;
 
-    while( m_firstEvent )                       // Simulator event loop
+    while( true )          // Simulator event loop
     {
-        if( m_firstEvent->eventTime > endRun ) break;  // All events for this Timer Tick are done
+        if( m_qemuDevice )
+        {
+            if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
+            else               nextTime = endRun;
 
-        nextTime = m_circTime;
+            m_qemuDevice->runToTime( nextTime );  // This will add events
+        }
+        if( !m_firstEvent ) break;
+        if( m_state < SIM_RUNNING ) break;
+
+        nextTime = m_firstEvent->eventTime;
+        if( nextTime > endRun ) break;           // All events for this Timer Tick are done
+
+        m_circTime = nextTime;
         while( m_circTime == nextTime )         // Run all event with same timeStamp
         {
-            m_circTime = m_firstEvent->eventTime;
             event = m_firstEvent;
             m_firstEvent = event->nextEvent;
 
@@ -208,12 +260,12 @@ void Simulator::runCircuit()
             nextTime = m_firstEvent->eventTime;
         }
         solveCircuit();
-        if( m_state < SIM_RUNNING ) break;
     }
     m_loopTime = m_RefTimer.nsecsElapsed();
 
     if     ( m_state >  SIM_WAITING ) m_circTime = endRun;
     //else if( m_state == SIM_WAITING ) m_state = SIM_PAUSED;
+    //qDebug() << "\n---------------------------------------------\n";
 }
 
 void Simulator::solveCircuit()

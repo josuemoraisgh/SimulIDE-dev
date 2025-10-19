@@ -71,6 +71,8 @@ QemuDevice::QemuDevice( QString type, QString id )
         m_arena = (qemuArena_t*)arena;
         m_arena->state = 0;
         qDebug() << "Shared Mem created" << shMemSize << "bytes";
+
+        Simulator::self()->m_qemuDevice = this;
     }else{
         m_arena = nullptr;
         m_shMemId = -1;
@@ -79,7 +81,7 @@ QemuDevice::QemuDevice( QString type, QString id )
 
     m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
 
-    Simulator::self()->addToUpdateList( this );
+    //Simulator::self()->addToUpdateList( this );
 
     addPropGroup( { tr("Main"),{
         new StrProp<QemuDevice>("Program", tr("Firmware"),""
@@ -115,14 +117,15 @@ void QemuDevice::initialize()
         m_qemuProcess.kill();
         qDebug() << "QemuDevice: Qemu proccess killed";
     }
-    updateStep();
+    //updateStep();
 }
 
 void QemuDevice::stamp()
 {
     if( m_shMemId == -1 ) return;
 
-    m_arena->time = 0;
+    m_arena->simuTime = 0;
+    m_arena->qemuTime = 0;
     m_arena->data32 = 0;
     m_arena->mask32 = 0;
     m_arena->data16 = 0;
@@ -162,22 +165,22 @@ void QemuDevice::stamp()
                 return;
             }
         }
-        Simulator::self()->addEvent( 10, this );
-        updateStep();
+        //Simulator::self()->addEvent( 10, this );
+        //updateStep();
     }
 }
 
-void QemuDevice::updateStep()
-{
-    return;
-
-    QString output = m_qemuProcess.readAllStandardOutput();
-    if( !output.isEmpty() )
-    {
-        QStringList lines = output.split("\n");
-        for( QString line : lines ) qDebug() << line.remove("\"");
-    }
-}
+//void QemuDevice::updateStep()
+//{
+//    return;
+//
+//    QString output = m_qemuProcess.readAllStandardOutput();
+//    if( !output.isEmpty() )
+//    {
+//        QStringList lines = output.split("\n");
+//        for( QString line : lines ) qDebug() << line.remove("\"");
+//    }
+//}
 
 void QemuDevice::voltChanged()
 {
@@ -198,7 +201,40 @@ void QemuDevice::voltChanged()
     else if( m_qemuProcess.state() == QProcess::NotRunning ) stamp();
 }
 
+void QemuDevice::runToTime( uint64_t time )
+{
+    if( m_arena->qemuTime ) return; // Our event still not executed
+
+    //qDebug() << "\nQemuDevice::runToTime"<< time/1000;
+
+    m_arena->qemuTime = time; // Tell Qemu to run up to time
+
+    while( true ) //Simulator::self()->simState() == SIM_RUNNING )
+    {
+        if( m_arena->simuTime )
+        {
+            uint64_t actionTime = m_arena->simuTime;
+            uint64_t eventTime = actionTime - Simulator::self()->circTime();
+            //if( m_arena->action < SIM_EVENT )
+                Simulator::self()->addEvent( eventTime, this );
+
+            //qDebug() << "QemuDevice::runToTime action:"<< m_arena->action <<"at time"<< actionTime/1000;
+            return;
+        }
+    }
+}
+
 void QemuDevice::runEvent()
+{
+    //qDebug() << "QemuDevice::runEvent"<< m_arena->action<< Simulator::self()->circTime()/1000;
+    if( m_arena->action < SIM_EVENT ) doAction();
+    m_arena->action = 0;
+    m_arena->simuTime = 0;
+    m_arena->qemuTime = 0;       // Qemu will wait for next time
+    //m_arena->qemuTime = time; // Tell Qemu to run up to time
+}
+
+/*void QemuDevice::runEvent()
 {
     //qDebug() << "runEvent"<<m_arena->action<<eventEnter;
     if( m_arena->action )
@@ -224,7 +260,7 @@ void QemuDevice::runEvent()
     }
     Simulator::self()->addEvent( nextTime, this );
     //qDebug() << "exitEvent"<<m_arena->action<<m_arena->time;
-}
+}*/
 
 void QemuDevice::setFirmware( QString file )
 {
