@@ -7,17 +7,22 @@
 #include <QDebug>
 
 #include "qemuusart.h"
+#include "qemudevice.h"
 #include "serialmon.h"
 #include "usartrx.h"
 #include "usarttx.h"
+
+#include "simulator.h"
+
 //#include "e_mcu.h"
 //#include "mcuinterrupts.h"
 //#include "datautils.h"
 
-QemuUsart::QemuUsart( /*QemuDevice* mcu, QString name, int number*/ )
-         : UsartModule( nullptr, "" /*mcu->getId()+"-"+name*/ )
+QemuUsart::QemuUsart( QemuDevice* mcu, QString name, int number )
+         : UsartModule( nullptr, mcu->getId()+"-"+name )
 {
-    //m_number = number;
+    m_number = number;
+    m_mcu = mcu;
 
     /// FIXME ----------------------------
 
@@ -60,6 +65,17 @@ void QemuUsart::frameSent( uint8_t data )
 void QemuUsart::readByte( uint8_t )
 {
     //if( m_mcu->isCpuRead() ) m_mcu->m_regOverride = m_receiver->getData();
+}
+
+void QemuUsart::byteReceived( uint8_t data )
+{
+    UsartModule::byteReceived( data );
+    volatile qemuArena_t* arena = m_mcu->getArena();
+    arena->qemuAction = SIM_USART;
+    arena->mask8  = QUSART_READ;
+    arena->data8  = m_number;
+    arena->data16 = m_receiver->getData();
+    qDebug() << "QemuUsart::readByte" << arena->data16 << "at time" << Simulator::self()->circTime();
 }
 
 uint8_t QemuUsart::getBit9Tx()

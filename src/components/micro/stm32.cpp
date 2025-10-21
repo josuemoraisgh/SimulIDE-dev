@@ -57,17 +57,21 @@ Stm32::Stm32( QString type, QString id )
     m_i2c[1].setSclPin( m_portB.at(10) );
     m_i2c[1].setSdaPin( m_portB.at(11) );
 
-    m_usart[0].setPins({m_portA.at(9), m_portA.at(10)}); // Remap (TX/PB6, RX/PB7)
-    m_usart[1].setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
-    m_usart[2].setPins({m_portB.at(10), m_portB.at(11)});
+    for( int i=0; i<3; ++i ) m_usart[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
+
+    m_usart[0]->setPins({m_portA.at(9), m_portA.at(10)}); // Remap (TX/PB6, RX/PB7)
+    m_usart[1]->setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+    m_usart[2]->setPins({m_portB.at(10), m_portB.at(11)});
+
+
 }
 Stm32::~Stm32(){}
 
 void Stm32::stamp()
 {
-    m_usart[0].enable( true );
-    m_usart[1].enable( true );
-    m_usart[2].enable( true );
+    m_usart[0]->enable( true );
+    m_usart[1]->enable( true );
+    m_usart[2]->enable( true );
     QemuDevice::stamp();
 }
 
@@ -144,7 +148,7 @@ bool Stm32::createArgs()
 
 void Stm32::doAction()
 {
-    switch( m_arena->action )
+    switch( m_arena->simuAction )
     {
         case ARM_GPIO_OUT:       // Set Output
         {
@@ -182,7 +186,7 @@ void Stm32::doAction()
             uint32_t  data = m_arena->data32;
 
             //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
-            if( id < 3 ) m_usart[id].doAction( event, data );
+            if( id < 3 ) m_usart[id]->doAction( event, data );
         } break;
         case SIM_I2C:
         {
@@ -196,7 +200,7 @@ void Stm32::doAction()
             break;
         }
         default:
-            qDebug() << "Stm32::doAction Unimplemented"<< m_arena->action;
+            qDebug() << "Stm32::doAction Unimplemented"<< m_arena->simuAction;
     }
 }
 

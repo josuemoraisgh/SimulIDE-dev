@@ -272,7 +272,7 @@ void Esp32::setPinFunction( IoPin* ioPin, int func )
 
 void Esp32::doAction()
 {
-    switch( m_arena->action )
+    switch( m_arena->simuAction)
     {
         case ESP_GPIO_OUT:       // Set Output
         {
@@ -315,7 +315,7 @@ void Esp32::doAction()
         case ESP_GPIO_IN:                  // Read Inputs
         {
             readInputs();
-            //m_arena->action = 0;
+            //m_arena->simuAction= 0;
         } break;
         case ESP_IOMUX:
         {
