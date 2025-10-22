@@ -1,4 +1,4 @@
-name: MSVC Static Qt Build & Release (SimulIDE)
+name: MSVC Qt Build & Release (SimulIDE)
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
         required: false
         type: string
       qt_static_url:
-        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (deixe vazio para baixar do asset releases/latest)"
+        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (deixe vazio p/ tentar asset releases/latest)"
         required: false
         type: string
       project_pro:
@@ -30,11 +30,6 @@ on:
         required: true
         default: "build_XX/executables/SimulIDE_2.0.0-"
         type: string
-      artifact_glob:
-        description: "Arquivos a empacotar (glob, separado por vírgula)"
-        required: false
-        default: "*.exe"
-        type: string
 
 permissions:
   contents: write
@@ -45,8 +40,10 @@ jobs:
 
     env:
       QT_VERSION: 5.15.2
-      QT_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
-      ZIP_NAME: SimulIDE-windows-static-${{ inputs.version }}.zip
+      QT_STATIC_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
+      # mude para false se quiser falhar quando não houver Qt estático
+      ALLOW_DYNAMIC_FALLBACK: true
+      ZIP_NAME_BASE: SimulIDE-windows-${{ inputs.version }}
 
     steps:
       - name: Habilitar long paths no Git
@@ -66,64 +63,103 @@ jobs:
         with:
           arch: x64
 
-      # Baixa/usa Qt estático: (1) usa local; (2) usa input qt_static_url; (3) baixa asset releases/latest/qt-static-5.15.2-msvc2019_64-static.zip
-      - name: Preparar Qt estático (C:\qt-static\5.15.2\msvc2019_64-static)
+      # ====== RESOLVER/INSTALAR QT ESTÁTICO OU DINÂMICO ======
+      - name: Resolver Qt (preferir estático; fallback para dinâmico)
+        id: qt
         shell: pwsh
         env:
-          QT_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
+          QT_STATIC_PREFIX: ${{ env.QT_STATIC_PREFIX }}
         run: |
-          $qtDir = "${env:QT_PREFIX}"
-          $qmake = Join-Path $qtDir 'bin\qmake.exe'
-          if (Test-Path $qmake) {
-            Write-Host "Qt estático já presente em $qtDir"
-          } else {
-            $url = "${{ inputs.qt_static_url }}"
-            if ([string]::IsNullOrWhiteSpace($url)) {
-              # tenta baixar do asset da última release deste repo
-              $repo = $env:GITHUB_REPOSITORY
-              $assetName = "qt-static-5.15.2-msvc2019_64-static.zip"
-              $url = "https://github.com/$repo/releases/latest/download/$assetName"
-              Write-Host "qt_static_url vazio. Tentando baixar asset: $url"
-            } else {
-              Write-Host "Baixando Qt estático de $url"
-            }
-            $zipPath = Join-Path $env:TEMP 'qt_static.zip'
-            try {
-              Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
-            } catch {
-              Write-Error "Falha ao baixar Qt estático de '$url'. Forneça 'qt_static_url' ou faça upload do asset na última release com o nome 'qt-static-5.15.2-msvc2019_64-static.zip'."
-              exit 1
-            }
-            if (-not (Test-Path 'C:\qt-static\5.15.2')) { New-Item -ItemType Directory -Path 'C:\qt-static\5.15.2' | Out-Null }
-            Expand-Archive -Path $zipPath -DestinationPath 'C:\' -Force
-            if (-not (Test-Path $qmake)) {
-              Write-Error "qmake.exe não encontrado após extração. Verifique a estrutura do ZIP (deve conter C:\qt-static\5.15.2\msvc2019_64-static\bin\qmake.exe)."
-              exit 1
-            }
+          $staticPrefix = "${env:QT_STATIC_PREFIX}"
+          $qmakeStatic  = Join-Path $staticPrefix 'bin\qmake.exe'
+
+          function Export-Qt($prefix, $mode) {
+            "QTDIR=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            (Join-Path $prefix 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            "BUILD_MODE=$mode" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
 
-          # Exporta QTDIR e ajusta PATH
-          "QTDIR=$qtDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          (Join-Path $qtDir 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          if (Test-Path $qmakeStatic) {
+            Write-Host "Qt estático já presente: $staticPrefix"
+            Export-Qt $staticPrefix "static"
+            exit 0
+          }
 
-          & $qmake -v
+          # Tentar baixar Qt estático de input ou asset releases/latest
+          $url = "${{ inputs.qt_static_url }}"
+          if ([string]::IsNullOrWhiteSpace($url)) {
+            $repo = $env:GITHUB_REPOSITORY
+            $assetName = "qt-static-5.15.2-msvc2019_64-static.zip"
+            $url = "https://github.com/$repo/releases/latest/download/$assetName"
+            Write-Host "qt_static_url vazio. Tentando asset: $url"
+          } else {
+            Write-Host "Baixando Qt estático de $url"
+          }
 
+          try {
+            $zipPath = Join-Path $env:TEMP 'qt_static.zip'
+            Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
+            if (-not (Test-Path 'C:\qt-static\5.15.2')) { New-Item -ItemType Directory -Path 'C:\qt-static\5.15.2' | Out-Null }
+            Expand-Archive -Path $zipPath -DestinationPath 'C:\' -Force
+          } catch {
+            Write-Warning "Não foi possível baixar/extrair o Qt estático: $($_.Exception.Message)"
+          }
+
+          if (Test-Path $qmakeStatic) {
+            Write-Host "Qt estático pronto após download: $staticPrefix"
+            Export-Qt $staticPrefix "static"
+            exit 0
+          }
+
+          if ("${{ env.ALLOW_DYNAMIC_FALLBACK }}" -ne "true") {
+            Write-Error "Qt estático não disponível e fallback dinâmico desabilitado."
+            exit 1
+          }
+
+          # Fallback: instalar Qt DINÂMICO com Multimedia/SerialPort/Svg
+          Write-Host "Aplicando fallback: instalando Qt DINÂMICO 5.15.2 MSVC2019 x64..."
+          # marcamos BUILD_MODE=dynamic; QTDIR será preenchido pela action debaixo
+          "BUILD_MODE=dynamic" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Instalar Qt DINÂMICO (fallback)
+        if: env.BUILD_MODE == 'dynamic'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 5.15.2
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          modules: qtmultimedia qtserialport qtsvg
+          cache: true
+
+      - name: Exportar QTDIR dinâmico e PATH
+        if: env.BUILD_MODE == 'dynamic'
+        shell: pwsh
+        run: |
+          # Qt5_Dir é definido pela action install-qt
+          if (-not $env:Qt5_Dir) { Write-Error "Qt5_Dir não definido após install-qt-action."; exit 1 }
+          "QTDIR=$($env:Qt5_Dir)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          (Join-Path $env:Qt5_Dir 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          qmake -v
+
+      # ====== BUILD ======
       - name: Criar diretório de build
         shell: cmd
         run: |
           if not exist build mkdir build
 
-      - name: Configurar (qmake estático)
+      - name: Configurar (qmake)
         shell: cmd
-        env:
-          QTDIR: ${{ env.QT_PREFIX }}
         run: |
           cd build
           call qmake -v
-          rem Ajuste -spec se o seu kit exigir outro mkspec
-          call qmake "..\${{ inputs.project_pro }}" -spec win32-msvc CONFIG+=release CONFIG+=static
+          if "%BUILD_MODE%"=="static" (
+            call qmake "..\${{ inputs.project_pro }}" -spec win32-msvc CONFIG+=release CONFIG+=static
+          ) else (
+            call qmake "..\${{ inputs.project_pro }}" -spec win32-msvc CONFIG+=release
+          )
 
-      - name: Build (nmake)
+      - name: Compilar (nmake)
         shell: cmd
         run: |
           cd build
@@ -136,43 +172,28 @@ jobs:
           dir /s /b build
           echo === QMAKE STASH ===
           if exist build\.qmake.stash type build\.qmake.stash
+          echo BUILD_MODE=%BUILD_MODE%
 
+      # ====== EMPACOTAMENTO ======
       - name: Preparar artefatos para pacote
-        shell: cmd
+        shell: pwsh
         run: |
-          if exist bundle rmdir /s /q bundle
-          mkdir bundle
-          if not exist "${{ inputs.artifact_dir }}" (
-            echo ERRO: Pasta de artefatos nao encontrada: ${{ inputs.artifact_dir }}
-            exit /b 1
-          )
-          echo Copiando saida de ${{ inputs.artifact_dir }} para bundle...
-          xcopy /E /I /Y "${{ inputs.artifact_dir }}" "bundle\"
-          rem Copie recursos extras aqui se necessario (ex.: configs, qml, icons)
-          rem xcopy /E /I /Y "assets\*" "bundle\assets\"
+          $outDir = "${{ inputs.artifact_dir }}"
+          if (-not (Test-Path $outDir)) {
+            Write-Error "Pasta de artefatos não encontrada: $outDir"
+            exit 1
+          }
+          if (Test-Path "bundle") { Remove-Item -Recurse -Force bundle }
+          New-Item -ItemType Directory -Path bundle | Out-Null
+          Write-Host "Copiando $outDir -> bundle"
+          robocopy $outDir bundle /MIR | Out-Null
 
-      - name: Gerar ZIP
-        shell: cmd
-        run: |
-          if exist "%ZIP_NAME%" del "%ZIP_NAME%"
-          powershell -Command "Compress-Archive -Path 'bundle\*' -DestinationPath '${{ env.ZIP_NAME }}' -Force"
-          dir /-C "%ZIP_NAME%"
-
-      - name: Upload artifact (CI)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_NAME }}
-          if-no-files-found: error
-
-      - name: Criar Release com tag ${{ inputs.version }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.version }}
-          name: SimulIDE static ${{ inputs.version }}
-          body: ${{ inputs.notes }}
-          prerelease: ${{ inputs.prerelease }}
-          target_commitish: ${{ github.sha }}
-          files: ${{ env.ZIP_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Se for dinâmico, rodar windeployqt em cada .exe encontrado
+          if ($env:BUILD_MODE -eq "dynamic") {
+            $exes = Get-ChildItem -Path bundle -Filter *.exe -Recurse
+            if (-not $exes) {
+              Write-Warning "Nenhum .exe encontrado para windeployqt."
+            } else {
+              foreach ($e in $exes) {
+                Write-Host "windeployqt -> $($e.FullName)"
+                & windeployqt.exe -
