@@ -165,10 +165,10 @@ jobs:
             # .qmake.conf "proxy" (single-quoted here-string para não expandir $$)
             $srcRoot = $env:QT_SRC_ROOT -replace '\\','/'
             $shadowConf = @'
-QT_SOURCE_TREE = REPLACEME_SRC
-QT_BUILD_TREE  = $$PWD
-include($$QT_SOURCE_TREE/.qmake.conf)
-'@
+            QT_SOURCE_TREE = REPLACEME_SRC
+            QT_BUILD_TREE  = $$PWD
+            include($$QT_SOURCE_TREE/.qmake.conf)
+            '@
             $shadowConf = $shadowConf -replace 'REPLACEME_SRC', $srcRoot
             Set-Content (Join-Path (Get-Location) '.qmake.conf') $shadowConf -Encoding UTF8
 
