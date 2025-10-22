@@ -1,278 +1,276 @@
-name: MinGW Build & Release (qemu-simulide)
+name: Windows MSVC Static (Qt5 one-exe) + Tag/Release
 
 on:
+  push:
+    branches: [ "master" ]
+    tags: [ "v*", "V*", "release-*" ]
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão/Tag (ex.: v0.1.0)"
+        description: "Versão (ex.: v2.0.0-RC1)"
+        required: false
+        type: string
+      publish_release:
+        description: "Publicar Release?"
         required: true
-        type: string
-      prerelease:
-        description: "Marcar como pré-release?"
-        required: false
-        default: false
+        default: true
         type: boolean
-      notes:
-        description: "Notas da release (opcional)"
-        required: false
-        type: string
-      qemu_ref:
-        description: "Ref do QEMU se precisar clonar (ex.: v9.2.0 ou main)"
-        required: false
-        default: "v9.2.0"
-        type: string
 
 permissions:
   contents: write
 
 jobs:
-  build-release:
+  qt-static-build:
+    name: Build & Cache Qt 5.15.2 Static (MSVC)
     runs-on: windows-latest
-
     env:
-      ZIP_NAME: qemu-simulide-windows-mingw64-${{ inputs.version }}.zip
+      QT_VER: "5.15.2"
+      QT_TRIPLET: "msvc2019_64"
+      QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
+      QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
 
     steps:
-      - name: Habilitar long paths no Git
-        run: |
-          git config --system core.longpaths true
-          git config --global core.longpaths true
+      - name: Setup MSVC (VS 2022, x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-      - name: Checkout (com submódulos recursivos)
+      - name: Restore Qt static cache
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: "${{ env.QT_INSTALL_PREFIX }}"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v1"
+
+      - name: Install Python (for aqt)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Perl (required by Qt build on Windows)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: "5.32"
+
+      - name: Install aqt
+        run: |
+          pip install "aqtinstall==3.1.*"
+
+      - name: Ensure Qt sources present
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'C:\qt-src\5.15.2\Src')) {
+            python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
+          }
+
+      - name: Configure + Build + Install Qt (static + /MT) if not cached
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
+        run: |
+          cd /d %QT_SRC_ROOT%\qtbase
+          call configure.bat -prefix "%QT_INSTALL_PREFIX%" -platform win32-msvc ^
+            -release -static -static-runtime -opensource -confirm-license ^
+            -opengl desktop -nomake tests -nomake examples ^
+            -no-icu -no-dbus -no-angle -mp
+          nmake /NOLOGO
+          nmake /NOLOGO install
+
+      - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
+        run: |
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          set MOD_BUILD=C:\qt-build-mods
+          if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
+
+          goto after_functions
+          :ensure_module
+          rem %1 modulo, %2 lib base, %3 pri base
+          set MOD=%1
+          set LIBBASE=%2
+          set PRIBASE=%3
+          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
+          set MOD_BLD=%MOD_BUILD%\%MOD%
+
+          set NEED=0
+          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
+          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
+
+          if "%NEED%"=="0" (
+            echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD%.
+            goto :eof
+          )
+
+          echo === Construindo %MOD% (faltava lib ou pri) ===
+          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
+          cd /d "%MOD_BLD%"
+          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
+          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
+          nmake /NOLOGO
+          nmake /NOLOGO install
+          echo === %MOD% instalado. ===
+          goto :eof
+          :after_functions
+
+          call :ensure_module qtsvg Qt5Svg qt_lib_svg
+          call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia
+          call :ensure_module qtserialport Qt5SerialPort qt_lib_serialport
+
+          echo ----- Present Qt libs -----
+          dir /b "%QTDIR%\lib\Qt5*.lib"
+          echo ----- Present Qt module PRIs -----
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+
+  build-app:
+    name: Build App (Static, One EXE) + Tag/Release
+    needs: qt-static-build
+    runs-on: windows-latest
+    env:
+      PRO_DIR: "build_XX"
+      PRO_FILE: "SimulIDE_Build.pro"
+      BUILD_DIR: "out_msvc"
+      CONFIG: "release"
+      QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
+          submodules: true
 
-      - name: Setup MSYS2 (MINGW64)
-        uses: msys2/setup-msys2@v2
+      - name: Setup MSVC (VS 2022, x64)
+        uses: ilammy/msvc-dev-cmd@v1
         with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            git
-            base-devel
-            rsync
-            zip
-            findutils
-            grep
-            sed
-            gawk
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-python
-            mingw-w64-x86_64-pkgconf
-            mingw-w64-x86_64-glib2
-            mingw-w64-x86_64-pixman
-            mingw-w64-x86_64-SDL2
-            mingw-w64-x86_64-libslirp
-            mingw-w64-x86_64-gnutls
-            mingw-w64-x86_64-libssh
-            mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-libpng
-            mingw-w64-x86_64-libjpeg-turbo
-            mingw-w64-x86_64-capstone
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-meson
-            mingw-w64-x86_64-ntldd
-            mingw-w64-x86_64-bzip2
-            mingw-w64-x86_64-ncurses
+          arch: x64
 
-      - name: Versões das ferramentas
-        shell: msys2 {0}
+      - name: Restore Qt static cache
+        uses: actions/cache@v4
+        with:
+          path: "${{ env.QT_INSTALL_PREFIX }}"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
+
+      # Define APP_VER e cria tag automaticamente se veio por workflow_dispatch com version
+      - name: Compute version + optionally create tag
+        id: ver
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ev = context.eventName;
+            let ver = '';
+            if (ev === 'workflow_dispatch' && core.getInput('version')) {
+              ver = core.getInput('version');
+            } else if (context.ref && context.ref.startsWith('refs/tags/')) {
+              ver = context.ref.replace('refs/tags/','');
+            } else {
+              ver = `dev${context.runNumber}`;
+            }
+            ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
+            core.exportVariable('APP_VER', ver);
+            core.info(`>> Versão: ${ver}`);
+
+            // cria tag se foi manual com version e se nao existir
+            if (ev === 'workflow_dispatch' && core.getInput('version')) {
+              const tagRef = `refs/tags/${ver}`;
+              try {
+                await github.rest.git.getRef({ owner: context.repo.owner, repo: context.repo.repo, ref: tagRef });
+                core.info(`Tag ${ver} já existe.`);
+              } catch (e) {
+                if (e.status === 404) {
+                  const sha = context.sha;
+                  await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: tagRef, sha });
+                  core.info(`Criada tag ${ver} em ${sha}`);
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+      - name: Prepare build directory (out-of-source)
+        shell: pwsh
         run: |
-          which gcc && gcc --version
-          which python3 && python3 --version
-          which meson && meson --version
-          which ninja && ninja --version
-          which ntldd && ntldd --version
+          if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
-      # Descobre a raiz do QEMU no repo; se não achar, clona a ref pedida
-      - name: Detectar QEMU_DIR (ou clonar QEMU)
-        shell: msys2 {0}
+      - name: Debug installed Qt modules
+        shell: pwsh
         run: |
-          set -euo pipefail
-          echo "Procurando QEMU no repositório..."
-          QEMU_DIR=""
+          Write-Host "Libraries in $env:QT_INSTALL_PREFIX\lib:"
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\lib" -Filter "Qt5*.lib" | Sort-Object Name | Select-Object -ExpandProperty Name
+          Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
 
-          # 1) Tente encontrar um 'configure' típico do QEMU
-          CANDIDATE=$(find . -maxdepth 3 -type f -name configure | head -n1 || true)
-          if [ -n "${CANDIDATE:-}" ]; then
-            QEMU_DIR="$(dirname "$CANDIDATE")"
-          else
-            # 2) Caso não tenha ./configure, tente 'project('qemu' em meson.build'
-            CANDIDATE=$(grep -RIl "project('qemu'" --include=meson.build . | head -n1 || true)
-            if [ -n "${CANDIDATE:-}" ]; then
-              QEMU_DIR="$(dirname "$CANDIDATE")"
-            fi
-          fi
-
-          if [ -z "$QEMU_DIR" ]; then
-            echo "QEMU não encontrado no repo. Fazendo clone raso da ref ${{ inputs.qemu_ref }}..."
-            mkdir -p external
-            git clone --depth 1 --branch "${{ inputs.qemu_ref }}" https://gitlab.com/qemu-project/qemu.git external/qemu
-            QEMU_DIR="$PWD/external/qemu"
-          fi
-
-          echo "QEMU_DIR detectado: $QEMU_DIR"
-          echo "QEMU_DIR=$QEMU_DIR" >> "$GITHUB_ENV"
-
-      # Configura usando ./configure se existir; senão usa meson setup
-      - name: Configurar (configure ou meson)
-        shell: msys2 {0}
-        working-directory: ${{ env.QEMU_DIR }}
+      - name: Force static CRT (/MT) in .pro (before qmake)
+        shell: pwsh
         run: |
-          set -euo pipefail
-          if [ -x "./configure" ]; then
-            echo "Usando ./configure..."
-            ./configure \
-              --prefix=$MINGW_PREFIX \
-              --target-list=xtensa-softmmu \
-              --enable-sdl \
-              --enable-slirp \
-              --enable-capstone \
-              --enable-gnutls \
-              --enable-libssh \
-              --disable-werror
-          else
-            echo "Sem ./configure. Usando meson setup..."
-            # default_targets é equivalente à target-list para meson
-            meson setup build \
-              --prefix=$MINGW_PREFIX \
-              -Ddefault_targets=xtensa-softmmu \
-              -Dsdl=enabled \
-              -Dslirp=enabled \
-              -Dcapstone=enabled \
-              -Dgnutls=enabled \
-              -Dlibssh=enabled \
-              -Dwerror=false
-          fi
+          $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
+          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço /MT."; exit 0 }
+          Add-Content $proPath "QMAKE_CFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
 
-      - name: Build (ninja ou make)
-        shell: msys2 {0}
-        working-directory: ${{ env.QEMU_DIR }}
+      - name: qmake (Static Release) using build_XX/SimulIDE_Build.pro
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
         run: |
-          set -euo pipefail
-          if [ -x "./configure" ]; then
-            make -j"$(nproc || echo 2)"
-          else
-            ninja -C build
-          fi
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          set QMAKEPATH=%QTDIR%\mkspecs
+          "%QTDIR%\bin\qmake.exe" -query
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+          dir /b "%QTDIR%\lib\Qt5*.lib"
+          cd %BUILD_DIR%
+          "%QTDIR%\bin\qmake.exe" "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
 
-      - name: Install to staging (DESTDIR)
-        shell: msys2 {0}
-        working-directory: ${{ env.QEMU_DIR }}
+      - name: Build with nmake
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
         run: |
-          set -euo pipefail
-          rm -rf "$GITHUB_WORKSPACE/dist" "$GITHUB_WORKSPACE/bundle"
-          mkdir -p "$GITHUB_WORKSPACE/dist"
-          if [ -x "./configure" ]; then
-            make install DESTDIR="$GITHUB_WORKSPACE/dist"
-          else
-            ninja -C build install DESTDIR="$GITHUB_WORKSPACE/dist"
-          fi
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          cd %BUILD_DIR%
+          nmake /NOLOGO
 
-      # Normaliza layout + copia DLLs com ntldd
-      - name: Criar bundle flat + copiar DLLs de runtime
-        shell: msys2 {0}
+      - name: Locate EXE (single-file)
+        id: out
+        shell: pwsh
         run: |
-          set -euo pipefail
-          shopt -s nullglob
+          $exe = Get-ChildItem ".\${env:BUILD_DIR}" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $exe) {
+            $exe = Get-ChildItem "$env:GITHUB_WORKSPACE" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
+                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          }
+          if (-not $exe) { throw "Nenhum .exe encontrado após o build." }
+          "EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "EXE encontrado: $($exe.FullName)"
 
-          # 1) Onde os EXEs foram instalados
-          EXE_PATH="$(find dist -type f -name 'qemu-system-xtensa*.exe' -print | head -n1 || true)"
-          if [ -z "$EXE_PATH" ]; then
-            echo "qemu-system-xtensa*.exe não encontrado em dist/"
-            find dist -maxdepth 3 -type f | sed 's/^/  - /'
-            exit 1
-          fi
-          BIN_DIR="$(dirname "$EXE_PATH")"
-          echo "BIN_DIR detectado: $BIN_DIR"
+          $zip = "SimulIDE-${env:APP_VER}-win64-MSVC-STATIC.zip"
+          Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
+          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "ZIP criado: $zip"
 
-          # 2) Pasta final "flat"
-          rm -rf bundle
-          mkdir -p bundle
-          cp -v "$BIN_DIR"/qemu*.exe bundle/ || true
-
-          # 3) share/qemu (ROMs/firmware/gui files)
-          if [ -d "$MINGW_PREFIX/share/qemu" ]; then
-            mkdir -p bundle/share
-            rsync -a "$MINGW_PREFIX/share/qemu" "bundle/share/"
-          fi
-          if [ -d "$(dirname "$BIN_DIR")/share/qemu" ]; then
-            mkdir -p bundle/share
-            rsync -a --ignore-existing "$(dirname "$BIN_DIR")/share/qemu" "bundle/share/" || \
-            cp -r "$(dirname "$BIN_DIR")/share/qemu" "bundle/share/"
-          fi
-
-          # 4) Resolver dependências com ntldd
-          mapfile -t DEPS < <(
-            find bundle -maxdepth 1 -type f -name '*.exe' -print0 |
-            xargs -0 -I{} ntldd -R "{}" |
-            sed -n 's/.*=> \([^ ]*\.dll\).*/\1/p' |
-            sed 's#\\#/#g' |
-            awk 'NF && $0 ~ /\.dll$/ {print}' |
-            sort -u
-          )
-          for d in "${DEPS[@]}"; do
-            if [ -f "$d" ]; then
-              cp -n "$d" bundle/
-            fi
-          done
-
-          # 5) Fallback DLLs comuns
-          for dll in \
-            libbz2-1.dll zlib1.dll libzstd.dll \
-            libncursesw6.dll libreadline8.dll \
-            libwinpthread-1.dll libstdc++-6.dll libgcc_s_seh-1.dll \
-            SDL2.dll \
-            libglib-2.0-0.dll libgobject-2.0-0.dll libgmodule-2.0-0.dll libgthread-2.0-0.dll \
-            libgio-2.0-0.dll libintl-8.dll libiconv-2.dll libpcre2-8-0.dll \
-            libpixman-1-0.dll libslirp-0.dll \
-            libgnutls-30.dll libssh.dll \
-            libcapstone.dll \
-            libjpeg-8.dll libpng16-16.dll libffi-8.dll \
-          ; do
-            [ -f "/mingw64/bin/$dll" ] && cp -n "/mingw64/bin/$dll" bundle/ || true
-          done
-
-          echo "Conteúdo final da pasta bundle/:"
-          ls -al bundle
-          echo "Árvore:"
-          (cd bundle && find . -maxdepth 2 -type f | sed 's/^/  - /')
-
-      # Package (ZIP via MSYS2, sem PowerShell)
-      - name: Gerar ZIP
-        shell: msys2 {0}
-        run: |
-          rm -f "${ZIP_NAME}"
-          (cd bundle && zip -r "../${ZIP_NAME}" .)
-          ls -lh "${ZIP_NAME}"
-
-      - name: Upload artifact (CI)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_NAME }}
+          name: SimulIDE-${{ env.APP_VER }}-win64-MSVC-STATIC
+          path: "${{ steps.out.outputs.ZIP_NAME }}"
           if-no-files-found: error
+          retention-days: 14
 
-      # Create tag + GitHub Release
-      - name: Criar Release com tag ${{ inputs.version }}
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version }}
-          name: qemu-simulide ${{ inputs.version }}
-          body: ${{ inputs.notes }}
-          prerelease: ${{ inputs.prerelease }}
-          target_commitish: ${{ github.sha }}
-          files: ${{ env.ZIP_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Logs úteis em caso de falha
-      - name: Show logs on failure (config.log / meson-log)
-        if: ${{ failure() }}
-        shell: msys2 {0}
-        run: |
-          set -euo pipefail
-          { test -f config.log && echo "===== BEGIN config.log =====" && sed -n '1,400p' config.log && echo "===== END config.log ====="; } || echo "config.log not found."
-          { test -f build/meson-logs/meson-log.txt && echo "===== BEGIN meson-log.txt =====" && sed -n '1,400p' build/meson-logs/meson-log.txt && echo "===== END meson-log.txt ====="; } || echo "meson-log.txt not found."
+          tag_name: ${{ env.APP_VER }}
+          files: "${{ steps.out.outputs.ZIP_NAME }}"
+          generate_release_notes: true
