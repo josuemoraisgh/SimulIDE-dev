@@ -1,199 +1,276 @@
-name: MSVC Qt Build & Release (SimulIDE)
+name: Windows MSVC Static (Qt5 one-exe) + Tag/Release
 
 on:
+  push:
+    branches: [ "master" ]
+    tags: [ "v*", "V*", "release-*" ]
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão/Tag (ex.: v0.1.0)"
-        required: true
-        type: string
-      prerelease:
-        description: "Marcar como pré-release?"
+        description: "Versão (ex.: v2.0.0-RC1)"
         required: false
-        default: false
+        type: string
+      publish_release:
+        description: "Publicar Release?"
+        required: true
+        default: true
         type: boolean
-      notes:
-        description: "Notas da release (opcional)"
-        required: false
-        type: string
-      qt_static_url:
-        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (deixe vazio p/ tentar asset releases/latest)"
-        required: false
-        type: string
-      project_pro:
-        description: "Caminho do .pro"
-        required: true
-        default: "build_XX/SimulIDE_Build.pro"
-        type: string
-      artifact_dir:
-        description: "Pasta com os binários finais"
-        required: true
-        default: "build_XX/executables/SimulIDE_2.0.0-"
-        type: string
 
 permissions:
   contents: write
 
 jobs:
-  build-release:
+  qt-static-build:
+    name: Build & Cache Qt 5.15.2 Static (MSVC)
     runs-on: windows-latest
-
     env:
-      QT_VERSION: 5.15.2
-      QT_STATIC_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
-      # mude para false se quiser falhar quando não houver Qt estático
-      ALLOW_DYNAMIC_FALLBACK: true
-      ZIP_NAME_BASE: SimulIDE-windows-${{ inputs.version }}
+      QT_VER: "5.15.2"
+      QT_TRIPLET: "msvc2019_64"
+      QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
+      QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
 
     steps:
-      - name: Habilitar long paths no Git
-        shell: cmd
-        run: |
-          git config --system core.longpaths true
-          git config --global core.longpaths true
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Configurar ambiente MSVC (VS Developer)
+      - name: Setup MSVC (VS 2022, x64)
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      # ====== RESOLVER/INSTALAR QT ESTÁTICO OU DINÂMICO ======
-      - name: Resolver Qt (preferir estático; fallback para dinâmico)
-        id: qt
-        shell: pwsh
-        env:
-          QT_STATIC_PREFIX: ${{ env.QT_STATIC_PREFIX }}
-        run: |
-          $staticPrefix = "${env:QT_STATIC_PREFIX}"
-          $qmakeStatic  = Join-Path $staticPrefix 'bin\qmake.exe'
-
-          function Export-Qt($prefix, $mode) {
-            "QTDIR=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            (Join-Path $prefix 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-            "BUILD_MODE=$mode" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          }
-
-          if (Test-Path $qmakeStatic) {
-            Write-Host "Qt estático já presente: $staticPrefix"
-            Export-Qt $staticPrefix "static"
-            exit 0
-          }
-
-          # Tentar baixar Qt estático de input ou asset releases/latest
-          $url = "${{ inputs.qt_static_url }}"
-          if ([string]::IsNullOrWhiteSpace($url)) {
-            $repo = $env:GITHUB_REPOSITORY
-            $assetName = "qt-static-5.15.2-msvc2019_64-static.zip"
-            $url = "https://github.com/$repo/releases/latest/download/$assetName"
-            Write-Host "qt_static_url vazio. Tentando asset: $url"
-          } else {
-            Write-Host "Baixando Qt estático de $url"
-          }
-
-          try {
-            $zipPath = Join-Path $env:TEMP 'qt_static.zip'
-            Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
-            if (-not (Test-Path 'C:\qt-static\5.15.2')) { New-Item -ItemType Directory -Path 'C:\qt-static\5.15.2' | Out-Null }
-            Expand-Archive -Path $zipPath -DestinationPath 'C:\' -Force
-          } catch {
-            Write-Warning "Não foi possível baixar/extrair o Qt estático: $($_.Exception.Message)"
-          }
-
-          if (Test-Path $qmakeStatic) {
-            Write-Host "Qt estático pronto após download: $staticPrefix"
-            Export-Qt $staticPrefix "static"
-            exit 0
-          }
-
-          if ("${{ env.ALLOW_DYNAMIC_FALLBACK }}" -ne "true") {
-            Write-Error "Qt estático não disponível e fallback dinâmico desabilitado."
-            exit 1
-          }
-
-          # Fallback: instalar Qt DINÂMICO com Multimedia/SerialPort/Svg
-          Write-Host "Aplicando fallback: instalando Qt DINÂMICO 5.15.2 MSVC2019 x64..."
-          # marcamos BUILD_MODE=dynamic; QTDIR será preenchido pela action debaixo
-          "BUILD_MODE=dynamic" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Instalar Qt DINÂMICO (fallback)
-        if: env.BUILD_MODE == 'dynamic'
-        uses: jurplel/install-qt-action@v4
+      - name: Restore Qt static cache
+        id: cache-qt
+        uses: actions/cache@v4
         with:
-          version: 5.15.2
-          host: windows
-          target: desktop
-          arch: win64_msvc2019_64
-          modules: qtmultimedia qtserialport qtsvg
-          cache: true
+          path: "${{ env.QT_INSTALL_PREFIX }}"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v1"
 
-      - name: Exportar QTDIR dinâmico e PATH
-        if: env.BUILD_MODE == 'dynamic'
+      - name: Install Python (for aqt)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Perl (required by Qt build on Windows)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: "5.32"
+
+      - name: Install aqt
+        run: |
+          pip install "aqtinstall==3.1.*"
+
+      - name: Ensure Qt sources present
         shell: pwsh
         run: |
-          # Qt5_Dir é definido pela action install-qt
-          if (-not $env:Qt5_Dir) { Write-Error "Qt5_Dir não definido após install-qt-action."; exit 1 }
-          "QTDIR=$($env:Qt5_Dir)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          (Join-Path $env:Qt5_Dir 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          qmake -v
+          if (-not (Test-Path 'C:\qt-src\5.15.2\Src')) {
+            python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
+          }
 
-      # ====== BUILD ======
-      - name: Criar diretório de build
+      - name: Configure + Build + Install Qt (static + /MT) if not cached
+        if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
-          if not exist build mkdir build
+          cd /d %QT_SRC_ROOT%\qtbase
+          call configure.bat -prefix "%QT_INSTALL_PREFIX%" -platform win32-msvc ^
+            -release -static -static-runtime -opensource -confirm-license ^
+            -opengl desktop -nomake tests -nomake examples ^
+            -no-icu -no-dbus -no-angle -mp
+          nmake /NOLOGO
+          nmake /NOLOGO install
 
-      - name: Configurar (qmake)
+      - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
         shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
-          cd build
-          call qmake -v
-          if "%BUILD_MODE%"=="static" (
-            call qmake "..\${{ inputs.project_pro }}" -spec win32-msvc CONFIG+=release CONFIG+=static
-          ) else (
-            call qmake "..\${{ inputs.project_pro }}" -spec win32-msvc CONFIG+=release
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          set MOD_BUILD=C:\qt-build-mods
+          if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
+
+          goto after_functions
+          :ensure_module
+          rem %1 modulo, %2 lib base, %3 pri base
+          set MOD=%1
+          set LIBBASE=%2
+          set PRIBASE=%3
+          set MOD_SRC=%QT_SRC_ROOT%\%MOD%
+          set MOD_BLD=%MOD_BUILD%\%MOD%
+
+          set NEED=0
+          if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
+          if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
+
+          if "%NEED%"=="0" (
+            echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD%.
+            goto :eof
           )
 
-      - name: Compilar (nmake)
-        shell: cmd
-        run: |
-          cd build
+          echo === Construindo %MOD% (faltava lib ou pri) ===
+          if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
+          cd /d "%MOD_BLD%"
+          set QMAKEFEATURES=%MOD_SRC%\mkspecs\features
+          "%QTDIR%\bin\qmake" "%MOD_SRC%\src\src.pro" -r
           nmake /NOLOGO
+          nmake /NOLOGO install
+          echo === %MOD% instalado. ===
+          goto :eof
+          :after_functions
 
-      - name: Mostrar saída de build
-        shell: cmd
-        run: |
-          echo === ARVORE DE BUILD ===
-          dir /s /b build
-          echo === QMAKE STASH ===
-          if exist build\.qmake.stash type build\.qmake.stash
-          echo BUILD_MODE=%BUILD_MODE%
+          call :ensure_module qtsvg Qt5Svg qt_lib_svg
+          call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia
+          call :ensure_module qtserialport Qt5SerialPort qt_lib_serialport
 
-      # ====== EMPACOTAMENTO ======
-      - name: Preparar artefatos para pacote
+          echo ----- Present Qt libs -----
+          dir /b "%QTDIR%\lib\Qt5*.lib"
+          echo ----- Present Qt module PRIs -----
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+
+  build-app:
+    name: Build App (Static, One EXE) + Tag/Release
+    needs: qt-static-build
+    runs-on: windows-latest
+    env:
+      PRO_DIR: "build_XX"
+      PRO_FILE: "SimulIDE_Build.pro"
+      BUILD_DIR: "out_msvc"
+      CONFIG: "release"
+      QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup MSVC (VS 2022, x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Restore Qt static cache
+        uses: actions/cache@v4
+        with:
+          path: "${{ env.QT_INSTALL_PREFIX }}"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
+
+      # Define APP_VER e cria tag automaticamente se veio por workflow_dispatch com version
+      - name: Compute version + optionally create tag
+        id: ver
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ev = context.eventName;
+            let ver = '';
+            if (ev === 'workflow_dispatch' && core.getInput('version')) {
+              ver = core.getInput('version');
+            } else if (context.ref && context.ref.startsWith('refs/tags/')) {
+              ver = context.ref.replace('refs/tags/','');
+            } else {
+              ver = `dev${context.runNumber}`;
+            }
+            ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
+            core.exportVariable('APP_VER', ver);
+            core.info(`>> Versão: ${ver}`);
+
+            // cria tag se foi manual com version e se nao existir
+            if (ev === 'workflow_dispatch' && core.getInput('version')) {
+              const tagRef = `refs/tags/${ver}`;
+              try {
+                await github.rest.git.getRef({ owner: context.repo.owner, repo: context.repo.repo, ref: tagRef });
+                core.info(`Tag ${ver} já existe.`);
+              } catch (e) {
+                if (e.status === 404) {
+                  const sha = context.sha;
+                  await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: tagRef, sha });
+                  core.info(`Criada tag ${ver} em ${sha}`);
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+      - name: Prepare build directory (out-of-source)
         shell: pwsh
         run: |
-          $outDir = "${{ inputs.artifact_dir }}"
-          if (-not (Test-Path $outDir)) {
-            Write-Error "Pasta de artefatos não encontrada: $outDir"
-            exit 1
-          }
-          if (Test-Path "bundle") { Remove-Item -Recurse -Force bundle }
-          New-Item -ItemType Directory -Path bundle | Out-Null
-          Write-Host "Copiando $outDir -> bundle"
-          robocopy $outDir bundle /MIR | Out-Null
+          if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
-          # Se for dinâmico, rodar windeployqt em cada .exe encontrado
-          if ($env:BUILD_MODE -eq "dynamic") {
-            $exes = Get-ChildItem -Path bundle -Filter *.exe -Recurse
-            if (-not $exes) {
-              Write-Warning "Nenhum .exe encontrado para windeployqt."
-            } else {
-              foreach ($e in $exes) {
-                Write-Host "windeployqt -> $($e.FullName)"
-                & windeployqt.exe -
+      - name: Debug installed Qt modules
+        shell: pwsh
+        run: |
+          Write-Host "Libraries in $env:QT_INSTALL_PREFIX\lib:"
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\lib" -Filter "Qt5*.lib" | Sort-Object Name | Select-Object -ExpandProperty Name
+          Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
+
+      - name: Force static CRT (/MT) in .pro (before qmake)
+        shell: pwsh
+        run: |
+          $proPath = Join-Path $env:PRO_DIR $env:PRO_FILE
+          if (-not (Test-Path $proPath)) { Write-Host "Aviso: $proPath não encontrado. Pulando reforço /MT."; exit 0 }
+          Add-Content $proPath "QMAKE_CFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_CXXFLAGS_RELEASE += /MT`n"
+          Add-Content $proPath "QMAKE_LFLAGS_RELEASE += /NODEFAULTLIB:MSVCRT`n"
+
+      - name: qmake (Static Release) using build_XX/SimulIDE_Build.pro
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          set QMAKEPATH=%QTDIR%\mkspecs
+          "%QTDIR%\bin\qmake.exe" -query
+          dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+          dir /b "%QTDIR%\lib\Qt5*.lib"
+          cd %BUILD_DIR%
+          "%QTDIR%\bin\qmake.exe" "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
+
+      - name: Build with nmake
+        shell: cmd
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          set QTDIR=%QT_INSTALL_PREFIX%
+          set PATH=%QTDIR%\bin;%PATH%
+          cd %BUILD_DIR%
+          nmake /NOLOGO
+
+      - name: Locate EXE (single-file)
+        id: out
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem ".\${env:BUILD_DIR}" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $exe) {
+            $exe = Get-ChildItem "$env:GITHUB_WORKSPACE" -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
+                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          }
+          if (-not $exe) { throw "Nenhum .exe encontrado após o build." }
+          "EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "EXE encontrado: $($exe.FullName)"
+
+          $zip = "SimulIDE-${env:APP_VER}-win64-MSVC-STATIC.zip"
+          Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
+          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "ZIP criado: $zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulIDE-${{ env.APP_VER }}-win64-MSVC-STATIC
+          path: "${{ steps.out.outputs.ZIP_NAME }}"
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.APP_VER }}
+          files: "${{ steps.out.outputs.ZIP_NAME }}"
+          generate_release_notes: true
