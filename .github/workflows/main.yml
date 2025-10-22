@@ -17,7 +17,7 @@ on:
         required: false
         type: string
       qt_static_url:
-        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (deixe vazio se já existir em C:/qt-static)"
+        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (deixe vazio para baixar do asset releases/latest)"
         required: false
         type: string
       project_pro:
@@ -66,7 +66,7 @@ jobs:
         with:
           arch: x64
 
-      # PowerShell aqui evita bugs de parênteses do cmd
+      # Baixa/usa Qt estático: (1) usa local; (2) usa input qt_static_url; (3) baixa asset releases/latest/qt-static-5.15.2-msvc2019_64-static.zip
       - name: Preparar Qt estático (C:\qt-static\5.15.2\msvc2019_64-static)
         shell: pwsh
         env:
@@ -77,18 +77,27 @@ jobs:
           if (Test-Path $qmake) {
             Write-Host "Qt estático já presente em $qtDir"
           } else {
-            if ([string]::IsNullOrWhiteSpace("${{ inputs.qt_static_url }}")) {
-              Write-Error "Qt estático não encontrado e nenhuma URL foi fornecida (qt_static_url)."
-              exit 1
+            $url = "${{ inputs.qt_static_url }}"
+            if ([string]::IsNullOrWhiteSpace($url)) {
+              # tenta baixar do asset da última release deste repo
+              $repo = $env:GITHUB_REPOSITORY
+              $assetName = "qt-static-5.15.2-msvc2019_64-static.zip"
+              $url = "https://github.com/$repo/releases/latest/download/$assetName"
+              Write-Host "qt_static_url vazio. Tentando baixar asset: $url"
+            } else {
+              Write-Host "Baixando Qt estático de $url"
             }
             $zipPath = Join-Path $env:TEMP 'qt_static.zip'
-            Write-Host "Baixando Qt estático de ${{ inputs.qt_static_url }}"
-            Invoke-WebRequest -Uri "${{ inputs.qt_static_url }}" -OutFile $zipPath
+            try {
+              Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
+            } catch {
+              Write-Error "Falha ao baixar Qt estático de '$url'. Forneça 'qt_static_url' ou faça upload do asset na última release com o nome 'qt-static-5.15.2-msvc2019_64-static.zip'."
+              exit 1
+            }
             if (-not (Test-Path 'C:\qt-static\5.15.2')) { New-Item -ItemType Directory -Path 'C:\qt-static\5.15.2' | Out-Null }
-            # O ZIP deve extrair a árvore para C:\qt-static\5.15.2\msvc2019_64-static\...
             Expand-Archive -Path $zipPath -DestinationPath 'C:\' -Force
             if (-not (Test-Path $qmake)) {
-              Write-Error "qmake.exe não encontrado após extração. Verifique a estrutura do ZIP."
+              Write-Error "qmake.exe não encontrado após extração. Verifique a estrutura do ZIP (deve conter C:\qt-static\5.15.2\msvc2019_64-static\bin\qmake.exe)."
               exit 1
             }
           }
@@ -141,9 +150,6 @@ jobs:
           xcopy /E /I /Y "${{ inputs.artifact_dir }}" "bundle\"
           rem Copie recursos extras aqui se necessario (ex.: configs, qml, icons)
           rem xcopy /E /I /Y "assets\*" "bundle\assets\"
-
-          rem Se quiser filtrar por glob (ex.: somente *.exe), descomente:
-          rem for %%G in (${{ inputs.artifact_glob }}) do @echo %%G
 
       - name: Gerar ZIP
         shell: cmd
