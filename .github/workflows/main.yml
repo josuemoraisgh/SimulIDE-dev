@@ -16,6 +16,11 @@ on:
         description: "Notas da release (opcional)"
         required: false
         type: string
+      qemu_ref:
+        description: "Ref do QEMU se precisar clonar (ex.: v9.2.0 ou main)"
+        required: false
+        default: "v9.2.0"
+        type: string
 
 permissions:
   contents: write
@@ -33,10 +38,10 @@ jobs:
           git config --system core.longpaths true
           git config --global core.longpaths true
 
-      - name: Checkout (sem submódulos)
+      - name: Checkout (com submódulos recursivos)
         uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: recursive
           fetch-depth: 0
 
       - name: Setup MSYS2 (MINGW64)
@@ -49,6 +54,10 @@ jobs:
             base-devel
             rsync
             zip
+            findutils
+            grep
+            sed
+            gawk
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-python
             mingw-w64-x86_64-pkgconf
@@ -77,33 +86,92 @@ jobs:
           which ninja && ninja --version
           which ntldd && ntldd --version
 
-      # ---- BUILD (configure + make) ----
-      - name: Configure (legacy ./configure)
+      # Descobre a raiz do QEMU no repo; se não achar, clona a ref pedida
+      - name: Detectar QEMU_DIR (ou clonar QEMU)
         shell: msys2 {0}
         run: |
-          ./configure \
-            --prefix=$MINGW_PREFIX \
-            --target-list=xtensa-softmmu \
-            --enable-sdl \
-            --enable-slirp \
-            --enable-capstone \
-            --enable-gnutls \
-            --enable-libssh \
-            --disable-werror
+          set -euo pipefail
+          echo "Procurando QEMU no repositório..."
+          QEMU_DIR=""
 
-      - name: Build (make)
+          # 1) Tente encontrar um 'configure' típico do QEMU
+          CANDIDATE=$(find . -maxdepth 3 -type f -name configure | head -n1 || true)
+          if [ -n "${CANDIDATE:-}" ]; then
+            QEMU_DIR="$(dirname "$CANDIDATE")"
+          else
+            # 2) Caso não tenha ./configure, tente 'project('qemu' em meson.build'
+            CANDIDATE=$(grep -RIl "project('qemu'" --include=meson.build . | head -n1 || true)
+            if [ -n "${CANDIDATE:-}" ]; then
+              QEMU_DIR="$(dirname "$CANDIDATE")"
+            fi
+          fi
+
+          if [ -z "$QEMU_DIR" ]; then
+            echo "QEMU não encontrado no repo. Fazendo clone raso da ref ${{ inputs.qemu_ref }}..."
+            mkdir -p external
+            git clone --depth 1 --branch "${{ inputs.qemu_ref }}" https://gitlab.com/qemu-project/qemu.git external/qemu
+            QEMU_DIR="$PWD/external/qemu"
+          fi
+
+          echo "QEMU_DIR detectado: $QEMU_DIR"
+          echo "QEMU_DIR=$QEMU_DIR" >> "$GITHUB_ENV"
+
+      # Configura usando ./configure se existir; senão usa meson setup
+      - name: Configurar (configure ou meson)
         shell: msys2 {0}
+        working-directory: ${{ env.QEMU_DIR }}
         run: |
-          make -j"$(nproc || echo 2)"
+          set -euo pipefail
+          if [ -x "./configure" ]; then
+            echo "Usando ./configure..."
+            ./configure \
+              --prefix=$MINGW_PREFIX \
+              --target-list=xtensa-softmmu \
+              --enable-sdl \
+              --enable-slirp \
+              --enable-capstone \
+              --enable-gnutls \
+              --enable-libssh \
+              --disable-werror
+          else
+            echo "Sem ./configure. Usando meson setup..."
+            # default_targets é equivalente à target-list para meson
+            meson setup build \
+              --prefix=$MINGW_PREFIX \
+              -Ddefault_targets=xtensa-softmmu \
+              -Dsdl=enabled \
+              -Dslirp=enabled \
+              -Dcapstone=enabled \
+              -Dgnutls=enabled \
+              -Dlibssh=enabled \
+              -Dwerror=false
+          fi
+
+      - name: Build (ninja ou make)
+        shell: msys2 {0}
+        working-directory: ${{ env.QEMU_DIR }}
+        run: |
+          set -euo pipefail
+          if [ -x "./configure" ]; then
+            make -j"$(nproc || echo 2)"
+          else
+            ninja -C build
+          fi
 
       - name: Install to staging (DESTDIR)
         shell: msys2 {0}
+        working-directory: ${{ env.QEMU_DIR }}
         run: |
-          rm -rf dist bundle
-          mkdir -p dist
-          make install DESTDIR="$(pwd)/dist"
+          set -euo pipefail
+          rm -rf "$GITHUB_WORKSPACE/dist" "$GITHUB_WORKSPACE/bundle"
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          if [ -x "./configure" ]; then
+            make install DESTDIR="$GITHUB_WORKSPACE/dist"
+          else
+            ninja -C build install DESTDIR="$GITHUB_WORKSPACE/dist"
+          fi
 
-      # ---- NORMALIZAR LAYOUT + COPIAR DLLs ----
+      # Normaliza layout + copia DLLs com ntldd
       - name: Criar bundle flat + copiar DLLs de runtime
         shell: msys2 {0}
         run: |
@@ -111,7 +179,7 @@ jobs:
           shopt -s nullglob
 
           # 1) Onde os EXEs foram instalados
-          EXE_PATH="$(find dist -type f -name 'qemu-system-xtensa*.exe' -print -quit || true)"
+          EXE_PATH="$(find dist -type f -name 'qemu-system-xtensa*.exe' -print | head -n1 || true)"
           if [ -z "$EXE_PATH" ]; then
             echo "qemu-system-xtensa*.exe não encontrado em dist/"
             find dist -maxdepth 3 -type f | sed 's/^/  - /'
@@ -172,7 +240,7 @@ jobs:
           echo "Árvore:"
           (cd bundle && find . -maxdepth 2 -type f | sed 's/^/  - /')
 
-      # ---- PACKAGE (ZIP via MSYS2, sem PowerShell) ----
+      # Package (ZIP via MSYS2, sem PowerShell)
       - name: Gerar ZIP
         shell: msys2 {0}
         run: |
@@ -187,7 +255,7 @@ jobs:
           path: ${{ env.ZIP_NAME }}
           if-no-files-found: error
 
-      # ---- CREATE TAG + RELEASE ----
+      # Create tag + GitHub Release
       - name: Criar Release com tag ${{ inputs.version }}
         uses: softprops/action-gh-release@v2
         with:
@@ -200,7 +268,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---- LOGS EM CASO DE FALHA ----
+      # Logs úteis em caso de falha
       - name: Show logs on failure (config.log / meson-log)
         if: ${{ failure() }}
         shell: msys2 {0}
