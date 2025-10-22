@@ -141,6 +141,27 @@ jobs:
           }
           Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | % { $_.Filename + ': ' + $_.Line }
 
+      - name: Ensure top-level .qmake.conf exists (Src root)
+        shell: pwsh
+        env:
+          QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
+        run: |
+          $top = Join-Path $env:QT_SRC_ROOT '.qmake.conf'
+          if (-not (Test-Path $top)) {
+            $base = Join-Path $env:QT_SRC_ROOT 'qtbase\.qmake.conf'
+            if (Test-Path $base) {
+              # Inclui o .qmake.conf do qtbase se estiver disponível
+              Set-Content $top 'include($$PWD/qtbase/.qmake.conf)' -Encoding UTF8
+              Write-Host "Created top-level .qmake.conf including qtbase/.qmake.conf"
+            } else {
+              # Placeholder vazio (só para _QMAKE_CONF_ não ficar vazio)
+              Set-Content $top '# auto-generated top-level .qmake.conf' -Encoding UTF8
+              Write-Host "Created empty top-level .qmake.conf"
+            }
+          } else {
+            Write-Host "Top-level .qmake.conf already exists"
+          }
+
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
         env:
@@ -161,7 +182,7 @@ jobs:
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
 
-            # .qmake.conf "proxy" (sem here-string; sem interpolação de $)
+            # .qmake.conf "proxy" apontando para o topo (sem here-strings)
             $srcRoot = ($env:QT_SRC_ROOT -replace '\\','/')
             $shadowConf = ("QT_SOURCE_TREE = {0}`nQT_BUILD_TREE  = `$`$PWD`ninclude(`$`$QT_SOURCE_TREE/.qmake.conf)`n" -f $srcRoot)
             Set-Content (Join-Path (Get-Location) '.qmake.conf') $shadowConf -Encoding UTF8
@@ -188,7 +209,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # Patch qtmultimedia: off gst/pulse/openal/dshow; on wmf/wasapi
+          # qtmultimedia: desliga gst/pulse/openal/dshow; liga wmf/wasapi
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
@@ -238,7 +259,7 @@ jobs:
           Run-NMake
           Pop-Location
 
-          # valida
+          # valida módulos
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
           $needLibs = 'Qt5Svg.lib','Qt5SerialPort.lib','Qt5Multimedia.lib'
