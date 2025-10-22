@@ -18,8 +18,9 @@ typedef struct qemuArena{
     uint16_t mask16;
     uint8_t  data8;
     uint8_t  mask8;
-    uint8_t  state;
-    uint8_t  action;
+    uint8_t  simuAction;
+    uint8_t  qemuAction;
+    double   ps_per_inst;
 } qemuArena_t;
 
 enum simuAction{

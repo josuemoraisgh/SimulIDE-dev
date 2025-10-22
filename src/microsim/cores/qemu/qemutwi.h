@@ -28,7 +28,7 @@ class QemuTwi : public TwiModule
         ~QemuTwi();
 
         enum i2c_action_t {
-            QI2C_START_READ=0,
+            QI2C_START_READ=1,
             QI2C_START_WRITE,
             QI2C_START_WRITE_ASYNC,
             QI2C_STOP,

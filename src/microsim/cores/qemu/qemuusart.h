@@ -12,11 +12,11 @@ class QemuDevice;
 class QemuUsart : public UsartModule
 {
     public:
-        QemuUsart( /*QemuDevice* mcu, QString name, int number*/ );
+        QemuUsart( QemuDevice* mcu, QString name, int number );
         virtual ~QemuUsart();
 
         enum usart_action_t{
-            QUSART_READ=0,
+            QUSART_READ=1,
             QUSART_WRITE,
             QUSART_BAUD
         };
@@ -27,6 +27,7 @@ class QemuUsart : public UsartModule
         void bufferEmpty() override;
         void frameSent( uint8_t data ) override;
         void readByte( uint8_t data ) override;
+        void byteReceived( uint8_t data ) override;
 
         uint8_t getBit9Tx() override;
         void setBit9Rx( uint8_t bit ) override;
@@ -36,6 +37,10 @@ class QemuUsart : public UsartModule
         void doAction( uint32_t action, uint32_t data );
 
     protected:
+        //void readBuffer();
+
+        QemuDevice* m_mcu;
+
         int m_number;
 
         bool m_speedx2;

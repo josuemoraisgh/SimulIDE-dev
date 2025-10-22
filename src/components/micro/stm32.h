@@ -50,5 +50,5 @@ class Stm32 : public QemuDevice
 
         QemuTwi m_i2c[2];
 
-        QemuUsart m_usart[3];
+        QemuUsart* m_usart[3];
 };
