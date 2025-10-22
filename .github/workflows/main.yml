@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v1"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v2"
 
       - name: Install Python (for aqt)
         if: steps.cache-qt.outputs.cache-hit != 'true'
@@ -55,14 +55,26 @@ jobs:
           perl-version: "5.32"
 
       - name: Install aqt
+        if: steps.cache-qt.outputs.cache-hit != 'true'
         run: |
-          pip install "aqtinstall==3.1.*"
+          python -m pip install --upgrade pip
+          pip install "aqtinstall==3.3.0"
 
-      - name: Ensure Qt sources present
+      # >>>>>>>>>>>>>>> FIX: baixar também os módulos do Qt 5 (qtbase + qtmultimedia + qtsvg + qtserialport + qtimageformats)
+      - name: Ensure Qt sources present (qtbase + modules)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           if (-not (Test-Path 'C:\qt-src\5.15.2\Src')) {
-            python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
+            python -m aqt list-qt windows desktop 5.15.2
+            python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src' `
+              --archives qtbase qtmultimedia qtsvg qtserialport qtimageformats
+          }
+          # Sanity: verifique se os módulos realmente existem
+          $mods = @('qtbase','qtmultimedia','qtsvg','qtserialport','qtimageformats')
+          foreach ($m in $mods) {
+            $p = "C:\qt-src\5.15.2\Src\$m"
+            if (-not (Test-Path $p)) { throw "Faltou origem do módulo: $p" }
           }
 
       - name: Configure + Build + Install Qt (static + /MT) if not cached
@@ -81,6 +93,7 @@ jobs:
           nmake /NOLOGO install
 
       - name: Ensure Qt modules (SVG, Multimedia, SerialPort) - out-of-source + features
+        # compila e instala bibliotecas e PRIs dos módulos contra o qtbase estático instalado
         shell: cmd
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
@@ -91,6 +104,19 @@ jobs:
           set MOD_BUILD=C:\qt-build-mods
           if not exist "%MOD_BUILD%" mkdir "%MOD_BUILD%"
 
+          if not exist "%QT_SRC_ROOT%\qtsvg" (
+            echo ERRO: Source de qtsvg nao encontrado em %QT_SRC_ROOT%\qtsvg
+            exit /b 1
+          )
+          if not exist "%QT_SRC_ROOT%\qtmultimedia" (
+            echo ERRO: Source de qtmultimedia nao encontrado em %QT_SRC_ROOT%\qtmultimedia
+            exit /b 1
+          )
+          if not exist "%QT_SRC_ROOT%\qtserialport" (
+            echo ERRO: Source de qtserialport nao encontrado em %QT_SRC_ROOT%\qtserialport
+            exit /b 1
+          )
+
           goto after_functions
           :ensure_module
           rem %1 modulo, %2 lib base, %3 pri base
@@ -99,16 +125,13 @@ jobs:
           set PRIBASE=%3
           set MOD_SRC=%QT_SRC_ROOT%\%MOD%
           set MOD_BLD=%MOD_BUILD%\%MOD%
-
           set NEED=0
           if not exist "%QTDIR%\lib\%LIBBASE%.lib" set NEED=1
           if not exist "%QTDIR%\mkspecs\modules\%PRIBASE%.pri" set NEED=1
-
           if "%NEED%"=="0" (
             echo %LIBBASE% / %PRIBASE%.pri ja presentes — pulando %MOD%.
             goto :eof
           )
-
           echo === Construindo %MOD% (faltava lib ou pri) ===
           if not exist "%MOD_BLD%" mkdir "%MOD_BLD%"
           cd /d "%MOD_BLD%"
@@ -120,6 +143,7 @@ jobs:
           goto :eof
           :after_functions
 
+          rem qtsvg, qtmultimedia, qtserialport
           call :ensure_module qtsvg Qt5Svg qt_lib_svg
           call :ensure_module qtmultimedia Qt5Multimedia qt_lib_multimedia
           call :ensure_module qtserialport Qt5SerialPort qt_lib_serialport
@@ -156,9 +180,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v1"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v2"
 
-      # Define APP_VER e cria tag automaticamente se veio por workflow_dispatch com version
+      # Define APP_VER e cria tag automaticamente se vier por workflow_dispatch com version
       - name: Compute version + optionally create tag
         id: ver
         uses: actions/github-script@v7
@@ -176,8 +200,6 @@ jobs:
             ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
             core.exportVariable('APP_VER', ver);
             core.info(`>> Versão: ${ver}`);
-
-            // cria tag se foi manual com version e se nao existir
             if (ev === 'workflow_dispatch' && core.getInput('version')) {
               const tagRef = `refs/tags/${ver}`;
               try {
@@ -203,9 +225,9 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Libraries in $env:QT_INSTALL_PREFIX\lib:"
-          Get-ChildItem "$env:QT_INSTALL_PREFIX\lib" -Filter "Qt5*.lib" | Sort-Object Name | Select-Object -ExpandProperty Name
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\lib" -Filter "Qt5*.lib" -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -ExpandProperty Name
           Write-Host "`nModule PRIs in $env:QT_INSTALL_PREFIX\mkspecs\modules:"
-          Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" | Sort-Object Name | Select-Object -ExpandProperty Name
+          Get-ChildItem "$env:QT_INSTALL_PREFIX\mkspecs\modules" -Filter "qt_lib_*.pri" -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -ExpandProperty Name
 
       - name: Force static CRT (/MT) in .pro (before qmake)
         shell: pwsh
@@ -224,9 +246,16 @@ jobs:
           set QTDIR=%QT_INSTALL_PREFIX%
           set PATH=%QTDIR%\bin;%PATH%
           set QMAKEPATH=%QTDIR%\mkspecs
+          echo ---- qmake -query ----
           "%QTDIR%\bin\qmake.exe" -query
+          echo ---- PRIs ----
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*.pri"
+          echo ---- Libs ----
           dir /b "%QTDIR%\lib\Qt5*.lib"
+          if not exist "%QTDIR%\mkspecs\modules\qt_lib_multimedia.pri" (
+            echo ERRO: qt_lib_multimedia.pri ausente. O job qt-static-build nao gerou o modulo qtmultimedia corretamente.
+            exit /b 3
+          )
           cd %BUILD_DIR%
           "%QTDIR%\bin\qmake.exe" "%GITHUB_WORKSPACE%\%PRO_DIR%\%PRO_FILE%" -r -spec win32-msvc "CONFIG+=release static"
 
@@ -253,7 +282,6 @@ jobs:
           if (-not $exe) { throw "Nenhum .exe encontrado após o build." }
           "EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "EXE encontrado: $($exe.FullName)"
-
           $zip = "SimulIDE-${env:APP_VER}-win64-MSVC-STATIC.zip"
           Compress-Archive -Path $exe.FullName -DestinationPath $zip -Force
           "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
