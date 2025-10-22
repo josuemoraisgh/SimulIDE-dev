@@ -182,6 +182,8 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
 
         virtual void findHelp(){;}
 
+        QString findIdLabel();
+
         bool m_isMainComp;
         bool m_graphical;
         bool m_showId;

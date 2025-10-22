@@ -82,12 +82,12 @@ class Mcu : public Chip, public Linker
         int serialMon();
         void setSerialMon( int s );
 
-        virtual void setIdLabel( QString id ) override;
+        void setIdLabel( QString id ) override;
 
-        virtual void initialize() override;
-        virtual void stamp() override;
-        virtual void updateStep() override;
-        virtual void voltChanged() override;
+        void initialize() override;
+        void stamp() override;
+        void updateStep() override;
+        void voltChanged() override;
 
         QString device() { return m_device; }
         bool isScripted() { return m_scripted; }
@@ -98,15 +98,15 @@ class Mcu : public Chip, public Linker
 
         bool load( QString fileName );
 
-        virtual Pin* addPin( QString id, QString type, QString label,
+        Pin* addPin( QString id, QString type, QString label,
                              int pos, int xpos, int ypos, int angle , int length=8, int space=0 ) override;
 
         void setScriptLinker( ScriptCpu* l) { m_scriptLink = l; } // Called from script
 
-        virtual void setLinkedValue( double v, int i=0  ) override;
-        virtual void setLinkedString( QString str, int i=0 ) override;
+        void setLinkedValue( double v, int i=0  ) override;
+        void setLinkedString( QString str, int i=0 ) override;
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
         void slotmain();
         void slotLoad();
@@ -124,9 +124,7 @@ class Mcu : public Chip, public Linker
         QString getPGM();
         void setPGM( QString pgm );
 
-        virtual void contextMenu( QGraphicsSceneContextMenuEvent* e, QMenu* m ) override;
-
-        QString findIdLabel();
+        void contextMenu( QGraphicsSceneContextMenuEvent* e, QMenu* m ) override;
 
         //deviceType_t m_deviceType;
         //bool m_isTQFP;

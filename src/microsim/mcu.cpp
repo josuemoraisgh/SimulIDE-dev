@@ -640,16 +640,6 @@ int Mcu::serialMon()
 
 void Mcu::setSerialMon( int s ) { if( s>=0 ) slotOpenTerm( s ); }
 
-QString Mcu::findIdLabel() /// FIXME: move to Component??
-{
-    QString label = idLabel();
-    if( this->parentItem() ){
-        Component* comp = qgraphicsitem_cast<Component*>( this->parentItem() );
-        label = comp->idLabel();
-    }
-    return label;
-}
-
 void Mcu::setLinkedValue( double v, int i )
 {
     if( m_scriptLink ) m_scriptLink->setLinkedVal( v, i );

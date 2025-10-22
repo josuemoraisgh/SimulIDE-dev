@@ -5,7 +5,10 @@
 
 #include <qtconcurrentrun.h>
 #include <QLibrary>
+#include <QFileDialog>
 #include <QFileInfo>
+#include <QMessageBox>
+#include <QSignalMapper>
 #include <QDir>
 
 #include <stdlib.h>
@@ -19,6 +22,7 @@
 #endif
 
 #include "qemudevice.h"
+#include "qemuusart.h"
 #include "circuitwidget.h"
 #include "iopin.h"
 
@@ -262,6 +266,31 @@ void QemuDevice::runEvent()
     //qDebug() << "exitEvent"<<m_arena->action<<m_arena->time;
 }*/
 
+void QemuDevice::slotOpenTerm( int num )
+{
+    m_usarts.at(num-1)->openMonitor( findIdLabel(), num );
+    //m_serialMon = num;
+}
+
+void QemuDevice::slotLoad()
+{
+    QDir dir( m_lastFirmDir );
+    if( !dir.exists() ) m_lastFirmDir = Circuit::self()->getFilePath();
+
+    QString fileName = QFileDialog::getOpenFileName( nullptr, tr("Load Firmware"), m_lastFirmDir,
+                                                    tr("All files (*.*);;Hex Files (*.hex)"));
+
+    if( fileName.isEmpty() ) return; // User cancels loading
+
+    setFirmware( fileName );
+}
+
+void QemuDevice::slotReload()
+{
+    if( !m_firmware.isEmpty() ) setFirmware( m_firmware );
+    else QMessageBox::warning( 0, "QemuDevice::slotReload", tr("No File to reload ") );
+}
+
 void QemuDevice::setFirmware( QString file )
 {
     if( Simulator::self()->isRunning() ) CircuitWidget::self()->powerCircOff();
@@ -288,4 +317,37 @@ void QemuDevice::setPackageFile( QString package )
     m_label.setPlainText( m_name );
 
     Circuit::self()->update();
+}
+
+void QemuDevice::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu )
+{
+    //if( m_eMcu.flashSize() )
+    {
+        QAction* loadAction = menu->addAction( QIcon(":/load.svg"),tr("Load firmware") );
+        QObject::connect( loadAction, &QAction::triggered, [=](){ slotLoad(); } );
+
+        QAction* reloadAction = menu->addAction( QIcon(":/reload.svg"),tr("Reload firmware") );
+        QObject::connect( reloadAction, &QAction::triggered, [=](){ slotReload(); } );
+
+        menu->addSeparator();
+    }
+
+    //QAction* openRamTab = menu->addAction( QIcon(":/terminal.svg"),tr("Open Mcu Monitor.") );
+    //QObject::connect( openRamTab, &QAction::triggered, [=](){ slotOpenMcuMonitor(); } );
+
+    if( m_usarts.size() )
+    {
+        QMenu* serMonMenu = menu->addMenu( QIcon(":/serialterm.png"),tr("Open Serial Monitor.") );
+
+        QSignalMapper* sm = new QSignalMapper();
+        for( uint i=0; i<m_usarts.size(); ++i )
+        {
+            QAction* openSerMonAct = serMonMenu->addAction( "USart"+QString::number(i+1) );
+            QObject::connect( openSerMonAct, &QAction::triggered, sm, QOverload<>::of(&QSignalMapper::map) );
+            sm->setMapping( openSerMonAct, i+1 );
+        }
+        QObject::connect( sm, QOverload<int>::of(&QSignalMapper::mapped), [=](int n){ slotOpenTerm(n);} );
+    }
+    menu->addSeparator();
+    Component::contextMenu( event, menu );
 }
