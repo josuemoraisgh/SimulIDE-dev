@@ -1,4 +1,4 @@
-name: MSVC Static Qt Build & Release
+name: MSVC Static Qt Build & Release (SimulIDE)
 
 on:
   workflow_dispatch:
@@ -17,19 +17,21 @@ on:
         required: false
         type: string
       qt_static_url:
-        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (se vazio, assume já presente em C:/qt-static)"
+        description: "URL do ZIP do Qt estático 5.15.2 msvc2019_64-static (deixe vazio se já existir em C:/qt-static)"
         required: false
         type: string
       project_pro:
-        description: "Caminho do .pro (ex.: SimulIDE.pro ou src/SimulIDE.pro)"
+        description: "Caminho do .pro"
         required: true
+        default: "build_XX/SimulIDE_Build.pro"
         type: string
       artifact_dir:
-        description: "Pasta que contém o executável final (ex.: build_XX/executables/SimulIDE_2.0.0-)"
+        description: "Pasta com os binários finais"
         required: true
+        default: "build_XX/executables/SimulIDE_2.0.0-"
         type: string
       artifact_glob:
-        description: "Arquivos a empacotar (ex.: *.exe,*.dll,*.ini,resources/**)"
+        description: "Arquivos a empacotar (glob, separado por vírgula)"
         required: false
         default: "*.exe"
         type: string
@@ -44,7 +46,7 @@ jobs:
     env:
       QT_VERSION: 5.15.2
       QT_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
-      ZIP_NAME: app-windows-static-${{ inputs.version }}.zip
+      ZIP_NAME: SimulIDE-windows-static-${{ inputs.version }}.zip
 
     steps:
       - name: Habilitar long paths no Git
@@ -64,44 +66,52 @@ jobs:
         with:
           arch: x64
 
+      # PowerShell aqui evita bugs de parênteses do cmd
       - name: Preparar Qt estático (C:\qt-static\5.15.2\msvc2019_64-static)
-        shell: cmd
+        shell: pwsh
+        env:
+          QT_PREFIX: C:\qt-static\5.15.2\msvc2019_64-static
         run: |
-          if exist "%QT_PREFIX%\bin\qmake.exe" (
-            echo Qt static ja presente em %QT_PREFIX%
-          ) else (
-            if "${{ inputs.qt_static_url }}"=="" (
-              echo ERRO: Qt estatico nao encontrado e nenhuma URL foi fornecida (qt_static_url).
-              exit /b 1
-            )
-            echo Baixando Qt estatico de ${{ inputs.qt_static_url }}
-            set "TMPZIP=%TEMP%\qt_static.zip"
-            powershell -Command "Invoke-WebRequest -Uri '${{ inputs.qt_static_url }}' -OutFile '$env:TMP\\qt_static.zip'"
-            if not exist "C:\qt-static\5.15.2" mkdir "C:\qt-static\5.15.2"
-            powershell -Command "Expand-Archive -Path '$env:TMP\\qt_static.zip' -DestinationPath 'C:\\' -Force"
-            if not exist "%QT_PREFIX%\bin\qmake.exe" (
-              echo ERRO: qmake nao encontrado apos extracao. Verifique a estrutura do ZIP.
-              exit /b 1
-            )
-          )
-          echo QTDIR=%QT_PREFIX%>> "%GITHUB_ENV%"
-          echo %QT_PREFIX%\bin>> "%GITHUB_PATH%"
-          where qmake
-          qmake -v
+          $qtDir = "${env:QT_PREFIX}"
+          $qmake = Join-Path $qtDir 'bin\qmake.exe'
+          if (Test-Path $qmake) {
+            Write-Host "Qt estático já presente em $qtDir"
+          } else {
+            if ([string]::IsNullOrWhiteSpace("${{ inputs.qt_static_url }}")) {
+              Write-Error "Qt estático não encontrado e nenhuma URL foi fornecida (qt_static_url)."
+              exit 1
+            }
+            $zipPath = Join-Path $env:TEMP 'qt_static.zip'
+            Write-Host "Baixando Qt estático de ${{ inputs.qt_static_url }}"
+            Invoke-WebRequest -Uri "${{ inputs.qt_static_url }}" -OutFile $zipPath
+            if (-not (Test-Path 'C:\qt-static\5.15.2')) { New-Item -ItemType Directory -Path 'C:\qt-static\5.15.2' | Out-Null }
+            # O ZIP deve extrair a árvore para C:\qt-static\5.15.2\msvc2019_64-static\...
+            Expand-Archive -Path $zipPath -DestinationPath 'C:\' -Force
+            if (-not (Test-Path $qmake)) {
+              Write-Error "qmake.exe não encontrado após extração. Verifique a estrutura do ZIP."
+              exit 1
+            }
+          }
+
+          # Exporta QTDIR e ajusta PATH
+          "QTDIR=$qtDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          (Join-Path $qtDir 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          & $qmake -v
 
       - name: Criar diretório de build
         shell: cmd
         run: |
           if not exist build mkdir build
 
-      - name: Configurar (qmake estatico)
+      - name: Configurar (qmake estático)
         shell: cmd
         env:
           QTDIR: ${{ env.QT_PREFIX }}
         run: |
           cd build
           call qmake -v
-          rem Ajuste -spec se seu kit exigir outro mkspec
+          rem Ajuste -spec se o seu kit exigir outro mkspec
           call qmake "..\${{ inputs.project_pro }}" -spec win32-msvc CONFIG+=release CONFIG+=static
 
       - name: Build (nmake)
@@ -132,7 +142,10 @@ jobs:
           rem Copie recursos extras aqui se necessario (ex.: configs, qml, icons)
           rem xcopy /E /I /Y "assets\*" "bundle\assets\"
 
-      - name: Gerar ZIP (sem PowerShell multiline)
+          rem Se quiser filtrar por glob (ex.: somente *.exe), descomente:
+          rem for %%G in (${{ inputs.artifact_glob }}) do @echo %%G
+
+      - name: Gerar ZIP
         shell: cmd
         run: |
           if exist "%ZIP_NAME%" del "%ZIP_NAME%"
@@ -144,16 +157,4 @@ jobs:
         with:
           name: ${{ env.ZIP_NAME }}
           path: ${{ env.ZIP_NAME }}
-          if-no-files-found: error
-
-      - name: Criar Release com tag ${{ inputs.version }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.version }}
-          name: static-qt ${{ inputs.version }}
-          body: ${{ inputs.notes }}
-          prerelease: ${{ inputs.prerelease }}
-          target_commitish: ${{ github.sha }}
-          files: ${{ env.ZIP_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if-no-
