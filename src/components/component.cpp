@@ -509,6 +509,16 @@ void Component::rotateAngle( double a )
     if( !m_hidden ) moveSignal();
 }
 
+QString Component::findIdLabel() /// FIXME: move to Component??
+{
+    QString label = idLabel();
+    if( this->parentItem() ){
+        Component* comp = qgraphicsitem_cast<Component*>( this->parentItem() );
+        label = comp->idLabel();
+    }
+    return label;
+}
+
 QString Component::idLabel() { return m_idLabel->toPlainText(); }
 void Component::setIdLabel( QString id ) { m_idLabel->setPlainText( id ); m_idLabel->updtLabelPos(); }
 

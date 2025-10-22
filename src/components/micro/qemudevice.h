@@ -29,8 +29,8 @@ enum simuAction{
     SIM_EVENT=1<<7
 };
 
-
 class IoPin;
+class QemuUsart;
 
 class QemuDevice : public Chip
 {
@@ -58,11 +58,18 @@ class QemuDevice : public Chip
 
         void runToTime( uint64_t time );
 
+        void slotLoad();
+        void slotReload();
+        void slotOpenTerm( int num );
+
     protected:
         virtual bool createArgs(){ return false;}
 
         virtual void doAction(){;}
 
+        void contextMenu( QGraphicsSceneContextMenuEvent* e, QMenu* m ) override;
+
+        QString m_lastFirmDir;  // Last firmware folder used
         QString m_firmware;
         QString m_executable;
 
@@ -83,4 +90,6 @@ class QemuDevice : public Chip
 
         QProcess m_qemuProcess;
         QStringList m_arguments;
+
+        std::vector<QemuUsart*> m_usarts;
 };
