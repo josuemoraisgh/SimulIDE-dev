@@ -96,7 +96,7 @@ jobs:
           call configure.bat -prefix "%QT_INSTALL_PREFIX%" -platform win32-msvc ^
             -release -static -static-runtime -opensource -confirm-license ^
             -opengl desktop -nomake tests -nomake examples ^
-            -no-icu -no-dbus -no-angle -mp ^
+            -no-icu -no-dbus -no-angle -no-direct2d -mp ^
             -qt-zlib
           nmake /NOLOGO
           nmake /NOLOGO install
@@ -112,6 +112,28 @@ jobs:
           qmake -query QT_CONFIG
           echo === Modules present ===
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
+          
+      - name: Disable qdirect2d plugin pri (failsafe)
+        shell: pwsh
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          $mods = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
+          if (-not (Test-Path $mods)) { exit 0 }
+          $targets = @(
+            'qt_plugin_qdirect2d.pri',
+            'qt_plugin_qdirect2d_private.pri'
+          )
+          $bakDir = Join-Path $mods '_disabled'
+          if (-not (Test-Path $bakDir)) { New-Item -ItemType Directory -Path $bakDir | Out-Null }
+          foreach ($t in $targets) {
+            $p = Join-Path $mods $t
+            if (Test-Path $p) {
+              Move-Item -Force $p (Join-Path $bakDir $t)
+              Write-Host "Moved $t to _disabled/"
+            }
+          }
+          Write-Host "qdirect2d pri quarantine done."
 
       # --- correção preventiva: garantir zlib habilitado nos .pri ---
       - name: Force-enable zlib feature in module .pri (last resort)
@@ -206,7 +228,9 @@ jobs:
 
           function Run-QMake([string]$pro){
             & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc `
-              "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests"
+              "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
+              "QT_FEATURE_direct2d=0"
+
             if ($LASTEXITCODE -ne 0) {
               Write-Host "ERROR: qmake failed for $pro"
               Get-ChildItem -Recurse -Filter config.log | ForEach-Object { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
@@ -270,8 +294,10 @@ jobs:
             "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
             "QT_FEATURE_gstreamer=0" "QT_FEATURE_gstreamer_1_0=0" "QT_FEATURE_gstreamer_0_10=0" `
             "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
-            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow" `
+            "QT_FEATURE_direct2d=0" `
+            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d" `
             "CONFIG+=wmf" "CONFIG+=wasapi"
+
           if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: qmake qtmultimedia failed"
             Get-ChildItem -Recurse -Filter config.log | % { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
