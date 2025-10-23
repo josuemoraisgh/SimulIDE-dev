@@ -152,23 +152,24 @@ jobs:
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
           $top = Join-Path $env:QT_SRC_ROOT '.qmake.conf'
-          $qtbaseConf = Join-Path $env:QT_SRC_ROOT 'qtbase\.qmake.conf'
+          $srcAbs = ($env:QT_SRC_ROOT -replace '\\','/')
       
-          if (Test-Path $qtbaseConf) {
-            $lines = @(
-              '# auto-generated .qmake.conf (top-level)'
-              'QT_SOURCE_TREE = $$PWD'
-              'include($$PWD/qtbase/.qmake.conf)'
-            )
-            $content = $lines -join "`r`n"
+          # .qmake.conf com caminho absoluto (evita $$PWD)
+          $lines = @(
+            '# auto-generated .qmake.conf (top-level, absolute)'
+            "QT_SOURCE_TREE = $srcAbs"
+            'include($$QT_SOURCE_TREE/qtbase/.qmake.conf)'
+          )
+          $content = $lines -join "`r`n"
+      
+          if (Test-Path (Join-Path $env:QT_SRC_ROOT 'qtbase\.qmake.conf')) {
             Set-Content -Path $top -Value $content -Encoding UTF8
-            Write-Host "Created/updated top-level .qmake.conf including qtbase/.qmake.conf"
-          }
-          elseif (-not (Test-Path $top)) {
-            Set-Content -Path $top -Value '# empty top-level .qmake.conf (fallback)' -Encoding UTF8
-            Write-Host "Created empty top-level .qmake.conf (fallback)"
-          }
-          else {
+            Write-Host "Created/updated top-level .qmake.conf including qtbase/.qmake.conf (absolute)"
+          } elseif (-not (Test-Path $top)) {
+            # fallback mínimo – ainda absoluto
+            Set-Content -Path $top -Value $content -Encoding UTF8
+            Write-Host "Created top-level .qmake.conf fallback (absolute)"
+          } else {
             Write-Host "Top-level .qmake.conf already exists"
           }
       
