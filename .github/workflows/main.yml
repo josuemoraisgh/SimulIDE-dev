@@ -153,19 +153,25 @@ jobs:
         run: |
           $top = Join-Path $env:QT_SRC_ROOT '.qmake.conf'
           $qtbaseConf = Join-Path $env:QT_SRC_ROOT 'qtbase\.qmake.conf'
+      
           if (Test-Path $qtbaseConf) {
-            @"
-# auto-generated .qmake.conf (top-level)
-QT_SOURCE_TREE = $$PWD
-include($$PWD/qtbase/.qmake.conf)
-"@ | Set-Content -Path $top -Encoding UTF8
+            $lines = @(
+              '# auto-generated .qmake.conf (top-level)'
+              'QT_SOURCE_TREE = $$PWD'
+              'include($$PWD/qtbase/.qmake.conf)'
+            )
+            $content = $lines -join "`r`n"
+            Set-Content -Path $top -Value $content -Encoding UTF8
             Write-Host "Created/updated top-level .qmake.conf including qtbase/.qmake.conf"
-          } elseif (-not (Test-Path $top)) {
-            Set-Content $top '# empty top-level .qmake.conf (fallback)' -Encoding UTF8
+          }
+          elseif (-not (Test-Path $top)) {
+            Set-Content -Path $top -Value '# empty top-level .qmake.conf (fallback)' -Encoding UTF8
             Write-Host "Created empty top-level .qmake.conf (fallback)"
-          } else {
+          }
+          else {
             Write-Host "Top-level .qmake.conf already exists"
           }
+      
           Write-Host '--- Top-level .qmake.conf ---'
           Get-Content $top -Raw | Write-Host
 
