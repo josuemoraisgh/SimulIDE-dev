@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v8"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v10"
 
       # --- baixar fontes do Qt se necessário ---
       - name: Ensure Qt sources present
@@ -184,16 +184,15 @@ jobs:
           }
           Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | % { $_.Filename + ': ' + $_.Line }
 
-      # --- desabilitar 'stack-protector-strong' (MSVC não usa esse feature) ---
-      - name: Disable unsupported 'stack-protector-strong' (MSVC)
+      # --- desabilitar features não suportadas no MSVC (stack-protector-strong, reduce_exports) ---
+      - name: Disable unsupported features on MSVC (stack-protector-strong, reduce_exports)
         shell: pwsh
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
         run: |
           $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
-      
-          # Inclui também opengl/openglextensions/printsupport (public e private)
+          $badFeatures = @('stack-protector-strong','reduce_exports')
           $targets = @(
             'qt_lib_core_private.pri',
             'qt_lib_gui_private.pri',
@@ -206,27 +205,22 @@ jobs:
             'qt_lib_printsupport.pri',
             'qt_lib_global.pri'
           )
-      
           foreach ($t in $targets) {
             $f = Join-Path $mspec $t
             if (-not (Test-Path $f)) { continue }
-      
-            # 1) Carrega conteúdo
             $raw = Get-Content $f -Raw
-      
-            # 2) Remove 'stack-protector-strong' de quaisquer enabled_features
             $lines = $raw -split "`r?`n"
             for ($i=0; $i -lt $lines.Count; $i++) {
               if ($lines[$i] -match 'enabled_features\s*\+=') {
-                $lines[$i] = [regex]::Replace($lines[$i], '\bstack-protector-strong\b', '')
+                foreach ($bf in $badFeatures) {
+                  $lines[$i] = [regex]::Replace($lines[$i], ('\b{0}\b' -f [regex]::Escape($bf)), '')
+                }
                 $lines[$i] = [regex]::Replace($lines[$i], '\s{2,}', ' ')
                 $lines[$i] = [regex]::Replace($lines[$i], '(\+=)\s+$', '$1 ')
                 $lines[$i] = $lines[$i].TrimEnd()
               }
             }
             $c = ($lines -join "`r`n")
-      
-            # 3) Garante presença em disabled_features
             $prefix =
               if ($t -eq 'qt_lib_global.pri') { 'QT.global' }
               elseif ($t -like 'qt_lib_core_private.pri') { 'QT.core_private' }
@@ -239,20 +233,15 @@ jobs:
               elseif ($t -like 'qt_lib_openglextensions.pri') { 'QT.openglextensions' }
               elseif ($t -like 'qt_lib_printsupport.pri') { 'QT.printsupport' }
               else { 'QT.global' }
-      
-            if ($c -notmatch 'disabled_features[^\r\n]*\bstack-protector-strong\b') {
-              $c += "`r`n$prefix.disabled_features += stack-protector-strong`r`n"
+            foreach ($bf in $badFeatures) {
+              if ($c -notmatch ('disabled_features[^\r\n]*\b{0}\b' -f [regex]::Escape($bf))) {
+                $c += "`r`n$prefix.disabled_features += $bf`r`n"
+              }
             }
-      
             Set-Content $f $c -Encoding UTF8
-            Write-Host "Patched $t -> disabled stack-protector-strong"
+            Write-Host "Patched $t -> disabled: $($badFeatures -join ', ')"
           }
-      
-          # Debug: confira onde ficou registrado
-          Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'stack-protector-strong' -ErrorAction SilentlyContinue | % { $_.Filename + ': ' + $_.Line }
-
-
-
+          Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'stack-protector-strong|reduce_exports' -ErrorAction SilentlyContinue | % { $_.Filename + ': ' + $_.Line }
 
       # --- top-level .qmake.conf absoluto para evitar "Project has no top-level .qmake.conf file" ---
       - name: Ensure top-level .qmake.conf exists (Src root)
@@ -313,7 +302,8 @@ jobs:
             & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc `
               "_QMAKE_CONF_=$($env:QMAKE_CONF_ABS)" `
               "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
-              "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" "QT_FEATURE_stack_protector_strong=0"
+              "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
+              "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0"
             if ($LASTEXITCODE -ne 0) {
               Write-Host "ERROR: qmake failed for $pro"
               Get-ChildItem -Recurse -Filter config.log -ErrorAction SilentlyContinue | ForEach-Object {
@@ -386,8 +376,9 @@ jobs:
             "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
             "QT_FEATURE_gstreamer=0" "QT_FEATURE_gstreamer_1_0=0" "QT_FEATURE_gstreamer_0_10=0" `
             "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
-            "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" "QT_FEATURE_stack_protector_strong=0" `
-            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong" `
+            "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
+            "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0" `
+            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong reduce_exports" `
             "CONFIG+=wmf" "CONFIG+=wasapi"
           if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: qmake qtmultimedia failed"
@@ -434,7 +425,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v8"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v10"
 
       - name: Assert required Qt modules exist
         shell: pwsh
