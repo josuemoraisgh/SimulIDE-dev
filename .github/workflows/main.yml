@@ -25,12 +25,11 @@ jobs:
     runs-on: windows-latest
     env:
       QT_VER: "5.15.2"
-      QT_TRIPLET: "msvc2019_64"               # mkspec do Qt5; VS2022 funciona com esse triplet
+      QT_TRIPLET: "msvc2019_64"
       QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
       QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
 
     steps:
-      # --- toolchain ---
       - name: Setup MSVC (VS 2022, x64)
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -49,15 +48,13 @@ jobs:
       - name: Install aqt
         run: pip install "aqtinstall==3.1.*"
 
-      # --- cache do Qt estático instalado (qtbase + módulos) ---
       - name: Restore Qt static cache
         id: cache-qt
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v11"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v12"
 
-      # --- baixar fontes do Qt se necessário ---
       - name: Ensure Qt sources present
         shell: pwsh
         run: |
@@ -65,7 +62,6 @@ jobs:
             python -m aqt install-src windows desktop 5.15.2 --outputdir 'C:\qt-src'
           }
 
-      # --- detectar necessidade de rebuild (zlib habilitado?) ---
       - name: Detect if qtbase has zlib; mark rebuild if missing
         id: needrebuild
         shell: pwsh
@@ -78,11 +74,8 @@ jobs:
             Write-Host "QT_CONFIG=$cfg"
             if ($cfg -notmatch '\bzlib\b') { "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append }
             else { "rebuild=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append }
-          } else {
-            "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          }
+          } else { "rebuild=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Append }
 
-      # --- configurar/compilar/instalar qtbase estático + /MT + zlib + schannel (sem openssl) ---
       - name: Configure + Build + Install qtbase (static + /MT + zlib)
         if: steps.cache-qt.outputs.cache-hit != 'true' || steps.needrebuild.outputs.rebuild == '1'
         shell: cmd
@@ -113,7 +106,6 @@ jobs:
           echo === Modules present ===
           dir /b "%QTDIR%\mkspecs\modules\qt_lib_*"
 
-      # --- quarantine de pri problemáticos do Direct2D (failsafe) ---
       - name: Disable qdirect2d plugin pri (failsafe)
         shell: pwsh
         env:
@@ -131,9 +123,7 @@ jobs:
               Write-Host "Moved $t to _disabled/"
             }
           }
-          Write-Host "qdirect2d pri quarantine done."
 
-      # --- Neutralizar pri do QtNetwork que mencionem 'openssl' (failsafe) ---
       - name: Neutralize QtNetwork OpenSSL pri (failsafe)
         shell: pwsh
         env:
@@ -150,9 +140,7 @@ jobs:
               Write-Host "Moved $($_.Name) to _disabled/ (contained 'openssl')"
             }
           }
-          Get-ChildItem $mods -Filter "qt_lib_network*.pri" -ErrorAction SilentlyContinue | % FullName
 
-      # --- correção preventiva: garantir zlib habilitado nos .pri ---
       - name: Force-enable zlib feature in module .pri (last resort)
         shell: pwsh
         env:
@@ -177,14 +165,11 @@ jobs:
               $c = $c -replace '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)([^\r\n]*)', {
                 param($m); $m.Groups[1].Value + ([System.Linq.Enumerable]::Distinct(($m.Groups[2].Value -split '\s+') + @('zlib')) -join ' ')
               }
-            } else {
-              $c += "`r`nQT.global.enabled_features += zlib`r`n"
-            }
+            } else { $c += "`r`nQT.global.enabled_features += zlib`r`n" }
             Set-Content $f $c -Encoding UTF8
           }
           Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | % { $_.Filename + ': ' + $_.Line }
 
-      # --- desabilitar features não suportadas no MSVC (stack-protector-strong, reduce_exports) ---
       - name: Disable unsupported features on MSVC (stack-protector-strong, reduce_exports)
         shell: pwsh
         env:
@@ -194,15 +179,10 @@ jobs:
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
           $badFeatures = @('stack-protector-strong','reduce_exports')
           $targets = @(
-            'qt_lib_core_private.pri',
-            'qt_lib_gui_private.pri',
-            'qt_lib_widgets_private.pri',
-            'qt_lib_opengl_private.pri',
-            'qt_lib_opengl.pri',
-            'qt_lib_openglextensions_private.pri',
-            'qt_lib_openglextensions.pri',
-            'qt_lib_printsupport_private.pri',
-            'qt_lib_printsupport.pri',
+            'qt_lib_core_private.pri','qt_lib_gui_private.pri','qt_lib_widgets_private.pri',
+            'qt_lib_opengl_private.pri','qt_lib_opengl.pri',
+            'qt_lib_openglextensions_private.pri','qt_lib_openglextensions.pri',
+            'qt_lib_printsupport_private.pri','qt_lib_printsupport.pri',
             'qt_lib_global.pri'
           )
           foreach ($t in $targets) {
@@ -243,7 +223,6 @@ jobs:
           }
           Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'stack-protector-strong|reduce_exports' -ErrorAction SilentlyContinue | % { $_.Filename + ': ' + $_.Line }
 
-      # --- top-level .qmake.conf absoluto para evitar "Project has no top-level .qmake.conf file" ---
       - name: Ensure top-level .qmake.conf exists (Src root)
         shell: pwsh
         env:
@@ -260,7 +239,6 @@ jobs:
           Write-Host '--- Top-level .qmake.conf ---'
           Get-Content $top -Raw | Write-Host
 
-      # --- build/instalação dos módulos extras (qtsvg, qtserialport, qtmultimedia) ---
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
         env:
@@ -294,10 +272,8 @@ jobs:
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
             $env:QMAKEFEATURES = "$($env:QMAKEPATH)\features"
-            # === Pasta que o create_cmake.prf procura quando ativo ===
             $cmakeTests = Join-Path $BuildDir 'tests\auto\cmake'
             New-Item -ItemType Directory -Path $cmakeTests -Force | Out-Null
-            Write-Host "Created $cmakeTests"
             Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
             Write-Host "_QMAKE_CONF_ will be forced to $($env:QMAKE_CONF_ABS)"
           }
@@ -307,7 +283,8 @@ jobs:
               "_QMAKE_CONF_=$($env:QMAKE_CONF_ABS)" `
               "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" "CONFIG-=create_cmake" `
               "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
-              "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0"
+              "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0" `
+              "QMAKE_LIBS_ZLIB=" "QMAKE_INCDIR_ZLIB=" "QMAKE_DEFINES_ZLIB=QT_ZLIB_LIB"
             if ($LASTEXITCODE -ne 0) {
               Write-Host "ERROR: qmake failed for $pro"
               Get-ChildItem -Recurse -Filter config.log -ErrorAction SilentlyContinue | ForEach-Object {
@@ -325,7 +302,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # Patch qtmultimedia: desliga deps externas; liga backends nativos
+          # Patch qtmultimedia: nativo Windows (sem gstreamer/pulse/etc.)
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
@@ -377,6 +354,7 @@ jobs:
             "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
             "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
             "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0" `
+            "QMAKE_LIBS_ZLIB=" "QMAKE_INCDIR_ZLIB=" "QMAKE_DEFINES_ZLIB=QT_ZLIB_LIB" `
             "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong reduce_exports"
           if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: qmake qtmultimedia failed"
@@ -401,7 +379,7 @@ jobs:
     needs: qt-static-build
     runs-on: windows-latest
     env:
-      PRO_DIR: "build_XX"   # ajuste se seu .pro estiver em outra pasta
+      PRO_DIR: "build_XX"
       PRO_FILE: "SimulIDE_Build.pro"
       BUILD_DIR: "out_msvc"
       CONFIG: "release"
@@ -423,7 +401,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v11"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v12"
 
       - name: Assert required Qt modules exist
         shell: pwsh
@@ -449,13 +427,9 @@ jobs:
             Write-Host "Given PRO_DIR/PRO_FILE not found, attempting discovery..."
             $found = Get-ChildItem "$env:GITHUB_WORKSPACE" -Recurse -Filter $env:PRO_FILE -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found) {
-              Write-Host "Discovered: $($found.FullName)"
               $newDir = Split-Path $found.FullName -Parent
-              Write-Host "Using PRO_DIR=$newDir"
               "PRO_DIR=$newDir" | Out-File -FilePath $env:GITHUB_ENV -Append
-            } else {
-              throw "Could not find $($env:PRO_FILE). Set PRO_DIR correctly."
-            }
+            } else { throw "Could not find $($env:PRO_FILE). Set PRO_DIR correctly." }
           }
           if (-not (Test-Path $env:BUILD_DIR)) { New-Item -ItemType Directory -Path $env:BUILD_DIR | Out-Null }
 
@@ -523,9 +497,7 @@ jobs:
               ver = core.getInput('version');
             } else if (context.ref && context.ref.startsWith('refs/tags/')) {
               ver = context.ref.replace('refs/tags/','');
-            } else {
-              ver = `dev${context.runNumber}`;
-            }
+            } else { ver = `dev${context.runNumber}`; }
             ver = ver.replace(/[^0-9A-Za-z._-]/g, '');
             core.exportVariable('APP_VER', ver);
 
