@@ -193,10 +193,17 @@ jobs:
           $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
       
+          # Inclui também opengl/openglextensions/printsupport (public e private)
           $targets = @(
             'qt_lib_core_private.pri',
             'qt_lib_gui_private.pri',
             'qt_lib_widgets_private.pri',
+            'qt_lib_opengl_private.pri',
+            'qt_lib_opengl.pri',
+            'qt_lib_openglextensions_private.pri',
+            'qt_lib_openglextensions.pri',
+            'qt_lib_printsupport_private.pri',
+            'qt_lib_printsupport.pri',
             'qt_lib_global.pri'
           )
       
@@ -204,28 +211,33 @@ jobs:
             $f = Join-Path $mspec $t
             if (-not (Test-Path $f)) { continue }
       
-            # 1) Carrega conteúdo bruto
+            # 1) Carrega conteúdo
             $raw = Get-Content $f -Raw
       
-            # 2) Remove 'stack-protector-strong' de QUALQUER linha de enabled_features (sem '-replace' quebrado)
+            # 2) Remove 'stack-protector-strong' de quaisquer enabled_features
             $lines = $raw -split "`r?`n"
             for ($i=0; $i -lt $lines.Count; $i++) {
               if ($lines[$i] -match 'enabled_features\s*\+=') {
                 $lines[$i] = [regex]::Replace($lines[$i], '\bstack-protector-strong\b', '')
                 $lines[$i] = [regex]::Replace($lines[$i], '\s{2,}', ' ')
-                # se ficar "enabled_features +=" com nada, só normaliza espaços
                 $lines[$i] = [regex]::Replace($lines[$i], '(\+=)\s+$', '$1 ')
                 $lines[$i] = $lines[$i].TrimEnd()
               }
             }
             $c = ($lines -join "`r`n")
       
-            # 3) Garante que apareça como 'disabled'
+            # 3) Garante presença em disabled_features
             $prefix =
               if ($t -eq 'qt_lib_global.pri') { 'QT.global' }
               elseif ($t -like 'qt_lib_core_private.pri') { 'QT.core_private' }
               elseif ($t -like 'qt_lib_gui_private.pri') { 'QT.gui_private' }
               elseif ($t -like 'qt_lib_widgets_private.pri') { 'QT.widgets_private' }
+              elseif ($t -like 'qt_lib_opengl_private.pri') { 'QT.opengl_private' }
+              elseif ($t -like 'qt_lib_openglextensions_private.pri') { 'QT.openglextensions_private' }
+              elseif ($t -like 'qt_lib_printsupport_private.pri') { 'QT.printsupport_private' }
+              elseif ($t -like 'qt_lib_opengl.pri') { 'QT.opengl' }
+              elseif ($t -like 'qt_lib_openglextensions.pri') { 'QT.openglextensions' }
+              elseif ($t -like 'qt_lib_printsupport.pri') { 'QT.printsupport' }
               else { 'QT.global' }
       
             if ($c -notmatch 'disabled_features[^\r\n]*\bstack-protector-strong\b') {
@@ -236,8 +248,9 @@ jobs:
             Write-Host "Patched $t -> disabled stack-protector-strong"
           }
       
-          # Debug: mostrar onde ficou registrado
-          Select-String -Path (Join-Path $mspec 'qt_lib_*private.pri') -Pattern 'stack-protector-strong' -ErrorAction SilentlyContinue | % { $_.Filename + ': ' + $_.Line }
+          # Debug: confira onde ficou registrado
+          Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'stack-protector-strong' -ErrorAction SilentlyContinue | % { $_.Filename + ': ' + $_.Line }
+
 
 
 
