@@ -52,8 +52,6 @@ Esp32::Esp32( QString type, QString id )
     m_area = QRect( 0, 0, 15*8, 15*8 );
     m_color = QColor( 50, 50, 70 );
 
-    m_ClkPeriod = 1000*1*1000; // 1 ms
-
     m_executable = "./data/esp32/qemu-system-xtensa";
 
     m_firmware ="";

@@ -41,9 +41,6 @@ Stm32::Stm32( QString type, QString id )
 {
     m_area = QRect(-32,-32, 64, 64 );
 
-    m_ClkPeriod = 10240000; //6400000; // 6.4 ms
-    m_frequency = 72*1000*1000;
-
     m_executable = "./data/STM32/qemu-system-arm";
 
     m_firmware ="";
@@ -105,8 +102,6 @@ bool Stm32::createArgs()
         qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
         return false;
     }*/
-
-    m_arena->data32 = m_frequency;
 
     m_arguments.clear();
 

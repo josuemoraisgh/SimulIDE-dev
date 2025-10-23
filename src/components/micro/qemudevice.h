@@ -21,6 +21,7 @@ typedef struct qemuArena{
     uint8_t  simuAction;
     uint8_t  qemuAction;
     double   ps_per_inst;
+    bool     running;
 } qemuArena_t;
 
 enum simuAction{
@@ -76,8 +77,6 @@ class QemuDevice : public Chip
         QString m_extraArgs;
 
         volatile qemuArena_t* m_arena;
-
-        uint64_t m_ClkPeriod;
 
         int m_gpioSize;
         std::vector<IoPin*> m_ioPin;
