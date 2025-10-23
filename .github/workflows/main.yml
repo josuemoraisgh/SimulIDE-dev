@@ -192,41 +192,28 @@ jobs:
         run: |
           $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
           if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
+      
           $targets = @(
             'qt_lib_core_private.pri',
             'qt_lib_gui_private.pri',
             'qt_lib_widgets_private.pri',
             'qt_lib_global.pri'
           )
+      
           foreach ($t in $targets) {
             $f = Join-Path $mspec $t
             if (-not (Test-Path $f)) { continue }
-            $c = Get-Content $f -Raw
-            $c = $c -replace '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)(.*?)(\s|$)', {
-              param($m)
-              $head,$list = $m.Groups[1].Value, $m.Groups[2].Value
-              $new = ($list -split '\s+' | ? { $_ -and $_ -ne 'stack-protector-strong' }) -join ' '
-              "$head$new"
-            }
-            if ($c -match '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)') {
-              $c = $c -replace '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)', {
-                param($m)
-                $head,$list = $m.Groups[1].Value, $m.Groups[2].Value
-                $items = [System.Linq.Enumerable]::Distinct(($list -split '\s+') + @('stack-protector-strong')) -join ' '
-                "$head$items"
-              }
-            } else {
-              $prefix = if ($t -eq 'qt_lib_global.pri') { 'QT.global' }
-                        elseif ($t -like 'qt_lib_core_private.pri') { 'QT.core_private' }
-                        elseif ($t -like 'qt_lib_gui_private.pri') { 'QT.gui_private' }
-                        elseif ($t -like 'qt_lib_widgets_private.pri') { 'QT.widgets_private' }
-                        else { 'QT.global' }
-              $c += "`r`n$prefix.disabled_features += stack-protector-strong`r`n"
-            }
-            Set-Content $f $c -Encoding UTF8
-            Write-Host "Patched $t -> disabled stack-protector-strong"
-          }
-          Select-String -Path (Join-Path $mspec 'qt_lib_*private.pri') -Pattern 'stack-protector-strong' | % { $_.Filename + ': ' + $_.Line }
+      
+            # 1) Carrega conteúdo bruto
+            $raw = Get-Content $f -Raw
+      
+            # 2) Remove 'stack-protector-strong' de QUALQUER linha de enabled_features (sem usar callback)
+            $lines = $raw -split "`r?`n"
+            for ($i=0; $i -lt $lines.Count; $i++) {
+              if ($lines[$i] -match 'enabled_features\s*\+=') {
+                # remove a palavra isolada e limpa espaços múltiplos
+                $lines[$i] = ($lines[$i] -replace
+
 
       # --- top-level .qmake.conf absoluto para evitar "Project has no top-level .qmake.conf file" ---
       - name: Ensure top-level .qmake.conf exists (Src root)
