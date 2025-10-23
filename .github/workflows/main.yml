@@ -147,22 +147,30 @@ jobs:
           QT_SRC_ROOT: "C:\\qt-src\\5.15.2\\Src"
         run: |
           $top = Join-Path $env:QT_SRC_ROOT '.qmake.conf'
-          if (-not (Test-Path $top)) {
-            $base = Join-Path $env:QT_SRC_ROOT 'qtbase\.qmake.conf'
-            if (Test-Path $base) {
-              # Inclui o .qmake.conf do qtbase se estiver disponível
-              Set-Content $top 'include($$PWD/qtbase/.qmake.conf)' -Encoding UTF8
-              Write-Host "Created top-level .qmake.conf including qtbase/.qmake.conf"
-            } else {
-              # Placeholder vazio (só para _QMAKE_CONF_ não ficar vazio)
-              Set-Content $top '# auto-generated top-level .qmake.conf' -Encoding UTF8
-              Write-Host "Created empty top-level .qmake.conf"
-            }
-          } else {
+          $qtbaseConf = Join-Path $env:QT_SRC_ROOT 'qtbase\.qmake.conf'
+
+          if (Test-Path $qtbaseConf) {
+            # Cria um .qmake.conf REAL no topo incluindo o do qtbase
+            # (conteúdo real, não apenas proxy; isso faz o qmake setar _QMAKE_CONF_)
+            @"
+            # auto-generated .qmake.conf (top-level)
+            QT_SOURCE_TREE = $$PWD
+            include($$PWD/qtbase/.qmake.conf)
+            "@ | Set-Content -Path $top -Encoding UTF8
+            Write-Host "Created/updated top-level .qmake.conf including qtbase/.qmake.conf"
+          }
+          elseif (-not (Test-Path $top)) {
+            # Fallback: arquivo vazio só para marcar _QMAKE_CONF_ (melhor que nada)
+            Set-Content $top '# empty top-level .qmake.conf (fallback)' -Encoding UTF8
+            Write-Host "Created empty top-level .qmake.conf (fallback)"
+          }
+          else {
             Write-Host "Top-level .qmake.conf already exists"
           }
+          Write-Host '--- Top-level .qmake.conf ---'
+          Get-Content $top -Raw | Write-Host
 
-      - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
+            - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
         env:
           QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
@@ -173,35 +181,39 @@ jobs:
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
 
-          function Prep-Env([string]$BuildDir,[string]$FeatDir){
+          function Prep-Env([string]$BuildDir,[string]$ModuleSrcDir){
             if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
             New-Item -ItemType Directory -Path $BuildDir | Out-Null
-            Push-Location $BuildDir
-            $env:HOME = (Get-Location).Path
-            $cache = Join-Path (Get-Location) '.qmake.cache'
+
+            # 1) espelha o .qmake.conf topo no fonte do módulo
+            $topConf = Join-Path $env:QT_SRC_ROOT '.qmake.conf'
+            if (-not (Test-Path $topConf)) { throw "Top-level .qmake.conf não encontrado em $topConf" }
+
+            $modConf = Join-Path $ModuleSrcDir '.qmake.conf'
+            Copy-Item $topConf $modConf -Force
+
+            # 2) espelha também no diretório de build do módulo
+            $buildConf = Join-Path $BuildDir '.qmake.conf'
+            Copy-Item $topConf $buildConf -Force
+
+            # 3) cache vazio para evitar ruído, e features padrão
+            $cache = Join-Path $BuildDir '.qmake.cache'
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
+            $env:QMAKEFEATURES = "$($env:QMAKEPATH)\features"
 
-            # .qmake.conf "proxy" apontando para o topo (sem here-strings)
-            $srcRoot = ($env:QT_SRC_ROOT -replace '\\','/')
-            $shadowConf = ("QT_SOURCE_TREE = {0}`nQT_BUILD_TREE  = `$`$PWD`ninclude(`$`$QT_SOURCE_TREE/.qmake.conf)`n" -f $srcRoot)
-            Set-Content (Join-Path (Get-Location) '.qmake.conf') $shadowConf -Encoding UTF8
-
-            if ($FeatDir) { $env:QMAKEFEATURES = "$FeatDir;$($env:QMAKEPATH)\features" }
-            else { $env:QMAKEFEATURES = "$($env:QMAKEPATH)\features" }
-            & "$env:QTDIR\bin\qmake.exe" -v
             Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
           }
 
           function Run-QMake([string]$pro){
-            & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests"
+            & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc `
+              "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests"
             if ($LASTEXITCODE -ne 0) {
               Write-Host "ERROR: qmake failed for $pro"
               Get-ChildItem -Recurse -Filter config.log | ForEach-Object { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
               throw "qmake failed"
             }
           }
-
           function Run-NMake(){
             & nmake /NOLOGO
             if ($LASTEXITCODE -ne 0) { throw "nmake failed" }
@@ -209,42 +221,51 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # qtmultimedia: desliga gst/pulse/openal/dshow; liga wmf/wasapi
+          # --- Patch qtmultimedia: liga wmf/wasapi e desliga gs/pulse/openal/dshow ---
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
-          function Disable-Feature([string]$name){ $script:cfg = [regex]::Replace($script:cfg, '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}', '"'+$name+'": { "condition": "false" }', 'Singleline') }
-          function Enable-Feature([string]$name){  $script:cfg = [regex]::Replace($script:cfg, '"'+[regex]::Escape($name)+'"\s*:\s*\{[^}]*\}', '"'+$name+'": { "condition": "true" }',  'Singleline') }
+          function Disable-Feature([string]$n){ $script:cfg = [regex]::Replace($script:cfg, '"'+[regex]::Escape($n)+'"\s*:\s*\{[^}]*\}', '"'+$n+'": { "condition": "false" }', 'Singleline') }
+          function Enable-Feature([string]$n){  $script:cfg = [regex]::Replace($script:cfg, '"'+[regex]::Escape($n)+'"\s*:\s*\{[^}]*\}', '"'+$n+'": { "condition": "true" }',  'Singleline') }
           'gstreamer','gstreamer_1_0','gstreamer_0_10','pulseaudio','openal','resourcepolicy','directshow' | % { Disable-Feature $_ }
           'wmf','wasapi' | % { Enable-Feature $_ }
           Set-Content $cfgPath $cfg -Encoding UTF8
           Write-Host ">> Patched qtmultimedia configure.json"
 
-          # qtsvg: system-zlib -> zlib e garantir VERSION/MODULE_VERSION
+          # --- Patch qtsvg: usa 'zlib' em vez de 'system-zlib' (qtbase já está com -qt-zlib) ---
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
           $txt = $txt -replace 'qtConfig\(system-zlib\)', 'qtConfig(zlib)'
-          if ($txt -notmatch '(?m)^\s*VERSION\s*=') { $txt = "VERSION = $$QT_VERSION`r`n$txt" }
+          if ($txt -notmatch '(?m)^\s*VERSION\s*=')        { $txt = "VERSION = $$QT_VERSION`r`n$txt" }
           if ($txt -notmatch '(?m)^\s*MODULE_VERSION\s*=') { $txt = "MODULE_VERSION = $$QT_VERSION`r`n$txt" }
           Set-Content $svgPro $txt -Encoding UTF8
           Write-Host ">> Patched qtsvg/src/svg/svg.pro"
 
-          # qtsvg
-          Prep-Env -BuildDir 'C:\qt-build-mods\qtsvg' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtsvg\mkspecs\features')
-          Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtsvg\qtsvg.pro')
+          # --- qtsvg ---
+          $bld = 'C:\qt-build-mods\qtsvg'
+          $src = Join-Path $env:QT_SRC_ROOT 'qtsvg'
+          Prep-Env -BuildDir $bld -ModuleSrcDir $src
+          Push-Location $bld
+          Run-QMake (Join-Path $src 'qtsvg.pro')
           Run-NMake
           Pop-Location
 
-          # qtserialport
-          Prep-Env -BuildDir 'C:\qt-build-mods\qtserialport' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtserialport\mkspecs\features')
-          Run-QMake (Join-Path $env:QT_SRC_ROOT 'qtserialport\qtserialport.pro')
+          # --- qtserialport ---
+          $bld = 'C:\qt-build-mods\qtserialport'
+          $src = Join-Path $env:QT_SRC_ROOT 'qtserialport'
+          Prep-Env -BuildDir $bld -ModuleSrcDir $src
+          Push-Location $bld
+          Run-QMake (Join-Path $src 'qtserialport.pro')
           Run-NMake
           Pop-Location
 
-          # qtmultimedia (força wmf/wasapi e corta gs/pulse/openal/dshow)
-          Prep-Env -BuildDir 'C:\qt-build-mods\qtmultimedia' -FeatDir (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\mkspecs\features')
-          & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $env:QT_SRC_ROOT 'qtmultimedia\qtmultimedia.pro') -r -spec win32-msvc `
+          # --- qtmultimedia ---
+          $bld = 'C:\qt-build-mods\qtmultimedia'
+          $src = Join-Path $env:QT_SRC_ROOT 'qtmultimedia'
+          Prep-Env -BuildDir $bld -ModuleSrcDir $src
+          Push-Location $bld
+          & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $src 'qtmultimedia.pro') -r -spec win32-msvc `
             "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
             "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
             "QT_FEATURE_gstreamer=0" "QT_FEATURE_gstreamer_1_0=0" "QT_FEATURE_gstreamer_0_10=0" `
@@ -259,7 +280,7 @@ jobs:
           Run-NMake
           Pop-Location
 
-          # valida módulos
+          # --- valida módulos ---
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
           $needLibs = 'Qt5Svg.lib','Qt5SerialPort.lib','Qt5Multimedia.lib'
