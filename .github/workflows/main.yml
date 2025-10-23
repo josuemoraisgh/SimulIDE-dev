@@ -207,12 +207,38 @@ jobs:
             # 1) Carrega conteúdo bruto
             $raw = Get-Content $f -Raw
       
-            # 2) Remove 'stack-protector-strong' de QUALQUER linha de enabled_features (sem usar callback)
+            # 2) Remove 'stack-protector-strong' de QUALQUER linha de enabled_features (sem '-replace' quebrado)
             $lines = $raw -split "`r?`n"
             for ($i=0; $i -lt $lines.Count; $i++) {
               if ($lines[$i] -match 'enabled_features\s*\+=') {
-                # remove a palavra isolada e limpa espaços múltiplos
-                $lines[$i] = ($lines[$i] -replace
+                $lines[$i] = [regex]::Replace($lines[$i], '\bstack-protector-strong\b', '')
+                $lines[$i] = [regex]::Replace($lines[$i], '\s{2,}', ' ')
+                # se ficar "enabled_features +=" com nada, só normaliza espaços
+                $lines[$i] = [regex]::Replace($lines[$i], '(\+=)\s+$', '$1 ')
+                $lines[$i] = $lines[$i].TrimEnd()
+              }
+            }
+            $c = ($lines -join "`r`n")
+      
+            # 3) Garante que apareça como 'disabled'
+            $prefix =
+              if ($t -eq 'qt_lib_global.pri') { 'QT.global' }
+              elseif ($t -like 'qt_lib_core_private.pri') { 'QT.core_private' }
+              elseif ($t -like 'qt_lib_gui_private.pri') { 'QT.gui_private' }
+              elseif ($t -like 'qt_lib_widgets_private.pri') { 'QT.widgets_private' }
+              else { 'QT.global' }
+      
+            if ($c -notmatch 'disabled_features[^\r\n]*\bstack-protector-strong\b') {
+              $c += "`r`n$prefix.disabled_features += stack-protector-strong`r`n"
+            }
+      
+            Set-Content $f $c -Encoding UTF8
+            Write-Host "Patched $t -> disabled stack-protector-strong"
+          }
+      
+          # Debug: mostrar onde ficou registrado
+          Select-String -Path (Join-Path $mspec 'qt_lib_*private.pri') -Pattern 'stack-protector-strong' -ErrorAction SilentlyContinue | % { $_.Filename + ': ' + $_.Line }
+
 
 
       # --- top-level .qmake.conf absoluto para evitar "Project has no top-level .qmake.conf file" ---
