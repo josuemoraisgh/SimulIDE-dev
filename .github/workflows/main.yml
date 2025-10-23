@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v7"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v8"
 
       # --- baixar fontes do Qt se necessário ---
       - name: Ensure Qt sources present
@@ -184,6 +184,50 @@ jobs:
           }
           Select-String -Path (Join-Path $mspec 'qt_lib_*.pri') -Pattern 'enabled_features.*\bzlib\b' | % { $_.Filename + ': ' + $_.Line }
 
+      # --- desabilitar 'stack-protector-strong' (MSVC não usa esse feature) ---
+      - name: Disable unsupported 'stack-protector-strong' (MSVC)
+        shell: pwsh
+        env:
+          QT_INSTALL_PREFIX: "C:\\qt-static\\5.15.2\\msvc2019_64-static"
+        run: |
+          $mspec = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\modules'
+          if (-not (Test-Path $mspec)) { throw "Modules folder not found: $mspec" }
+          $targets = @(
+            'qt_lib_core_private.pri',
+            'qt_lib_gui_private.pri',
+            'qt_lib_widgets_private.pri',
+            'qt_lib_global.pri'
+          )
+          foreach ($t in $targets) {
+            $f = Join-Path $mspec $t
+            if (-not (Test-Path $f)) { continue }
+            $c = Get-Content $f -Raw
+            $c = $c -replace '(?m)^(QT\.[^\n]*enabled_features\s*\+=\s*)(.*?)(\s|$)', {
+              param($m)
+              $head,$list = $m.Groups[1].Value, $m.Groups[2].Value
+              $new = ($list -split '\s+' | ? { $_ -and $_ -ne 'stack-protector-strong' }) -join ' '
+              "$head$new"
+            }
+            if ($c -match '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)') {
+              $c = $c -replace '(?m)^(QT\.[^\n]*disabled_features\s*\+=\s*)([^\r\n]*)', {
+                param($m)
+                $head,$list = $m.Groups[1].Value, $m.Groups[2].Value
+                $items = [System.Linq.Enumerable]::Distinct(($list -split '\s+') + @('stack-protector-strong')) -join ' '
+                "$head$items"
+              }
+            } else {
+              $prefix = if ($t -eq 'qt_lib_global.pri') { 'QT.global' }
+                        elseif ($t -like 'qt_lib_core_private.pri') { 'QT.core_private' }
+                        elseif ($t -like 'qt_lib_gui_private.pri') { 'QT.gui_private' }
+                        elseif ($t -like 'qt_lib_widgets_private.pri') { 'QT.widgets_private' }
+                        else { 'QT.global' }
+              $c += "`r`n$prefix.disabled_features += stack-protector-strong`r`n"
+            }
+            Set-Content $f $c -Encoding UTF8
+            Write-Host "Patched $t -> disabled stack-protector-strong"
+          }
+          Select-String -Path (Join-Path $mspec 'qt_lib_*private.pri') -Pattern 'stack-protector-strong' | % { $_.Filename + ': ' + $_.Line }
+
       # --- top-level .qmake.conf absoluto para evitar "Project has no top-level .qmake.conf file" ---
       - name: Ensure top-level .qmake.conf exists (Src root)
         shell: pwsh
@@ -212,7 +256,7 @@ jobs:
           $env:QTDIR = $env:QT_INSTALL_PREFIX
           $env:Path = "$($env:QTDIR)\bin;$env:Path"
           $env:QMAKEPATH = "$($env:QTDIR)\mkspecs"
-      
+
           function New-AbsQMakeConf([string]$TargetDir,[string]$SrcRootAbs){
             $confPath = Join-Path $TargetDir '.qmake.conf'
             $lines = @(
@@ -223,20 +267,14 @@ jobs:
             Set-Content -Path $confPath -Value ($lines -join "`r`n") -Encoding UTF8
             return $confPath
           }
-      
+
           function Prep-Env([string]$BuildDir,[string]$ModuleSrcDir){
             if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
             New-Item -ItemType Directory -Path $BuildDir | Out-Null
-      
             $srcAbs = ($env:QT_SRC_ROOT -replace '\\','/')
-            # .qmake.conf ABSOLUTO no fonte e no build
             $null = New-AbsQMakeConf -TargetDir $ModuleSrcDir -SrcRootAbs $srcAbs
             $buildConf = New-AbsQMakeConf -TargetDir $BuildDir -SrcRootAbs $srcAbs
-      
-            # exporta caminho ABSOLUTO do .qmake.conf do build para passarmos ao qmake
             $env:QMAKE_CONF_ABS = ($buildConf -replace '\\','/')
-      
-            # cache vazio e features
             $cache = Join-Path $BuildDir '.qmake.cache'
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
@@ -244,13 +282,12 @@ jobs:
             Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
             Write-Host "_QMAKE_CONF_ will be forced to $($env:QMAKE_CONF_ABS)"
           }
-      
+
           function Run-QMake([string]$pro){
-            # PASSO-CHAVE: forçar _QMAKE_CONF_ para o .qmake.conf absoluto do diretório de build
             & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc `
               "_QMAKE_CONF_=$($env:QMAKE_CONF_ABS)" `
               "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
-              "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0"
+              "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" "QT_FEATURE_stack_protector_strong=0"
             if ($LASTEXITCODE -ne 0) {
               Write-Host "ERROR: qmake failed for $pro"
               Get-ChildItem -Recurse -Filter config.log -ErrorAction SilentlyContinue | ForEach-Object {
@@ -265,14 +302,14 @@ jobs:
               throw "qmake failed"
             }
           }
-      
+
           function Run-NMake(){
             & nmake /NOLOGO
             if ($LASTEXITCODE -ne 0) { throw "nmake failed" }
             & nmake /NOLOGO install
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
-      
+
           # Patch qtmultimedia: desliga deps externas; liga backends nativos
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
@@ -283,7 +320,7 @@ jobs:
           'wmf','wasapi' | % { Enable-Feature $_ }
           Set-Content $cfgPath $cfg -Encoding UTF8
           Write-Host ">> Patched qtmultimedia configure.json"
-      
+
           # Patch qtsvg: usar 'zlib' em vez de 'system-zlib'
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
@@ -293,7 +330,7 @@ jobs:
           if ($txt -notmatch '(?m)^\s*MODULE_VERSION\s*=') { $txt = "MODULE_VERSION = $$QT_VERSION`r`n$txt" }
           Set-Content $svgPro $txt -Encoding UTF8
           Write-Host ">> Patched qtsvg/src/svg/svg.pro"
-      
+
           # qtsvg
           $bld = 'C:\qt-build-mods\qtsvg'
           $src = Join-Path $env:QT_SRC_ROOT 'qtsvg'
@@ -302,7 +339,7 @@ jobs:
           Run-QMake (Join-Path $src 'qtsvg.pro')
           Run-NMake
           Pop-Location
-      
+
           # qtserialport
           $bld = 'C:\qt-build-mods\qtserialport'
           $src = Join-Path $env:QT_SRC_ROOT 'qtserialport'
@@ -311,7 +348,7 @@ jobs:
           Run-QMake (Join-Path $src 'qtserialport.pro')
           Run-NMake
           Pop-Location
-      
+
           # qtmultimedia
           $bld = 'C:\qt-build-mods\qtmultimedia'
           $src = Join-Path $env:QT_SRC_ROOT 'qtmultimedia'
@@ -323,8 +360,8 @@ jobs:
             "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
             "QT_FEATURE_gstreamer=0" "QT_FEATURE_gstreamer_1_0=0" "QT_FEATURE_gstreamer_0_10=0" `
             "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
-            "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
-            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl" `
+            "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" "QT_FEATURE_stack_protector_strong=0" `
+            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong" `
             "CONFIG+=wmf" "CONFIG+=wasapi"
           if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: qmake qtmultimedia failed"
@@ -333,7 +370,7 @@ jobs:
           }
           Run-NMake
           Pop-Location
-      
+
           # valida módulos
           $mspec = Join-Path $env:QTDIR 'mkspecs\modules'
           $lib   = Join-Path $env:QTDIR 'lib'
@@ -371,7 +408,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v7"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v8"
 
       - name: Assert required Qt modules exist
         shell: pwsh
