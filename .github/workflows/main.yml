@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v10"
+          key: "qt5static-${{ env.QT_VER }}-${{ env.QT_TRIPLET }}-msvc2022-opengl-desktop-staticruntime-v11"
 
       # --- baixar fontes do Qt se necessário ---
       - name: Ensure Qt sources present
@@ -294,6 +294,10 @@ jobs:
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
             $env:QMAKEFEATURES = "$($env:QMAKEPATH)\features"
+            # === Pasta que o create_cmake.prf procura quando ativo ===
+            $cmakeTests = Join-Path $BuildDir 'tests\auto\cmake'
+            New-Item -ItemType Directory -Path $cmakeTests -Force | Out-Null
+            Write-Host "Created $cmakeTests"
             Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
             Write-Host "_QMAKE_CONF_ will be forced to $($env:QMAKE_CONF_ABS)"
           }
@@ -301,7 +305,7 @@ jobs:
           function Run-QMake([string]$pro){
             & "$env:QTDIR\bin\qmake.exe" -d -nocache $pro -r -spec win32-msvc `
               "_QMAKE_CONF_=$($env:QMAKE_CONF_ABS)" `
-              "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
+              "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" "CONFIG-=create_cmake" `
               "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
               "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0"
             if ($LASTEXITCODE -ne 0) {
@@ -309,11 +313,6 @@ jobs:
               Get-ChildItem -Recurse -Filter config.log -ErrorAction SilentlyContinue | ForEach-Object {
                 Write-Host "--- $($_.FullName) ---"
                 Get-Content $_.FullName -Raw
-              }
-              $mods = Join-Path $env:QTDIR 'mkspecs\modules'
-              Get-ChildItem $mods -Filter "qt_lib_network*.pri" -ErrorAction SilentlyContinue | Select-Object -First 3 | ForEach-Object {
-                Write-Host "### HEAD of $($_.Name)"
-                Get-Content $_.FullName -TotalCount 60
               }
               throw "qmake failed"
             }
@@ -372,14 +371,13 @@ jobs:
           Push-Location $bld
           & "$env:QTDIR\bin\qmake.exe" -d -nocache (Join-Path $src 'qtmultimedia.pro') -r -spec win32-msvc `
             "_QMAKE_CONF_=$($env:QMAKE_CONF_ABS)" `
-            "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" `
+            "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" "CONFIG-=create_cmake" `
             "QT_FEATURE_wmf=1" "QT_FEATURE_wasapi=1" `
             "QT_FEATURE_gstreamer=0" "QT_FEATURE_gstreamer_1_0=0" "QT_FEATURE_gstreamer_0_10=0" `
             "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
             "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
             "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0" `
-            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong reduce_exports" `
-            "CONFIG+=wmf" "CONFIG+=wasapi"
+            "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong reduce_exports"
           if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: qmake qtmultimedia failed"
             Get-ChildItem -Recurse -Filter config.log | % { Write-Host "--- $($_.FullName) ---"; Get-Content $_.FullName -Raw }
@@ -425,7 +423,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: "${{ env.QT_INSTALL_PREFIX }}"
-          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v10"
+          key: "qt5static-5.15.2-msvc2019_64-msvc2022-opengl-desktop-staticruntime-v11"
 
       - name: Assert required Qt modules exist
         shell: pwsh
