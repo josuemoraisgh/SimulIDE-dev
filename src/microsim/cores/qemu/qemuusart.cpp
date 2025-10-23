@@ -75,7 +75,12 @@ void QemuUsart::byteReceived( uint8_t data )
     arena->mask8  = QUSART_READ;
     arena->data8  = m_number;
     arena->data16 = m_receiver->getData();
-    qDebug() << "QemuUsart::readByte" << arena->data16 << "at time" << Simulator::self()->circTime();
+
+    //while( arena->qemuAction )
+    //{
+    //    ; /// TODO: add timeout
+    //}
+    //qDebug() << "QemuUsart::readByte" << arena->data16 << "at time" << Simulator::self()->circTime();
 }
 
 uint8_t QemuUsart::getBit9Tx()

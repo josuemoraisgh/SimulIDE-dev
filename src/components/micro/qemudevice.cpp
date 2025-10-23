@@ -112,12 +112,15 @@ void QemuDevice::initialize()
 {
     if( m_shMemId == -1 ) return;
 
+    m_arena->running = 0;
+
     m_qemuProcess.waitForFinished( 500 );
     if( m_qemuProcess.state() != QProcess::NotRunning )
     {
         m_qemuProcess.kill();
         qDebug() << "QemuDevice: Qemu proccess killed";
     }
+    else qDebug() << "QemuDevice: Qemu proccess finished";
     //updateStep();
 }
 
@@ -136,6 +139,7 @@ void QemuDevice::stamp()
     m_arena->simuAction = 0;
     m_arena->qemuAction = 0;
     m_arena->ps_per_inst = 0;
+    m_arena->running = 0;
 
     for( IoPin* pin : m_ioPin ) // Qemu calls us to read input
     {
@@ -196,6 +200,8 @@ void QemuDevice::voltChanged()
 
     if( reset )
     {
+        m_arena->running = 0;
+
         if( m_qemuProcess.state() > QProcess::NotRunning )
         {
             Simulator::self()->cancelEvents( this );
@@ -213,29 +219,21 @@ void QemuDevice::runToTime( uint64_t time )
 
     m_arena->qemuTime = time; // Tell Qemu to run up to time
 
-    while( true ) //Simulator::self()->simState() == SIM_RUNNING )
-    {
-        if( m_arena->simuTime )
-        {
-            uint64_t actionTime = m_arena->simuTime;
-            uint64_t eventTime = actionTime - Simulator::self()->circTime();
-            //if( m_arena->action < SIM_EVENT )
-                Simulator::self()->addEvent( eventTime, this );
+    while( m_arena->simuTime == 0 ) { ; } // Wait for Qemu action  //   Simulator::self()->simState() == SIM_RUNNING )
 
-            //qDebug() << "QemuDevice::runToTime action:"<< m_arena->simuAction <<"at time"<< actionTime/1000;
-            return;
-        }
-    }
+    uint64_t actionTime = m_arena->simuTime;
+    uint64_t eventTime = actionTime - Simulator::self()->circTime();
+    //if( m_arena->action < SIM_EVENT )
+    Simulator::self()->addEvent( eventTime, this );
 }
 
 void QemuDevice::runEvent()
 {
     //qDebug() << "QemuDevice::runEvent"<< m_arena->action<< Simulator::self()->circTime()/1000;
     if( m_arena->simuAction < SIM_EVENT ) doAction();
-    m_arena->simuAction = 0;
-    m_arena->simuTime = 0;
+    //m_arena->simuAction = 0;
     m_arena->qemuTime = 0;       // Qemu will wait for next time
-    //m_arena->qemuTime = time; // Tell Qemu to run up to time
+    m_arena->simuTime = 0;
 }
 
 /*void QemuDevice::runEvent()
