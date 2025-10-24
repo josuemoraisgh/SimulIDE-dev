@@ -272,8 +272,11 @@ jobs:
             Set-Content $cache '' -Encoding ASCII
             $env:QMAKECACHE = $cache
             $env:QMAKEFEATURES = "$($env:QMAKEPATH)\features"
+
+            # evitar erro "Missing CMake tests..." gerado por create_cmake.prf
             $cmakeTests = Join-Path $BuildDir 'tests\auto\cmake'
             New-Item -ItemType Directory -Path $cmakeTests -Force | Out-Null
+
             Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
             Write-Host "_QMAKE_CONF_ will be forced to $($env:QMAKE_CONF_ABS)"
           }
@@ -284,6 +287,7 @@ jobs:
               "QT_BUILD_EXAMPLES=0" "QT_BUILD_TESTS=0" "CONFIG-=examples" "CONFIG-=tests" "CONFIG-=create_cmake" `
               "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
               "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0" `
+              "QT.svg.disabled_features+=stack-protector-strong reduce_exports" `
               "QMAKE_LIBS_ZLIB=" "QMAKE_INCDIR_ZLIB=" "QMAKE_DEFINES_ZLIB=QT_ZLIB_LIB"
             if ($LASTEXITCODE -ne 0) {
               Write-Host "ERROR: qmake failed for $pro"
@@ -302,7 +306,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nmake install failed" }
           }
 
-          # Patch qtmultimedia: nativo Windows (sem gstreamer/pulse/etc.)
+          # qtmultimedia: nativo Windows
           $cfgPath = Join-Path $env:QT_SRC_ROOT 'qtmultimedia\configure.json'
           if (-not (Test-Path $cfgPath)) { throw "configure.json não encontrado em $cfgPath" }
           $cfg = Get-Content $cfgPath -Raw
@@ -313,7 +317,7 @@ jobs:
           Set-Content $cfgPath $cfg -Encoding UTF8
           Write-Host ">> Patched qtmultimedia configure.json"
 
-          # Patch qtsvg: usar 'zlib' em vez de 'system-zlib'
+          # qtsvg: usar 'zlib' (interna) e não 'system-zlib'
           $svgPro = Join-Path $env:QT_SRC_ROOT 'qtsvg\src\svg\svg.pro'
           if (-not (Test-Path $svgPro)) { throw "Arquivo não encontrado: $svgPro" }
           $txt = Get-Content $svgPro -Raw
@@ -354,6 +358,7 @@ jobs:
             "QT_FEATURE_pulseaudio=0" "QT_FEATURE_openal=0" "QT_FEATURE_resourcepolicy=0" "QT_FEATURE_directshow=0" `
             "QT_FEATURE_openssl=0" "QT_FEATURE_schannel=1" "QT_FEATURE_direct2d=0" `
             "QT_FEATURE_stack_protector_strong=0" "QT_FEATURE_reduce_exports=0" `
+            "QT.svg.disabled_features+=stack-protector-strong reduce_exports" `
             "QMAKE_LIBS_ZLIB=" "QMAKE_INCDIR_ZLIB=" "QMAKE_DEFINES_ZLIB=QT_ZLIB_LIB" `
             "QT_CONFIG-=gstreamer gstreamer_1_0 gstreamer_0_10 pulseaudio openal resourcepolicy directshow direct2d openssl stack-protector-strong reduce_exports"
           if ($LASTEXITCODE -ne 0) {
@@ -372,7 +377,6 @@ jobs:
           foreach ($f in $needLibs) { if (-not (Test-Path (Join-Path $lib $f))) { throw "Missing $f in $lib" } }
           foreach ($p in $needPris) { if (-not (Test-Path (Join-Path $mspec $p))) { throw "Missing $p in $mspec" } }
           Write-Host ">> OK: módulos instalados"
-
 
   build-app:
     name: Build App (Static, One EXE) + Tag/Release
