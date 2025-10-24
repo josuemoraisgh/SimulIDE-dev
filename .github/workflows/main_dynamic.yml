@@ -10,51 +10,68 @@ on:
         description: "Qt Desktop version"
         required: false
         default: "5.15.2"
-      qt_target:
-        description: "Qt target (ex.: msvc2019_64)"
+      qt_arch:
+        description: "Qt arch (ex.: win64_msvc2019_64)"
         required: false
-        default: "msvc2019_64"
+        default: "win64_msvc2019_64"
+      build_static:
+        description: "Rodar job experimental de Qt ESTÁTICO?"
+        required: false
+        default: "false"
   push:
     tags:
       - "v*"
 
+permissions:
+  contents: write   # necessário para criar tag e release
+  actions: read
+
+concurrency:
+  group: simulide-msvc-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-msvc:
-    name: Build MSVC + Qt (${{ inputs.qt_version || '5.15.2' }} ${{ inputs.qt_target || 'msvc2019_64' }})
+    name: Build MSVC + Qt (${{ inputs.qt_version || '5.15.2' }} ${{ inputs.qt_arch || 'win64_msvc2019_64' }})
     runs-on: windows-latest
 
     env:
       APP_NAME: SimulIDE
       BUILD_DIR: build_XX
-      # Saída gerada pelo projeto (SimulIDE costuma criar algo como executables/SimulIDE_x.x.x)
-      OUT_DIR: build_XX\\executables
-      # Pasta final que vamos zipar:
+      OUT_DIR: build_XX\executables
       DIST_DIR: dist
-      # Caminho do exe pós-build (ajustado após build via PowerShell)
       EXE_NAME: SimulIDE.exe
 
     steps:
-      - name: Checkout
+      - name: Checkout (com submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Setup MSVC DevCmd (x64)
+      - name: MSVC DevCmd (x64)
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      - name: Instalar Qt (5.15.2 win64_msvc2019_64)
+      # Diagnóstico opcional para ver módulos disponíveis no feed do Qt 5.15.2
+      - name: Diagnóstico do feed Qt
+        shell: pwsh
+        run: |
+          python -m pip install -U aqtinstall==3.3.*
+          python -m aqt version
+          python -m aqt list-qt windows desktop --arch ${{ inputs.qt_version || '5.15.2' }}
+          python -m aqt list-qt windows desktop --modules ${{ inputs.qt_version || '5.15.2' }} ${{ inputs.qt_arch || 'win64_msvc2019_64' }}
+
+      - name: Instalar Qt (${{ inputs.qt_version || '5.15.2' }} / ${{ inputs.qt_arch || 'win64_msvc2019_64' }})
         uses: jurplel/install-qt-action@v4
         with:
-          version: 5.15.2
+          version: ${{ inputs.qt_version || '5.15.2' }}
           host: windows
           target: desktop
-          arch: win64_msvc2019_64   # <— era msvc2019_64; CORRETO para Qt5 é win64_msvc2019_64
+          arch: ${{ inputs.qt_arch || 'win64_msvc2019_64' }}
           cache: true
           modules: "qtserialport qtmultimedia qtsvg"
-
 
       - name: Mostrar qmake e windeployqt
         shell: bash
@@ -66,11 +83,10 @@ jobs:
       - name: Configurar build (qmake)
         shell: cmd
         run: |
+          if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
           cd %BUILD_DIR%
-          qmake ..\SimulIDE.pri -spec win32-msvc CONFIG+=release
-          rem Observação: em muitos commits de SimulIDE, basta "qmake" dentro de build_XX.
-          rem Se preferir o fluxo recomendado no README:
-          rem qmake
+          rem Se o projeto principal for SimulIDE.pro no raiz:
+          qmake ..\SimulIDE.pro -spec win32-msvc CONFIG+=release
 
       - name: Compilar (nmake)
         shell: cmd
@@ -78,58 +94,59 @@ jobs:
           cd %BUILD_DIR%
           nmake /NOLOGO
 
-      - name: Descobrir pasta do executável
+      - name: Encontrar pasta do executável
         id: findexe
         shell: pwsh
         run: |
-          # Normalmente sai em build_XX/executables/SimulIDE_x.x.x
           $exe = Get-ChildItem -Recurse -Filter $env:EXE_NAME -Path $env:OUT_DIR | Select-Object -First 1
-          if (-not $exe) { throw "Não encontrei $env:EXE_NAME em $env:OUT_DIR" }
-          $out = Split-Path -Parent $exe.FullName
-          "exe_dir=$out" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Host "Executável em: $out"
+          if (-not $exe) {
+            Get-ChildItem -Recurse -Path $env:BUILD_DIR | Write-Host
+            throw "Não encontrei $env:EXE_NAME em $env:OUT_DIR"
+          }
+          "exe_dir=$(Split-Path -Parent $exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Executável em: $($exe.FullName)"
 
-      - name: Rodar windeployqt (copiar DLLs do Qt)
+      - name: windeployqt (copiar DLLs Qt)
         shell: pwsh
         run: |
-          $exeDir = "${{ steps.findexe.outputs.exe_dir }}"
-          & windeployqt "$exeDir\\${{ env.EXE_NAME }}" --release
+          & windeployqt "${{ steps.findexe.outputs.exe_dir }}\${{ env.EXE_NAME }}" --release
 
-      - name: Preparar pasta de distribuição
+      - name: Preparar dist
         shell: pwsh
         run: |
+          if (Test-Path $env:DIST_DIR) { Remove-Item -Recurse -Force $env:DIST_DIR }
           New-Item -ItemType Directory -Path $env:DIST_DIR | Out-Null
-          $exeDir = "${{ steps.findexe.outputs.exe_dir }}"
-          Copy-Item -Recurse -Force "$exeDir\\*" "$env:DIST_DIR\\"
-          # Inclui READMEs/licenças úteis se desejar:
+          Copy-Item -Recurse -Force "${{ steps.findexe.outputs.exe_dir }}\*" "$env:DIST_DIR\"
           if (Test-Path "COPYING") { Copy-Item COPYING $env:DIST_DIR }
+          if (Test-Path "LICENSE") { Copy-Item LICENSE $env:DIST_DIR }
           if (Test-Path "README.md") { Copy-Item README.md $env:DIST_DIR }
 
-      - name: Empacotar ZIP
+      - name: Compactar ZIP
+        id: zip
         shell: pwsh
         run: |
           $zip = "${{ env.APP_NAME }}-windows-msvc.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }
-          Compress-Archive -Path "$env:DIST_DIR\\*" -DestinationPath $zip
-          Write-Host "ZIP criado: $zip"
-          echo "zip_name=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Compress-Archive -Path "$env:DIST_DIR\*" -DestinationPath $zip
+          "zip_name=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "ZIP gerado: $zip"
 
       - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-windows-msvc
-          path: ${{ env.APP_NAME }}-windows-msvc.zip
+          path: ${{ steps.zip.outputs.zip_name }}
           if-no-files-found: error
           retention-days: 7
 
-      - name: Criar tag (somente se workflow_dispatch com input)
+      - name: Criar tag (apenas em workflow_dispatch)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         shell: bash
         env:
           TAG_NAME: ${{ inputs.tag }}
         run: |
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME já existe. Prosseguindo para Release."
+            echo "Tag $TAG_NAME já existe."
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -137,13 +154,23 @@ jobs:
             git push origin "$TAG_NAME"
           fi
 
-      - name: Criar/atualizar Release e subir ZIP
+      - name: Criar/atualizar Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           name: "SimulIDE ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }} (Windows MSVC)"
           draft: false
           prerelease: false
-          files: ${{ env.APP_NAME }}-windows-msvc.zip
+          files: ${{ steps.zip.outputs.zip_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------- Job opcional (estático) — fica "pausado" por input ----------------
+  build-qt-static:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_static == 'true' }}
+    name: Experimental — Qt 5.15.2 static (MSVC)
+    runs-on: windows-latest
+    steps:
+      - name: Placeholder
+        run: |
+          echo "Job estático habilitado via input, configure seus passos aqui."
