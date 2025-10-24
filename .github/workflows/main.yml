@@ -6,6 +6,10 @@ on:
     tags: [ "v*", "V*", "release-*" ]
   workflow_dispatch:
     inputs:
+      build_static:
+        description: "Rodar build ESTÁTICO do Qt?"
+        required: false
+        default: "false"    
       version:
         description: "Version (e.g. v2.0.0-RC1). If set, a tag will be created if missing."
         required: false
