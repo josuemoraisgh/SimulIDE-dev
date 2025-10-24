@@ -242,13 +242,24 @@ jobs:
         run: |
           $feat = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\features'
           if (-not (Test-Path $feat)) { New-Item -ItemType Directory -Path $feat | Out-Null }
-          $prf = @'
-          QMAKE_LIBS_ZLIB =
-          QMAKE_INCDIR_ZLIB =
-          QMAKE_DEFINES_ZLIB = QT_ZLIB_LIB
-          '@
-          Set-Content (Join-Path $feat 'zlib.prf') $prf -Encoding ASCII
-          Write-Host "Created mkspecs/features/zlib.prf shim"
+      
+          # Conteúdo sem here-string (evita conflito de indentação do YAML)
+          $lines = @(
+            'QMAKE_LIBS_ZLIB ='
+            'QMAKE_INCDIR_ZLIB ='
+            'QMAKE_DEFINES_ZLIB = QT_ZLIB_LIB'
+          )
+          $path = Join-Path $feat 'zlib.prf'
+          Set-Content -Path $path -Value ($lines -join "`r`n") -Encoding ASCII
+          Write-Host "Created $path:"
+          Get-Content $path
+      
+          # Opcional: reforça caminho de features para o qmake atual
+          $env:QMAKEPATH = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs'
+          $env:QMAKEFEATURES = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\features'
+          Write-Host "QMAKEPATH=$($env:QMAKEPATH)"
+          Write-Host "QMAKEFEATURES=$($env:QMAKEFEATURES)"
+
 
       - name: Build & Install Qt modules (qtsvg, qtserialport, qtmultimedia)
         shell: pwsh
