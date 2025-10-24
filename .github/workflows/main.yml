@@ -243,10 +243,10 @@ jobs:
           $feat = Join-Path $env:QT_INSTALL_PREFIX 'mkspecs\features'
           if (-not (Test-Path $feat)) { New-Item -ItemType Directory -Path $feat | Out-Null }
           $prf = @'
-QMAKE_LIBS_ZLIB =
-QMAKE_INCDIR_ZLIB =
-QMAKE_DEFINES_ZLIB = QT_ZLIB_LIB
-'@
+          QMAKE_LIBS_ZLIB =
+          QMAKE_INCDIR_ZLIB =
+          QMAKE_DEFINES_ZLIB = QT_ZLIB_LIB
+          '@
           Set-Content (Join-Path $feat 'zlib.prf') $prf -Encoding ASCII
           Write-Host "Created mkspecs/features/zlib.prf shim"
 
