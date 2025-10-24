@@ -45,15 +45,16 @@ jobs:
         with:
           arch: x64
 
-      - name: Instalar Qt (${{ inputs.qt_version || '5.15.2' }} ${{ inputs.qt_target || 'msvc2019_64' }})
+      - name: Instalar Qt (5.15.2 win64_msvc2019_64)
         uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ inputs.qt_version || '5.15.2' }}
+          version: 5.15.2
           host: windows
           target: desktop
-          arch: ${{ inputs.qt_target || 'msvc2019_64' }}
+          arch: win64_msvc2019_64   # <— era msvc2019_64; CORRETO para Qt5 é win64_msvc2019_64
           cache: true
           modules: "qtserialport qtmultimedia qtsvg"
+
 
       - name: Mostrar qmake e windeployqt
         shell: bash
