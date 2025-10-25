@@ -12,6 +12,7 @@
 //#include "iopin.h"
 #include "stm32pin.h"
 #include "qemuusart.h"
+#include "qemutimer.h"
 
 #define tr(str) simulideTr("Stm32",str)
 
@@ -47,13 +48,14 @@ Stm32::Stm32( QString type, QString id )
 
     createPins();
 
-    m_i2c[0].setDevice( this );
-    m_i2c[0].setSclPin( m_portB.at(6) );
-    m_i2c[0].setSdaPin( m_portB.at(7) );
+    m_i2cs.resize( 2 );
+    for( int i=0; i<2; ++i ) m_i2cs[i] = new QemuTwi( this, "I2C"+QString::number(i), i );
 
-    m_i2c[1].setDevice( this );
-    m_i2c[1].setSclPin( m_portB.at(10) );
-    m_i2c[1].setSdaPin( m_portB.at(11) );
+    m_i2cs[0]->setSclPin( m_portB.at(6) );
+    m_i2cs[0]->setSdaPin( m_portB.at(7) );
+
+    m_i2cs[1]->setSclPin( m_portB.at(10) );
+    m_i2cs[1]->setSdaPin( m_portB.at(11) );
 
     m_usarts.resize( 3 );
     for( int i=0; i<3; ++i ) m_usarts[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
@@ -62,7 +64,8 @@ Stm32::Stm32( QString type, QString id )
     m_usarts[1]->setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
     m_usarts[2]->setPins({m_portB.at(10), m_portB.at(11)});
 
-
+    m_timers.resize( 5 );
+    for( int i=0; i<5; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
 }
 Stm32::~Stm32(){}
 
@@ -176,6 +179,17 @@ void Stm32::doAction()
             uint8_t  port   = m_arena->data8;
             m_arena->data16 = readInputs( port );
         } break;
+        case SIM_I2C:
+        {
+            uint16_t    id = m_arena->data16;
+            uint8_t   data = m_arena->data32;
+            uint8_t  event = m_arena->data8;
+
+            //qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
+
+            if( id < 2 ) m_i2cs[id]->doAction( event, data );
+            break;
+        }
         case SIM_USART:
         {
             uint16_t    id = m_arena->data16;
@@ -185,16 +199,15 @@ void Stm32::doAction()
             //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
             if( id < 3 ) m_usarts[id]->doAction( event, data );
         } break;
-        case SIM_I2C:
+
+        case SIM_TIMER:
         {
             uint16_t    id = m_arena->data16;
-            uint8_t   data = m_arena->data32;
             uint8_t  event = m_arena->data8;
+            uint32_t  data = m_arena->data32;
 
-            //qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
-
-            if( id < 2 ) m_i2c[id].doAction( event, data );
-            break;
+            if( id < 5 ) m_timers[id]->doAction( event, data );
+            //qDebug() << "Stm32::doAction SIM_TIMER Uart:"<< id << "action:"<< event<< "byte:" << data;
         }
         default:
             qDebug() << "Stm32::doAction Unimplemented"<< m_arena->simuAction;

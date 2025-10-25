@@ -44,6 +44,4 @@ class Stm32 : public QemuDevice
         std::vector<Stm32Pin*> m_portB;
         std::vector<Stm32Pin*> m_portC;
         std::vector<Stm32Pin*> m_portD;
-
-        QemuTwi m_i2c[2];
 };

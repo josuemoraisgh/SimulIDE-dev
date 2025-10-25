@@ -56,8 +56,11 @@ Esp32::Esp32( QString type, QString id )
 
     m_firmware ="";
 
-    m_i2c[0].setDevice( this );
-    m_i2c[1].setDevice( this );
+    m_i2cs.resize( 2 );
+    for( int i=0; i<2; ++i )
+    {
+        m_i2cs[i] = new QemuTwi( this, "I2C"+QString::number(i), i );
+    }
 
     createPins();
 }
@@ -376,14 +379,14 @@ void Esp32::doAction()
             case 17: //m_uart[1].rx_pin = io2pin(gpio); // U1RXD
                 break;
 
-            case 29: m_i2c[0].setSclPin( ioPin ); /*qDebug()<<"SCL"<<pin;*/ break; // I2CEXT0_SCL
-            case 30: m_i2c[0].setSdaPin( ioPin ); /*qDebug()<<"SDA"<<pin;*/ break; // I2CEXT0_SDA
+            case 29: m_i2cs[0]->setSclPin( ioPin ); /*qDebug()<<"SCL"<<pin;*/ break; // I2CEXT0_SCL
+            case 30: m_i2cs[0]->setSdaPin( ioPin ); /*qDebug()<<"SDA"<<pin;*/ break; // I2CEXT0_SDA
 
             case 64: //m_spi[1].cipo_pin = io2pin(gpio); // VSPIQ
                 break;
 
-            case 95: m_i2c[1].setSclPin( ioPin ); break; // I2CEXT1_SCL
-            case 96: m_i2c[1].setSdaPin( ioPin ); break; // I2CEXT1_SDA
+            case 95: m_i2cs[1]->setSclPin( ioPin ); break; // I2CEXT1_SCL
+            case 96: m_i2cs[1]->setSdaPin( ioPin ); break; // I2CEXT1_SDA
 
             case 198: //m_uart[2].rx_pin = io2pin(gpio); // U2RXD
                 break;
@@ -521,7 +524,7 @@ void Esp32::doAction()
             uint8_t   data = m_arena->data8;
             uint32_t event = m_arena->data32;
 
-            if( id < 2 ) m_i2c[id].doAction( event, data );
+            if( id < 2 ) m_i2cs[id]->doAction( event, data );
         } break;
     }
 }

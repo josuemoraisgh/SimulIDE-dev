@@ -24,7 +24,7 @@ class QemuTwi : public TwiModule
     friend class I2cRunner;
 
     public:
-        QemuTwi();
+        QemuTwi( QemuDevice* mcu, QString name, int number );
         ~QemuTwi();
 
         enum i2c_action_t {
@@ -47,8 +47,6 @@ class QemuTwi : public TwiModule
 
         void reset();
 
-        void setDevice( QemuDevice* dev );
-
         void doAction( uint32_t action, uint8_t data );
 
         void readByte() override;
@@ -68,7 +66,7 @@ class QemuTwi : public TwiModule
         i2cPending_t* m_nextAction;
         i2cPending_t* m_lastAction;
 
-        QemuDevice* m_device;
+        QemuDevice* m_mcu;
 
         I2cRunner m_runner;
 };
