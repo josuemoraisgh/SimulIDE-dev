@@ -76,7 +76,6 @@ jobs:
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          # Garante /mingw64/bin no PATH para todas as ferramentas Qt/MinGW
           export PATH="/mingw64/bin:$PATH"
 
           # qmake (Qt5)
@@ -104,7 +103,6 @@ jobs:
           echo "QT_BINDIR=$QT_BINDIR"   >> $GITHUB_ENV
           echo "QMAKE=$QMAKE"           >> $GITHUB_ENV
           echo "WINDEPLOY=$WINDEPLOY"   >> $GITHUB_ENV
-          # Aumenta PATH do job para outras steps MSYS2
           echo "/mingw64/bin"           >> $GITHUB_PATH
           echo "$QT_BINDIR"             >> $GITHUB_PATH
 
@@ -124,17 +122,18 @@ jobs:
           find . -maxdepth 2 -name "*.pro" -print 2>/dev/null || true
           ls -la build_XX || true
 
-      - name: Compilar (qmake + mingw32-make)
+      - name: Compilar (qmake + mingw32-make Release)
         shell: msys2 {0}
         run: |
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
           cd build_XX
-          "$QMAKE"
+          # força Release para garantir que o .exe final exista no alvo esperado
+          "$QMAKE" "CONFIG+=release"
           CORES=$(nproc || echo 2)
-          mingw32-make -j"${CORES}"
+          mingw32-make -j"${CORES}" release
           echo "Estrutura pós-build:"
-          find . -maxdepth 2 -type d -print 2>/dev/null || true
+          find . -maxdepth 3 -type d -print 2>/dev/null || true
 
       - name: Localizar pasta do executável
         id: find_outdir
@@ -165,28 +164,41 @@ jobs:
           echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
           echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
 
-      - name: Localizar executável (.exe)
+      - name: Localizar executável (.exe) – busca recursiva e *fallback*
         id: exe
         shell: msys2 {0}
         run: |
           set -euo pipefail
+
+          pick_latest_exe () {
+            # procura .exe até 3 níveis e escolhe o mais recente
+            local base="$1"
+            local cand
+            cand=$(find "$base" -maxdepth 3 -type f -iname "*.exe" -printf "%T@ %p\n" 2>/dev/null | sort -nr | awk 'NR==1{print substr($0, index($0,$2))}')
+            echo "$cand"
+          }
+
           OUT_DIR="${{ steps.find_outdir.outputs.outdir_unix }}"
-          EXE=$(
-            (find "$OUT_DIR" -maxdepth 1 -type f -iname "SimulIDE*.exe" -print 2>/dev/null; \
-             find "$OUT_DIR" -maxdepth 1 -type f -iname "simulide*.exe" -print 2>/dev/null; \
-             find "$OUT_DIR" -maxdepth 1 -type f -iname "*.exe" -print 2>/dev/null) \
-            | head -n1
-          )
+          EXE="$(pick_latest_exe "$OUT_DIR")"
+
+          # fallback: procurar em toda build_XX se nada em OUT_DIR
           if [ -z "$EXE" ]; then
-            echo "Nenhum .exe encontrado em $OUT_DIR"
-            echo "Listando conteúdo (nível 2):"
-            find "$OUT_DIR" -maxdepth 2 -print 2>/dev/null || true
+            echo "Nenhum .exe em $OUT_DIR; procurando em build_XX inteira…"
+            EXE="$(pick_latest_exe "build_XX")"
+          fi
+
+          if [ -z "$EXE" ] || [ ! -f "$EXE" ]; then
+            echo "Falha ao localizar .exe final."
+            echo "Listando executáveis candidatos em build_XX:"
+            find build_XX -type f -iname "*.exe" -print 2>/dev/null || true
             exit 1
           fi
-          echo "Executável encontrado (MSYS): $EXE"
-          echo "exe_win=$(cygpath -w "$EXE")"     >> $GITHUB_OUTPUT
-          echo "exe_dir_unix=$OUT_DIR"           >> $GITHUB_OUTPUT
-          echo "exe_dir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
+
+          echo "Executável escolhido (mais recente): $EXE"
+          echo "exe_unix=$EXE"                        >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")"         >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$(dirname "$EXE")"       >> $GITHUB_OUTPUT
+          echo "exe_dir_win=$(cygpath -w "$(dirname "$EXE")")" >> $GITHUB_OUTPUT
 
       - name: windeployqt (gerar pasta portable)
         shell: msys2 {0}
@@ -196,7 +208,7 @@ jobs:
           EXE_WIN="${{ steps.exe.outputs.exe_win }}"
           if [ ! -f "$(cygpath -u "$EXE_WIN")" ]; then
             echo "O caminho do .exe não existe (antes do windeployqt): $EXE_WIN"
-            ls -la "${{ steps.find_outdir.outputs.outdir_unix }}" || true
+            ls -la "${{ steps.exe.outputs.exe_dir_unix }}" || true
             exit 1
           fi
           # Copia DLLs do Qt + runtime MinGW para a mesma pasta do .exe
@@ -207,7 +219,7 @@ jobs:
         shell: pwsh
         run: |
           $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
-          $outDir  = "${{ steps.find_outdir.outputs.outdir_win }}"
+          $outDir  = "${{ steps.exe.outputs.exe_dir_win }}"
           $parent  = Split-Path -Path $outDir -Parent
           $zipPath = Join-Path $parent $zipName
           if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
