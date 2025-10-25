@@ -71,16 +71,16 @@ void QemuUsart::byteReceived( uint8_t data )
 {
     UsartModule::byteReceived( data );
     volatile qemuArena_t* arena = m_mcu->getArena();
-    arena->qemuAction = SIM_USART;
+
+    while( arena->qemuAction )        // Wait for previous action executed
+    {
+        ; /// TODO: add timeout
+    }
     arena->mask8  = QUSART_READ;
     arena->data8  = m_number;
     arena->data16 = m_receiver->getData();
-
-    //while( arena->qemuAction )
-    //{
-    //    ; /// TODO: add timeout
-    //}
     //qDebug() << "QemuUsart::readByte" << arena->data16 << "at time" << Simulator::self()->circTime();
+    arena->qemuAction = SIM_USART;
 }
 
 uint8_t QemuUsart::getBit9Tx()

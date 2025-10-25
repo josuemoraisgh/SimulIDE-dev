@@ -162,7 +162,7 @@ void QemuDevice::stamp()
         m_qemuProcess.start( executable, m_arguments );
 
         uint64_t timeout = 0;
-        while( m_arena->simuAction == 0 )   // Wait for Qemu running
+        while( !m_arena->running )   // Wait for Qemu running
         {
             if( timeout++ > 5e9 ) // Don't wait forever
             {
@@ -171,10 +171,7 @@ void QemuDevice::stamp()
                 return;
             }
         }
-        m_arena->simuAction = 0;
         qDebug() << "QemuDevice::stamp started";
-        //Simulator::self()->addEvent( 10, this );
-        //updateStep();
     }
 }
 
@@ -196,8 +193,6 @@ void QemuDevice::voltChanged()
 
     bool reset = !m_rstPin->getInpState();
 
-    //m_arena->resetHard = reset;
-
     if( reset )
     {
         m_arena->running = 0;
@@ -213,56 +208,30 @@ void QemuDevice::voltChanged()
 
 void QemuDevice::runToTime( uint64_t time )
 {
-    if( m_arena->qemuTime ) return; // Our event still not executed
+    //if( m_arena->qemuTime ) return; // Our event still not executed
+    if( m_arena->simuTime ) return; // Our event still not executed
 
-    //qDebug() << "\nQemuDevice::runToTime"<< time/1000;
+    //qDebug() << "\nQemuDevice::runToTime"<< time;
 
     m_arena->qemuTime = time; // Tell Qemu to run up to time
+    //m_arena->qemuAction = SIM_EVENT;
 
     while( m_arena->simuTime == 0 ) { ; } // Wait for Qemu action  //   Simulator::self()->simState() == SIM_RUNNING )
 
-    uint64_t actionTime = m_arena->simuTime;
-    uint64_t eventTime = actionTime - Simulator::self()->circTime();
+    uint64_t eventTime = m_arena->simuTime - Simulator::self()->circTime();
     //if( m_arena->action < SIM_EVENT )
     Simulator::self()->addEvent( eventTime, this );
+    //qDebug() << "QemuDevice::runToTime event"<< m_arena->simuTime;
 }
 
 void QemuDevice::runEvent()
 {
-    //qDebug() << "QemuDevice::runEvent"<< m_arena->action<< Simulator::self()->circTime()/1000;
+    //qDebug() << "QemuDevice::runEvent"<< m_arena->simuAction<< Simulator::self()->circTime();
     if( m_arena->simuAction < SIM_EVENT ) doAction();
     //m_arena->simuAction = 0;
     m_arena->qemuTime = 0;       // Qemu will wait for next time
     m_arena->simuTime = 0;
 }
-
-/*void QemuDevice::runEvent()
-{
-    //qDebug() << "runEvent"<<m_arena->action<<eventEnter;
-    if( m_arena->action )
-    {
-        doAction();
-        m_arena->action = 0;
-    }
-
-    uint64_t nextTime = 0;
-    uint64_t time = 0;
-    m_arena->time = 0;
-
-    while( time == 0 )   // Wait for next event from Qemu
-    {
-        if( Simulator::self()->simState() < SIM_RUNNING ) break;// runCircuit loop finished
-        time = m_arena->time;
-    }
-    if( time )
-    {
-        uint64_t eventEnter = Simulator::self()->circTime();
-        Q_ASSERT( time >= eventEnter );
-        nextTime = time-eventEnter;
-    }
-    Simulator::self()->addEvent( nextTime, this );
-    //qDebug() << "exitEvent"<<m_arena->action<<m_arena->time;
-}*/
 
 void QemuDevice::slotOpenTerm( int num )
 {
