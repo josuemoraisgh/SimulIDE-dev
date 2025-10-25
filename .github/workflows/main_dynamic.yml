@@ -99,17 +99,22 @@ jobs:
           fi
           echo "Usando windeploy: $WINDEPLOY"
 
+          # Onde estão os plugins do Qt (ex.: /mingw64/share/qt5/plugins ou /mingw64/plugins)
+          PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
+          if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
+            for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
+              [ -d "$d" ] && PLUG_DIR="$d" && break
+            done
+          fi
+          echo "QT_INSTALL_PLUGINS: $PLUG_DIR"
+          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
+
           QT_BINDIR="$(dirname "$(which "$QMAKE")")"
           echo "QT_BINDIR=$QT_BINDIR"   >> $GITHUB_ENV
           echo "QMAKE=$QMAKE"           >> $GITHUB_ENV
           echo "WINDEPLOY=$WINDEPLOY"   >> $GITHUB_ENV
           echo "/mingw64/bin"           >> $GITHUB_PATH
           echo "$QT_BINDIR"             >> $GITHUB_PATH
-
-          which lrelease   || true
-          which uic        || true
-          which moc        || true
-          which "$WINDEPLOY" || true
 
       - name: Preflight (qmake build)
         shell: msys2 {0}
@@ -128,7 +133,6 @@ jobs:
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
           cd build_XX
-          # força Release para garantir que o .exe final exista no alvo esperado
           "$QMAKE" "CONFIG+=release"
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
@@ -164,55 +168,81 @@ jobs:
           echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
           echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
 
-      - name: Localizar executável (.exe) – busca recursiva e *fallback*
+      - name: Localizar executável (.exe) – mais recente com fallback
         id: exe
         shell: msys2 {0}
         run: |
           set -euo pipefail
-
           pick_latest_exe () {
-            # procura .exe até 3 níveis e escolhe o mais recente
             local base="$1"
             local cand
             cand=$(find "$base" -maxdepth 3 -type f -iname "*.exe" -printf "%T@ %p\n" 2>/dev/null | sort -nr | awk 'NR==1{print substr($0, index($0,$2))}')
             echo "$cand"
           }
-
           OUT_DIR="${{ steps.find_outdir.outputs.outdir_unix }}"
           EXE="$(pick_latest_exe "$OUT_DIR")"
-
-          # fallback: procurar em toda build_XX se nada em OUT_DIR
-          if [ -z "$EXE" ]; then
-            echo "Nenhum .exe em $OUT_DIR; procurando em build_XX inteira…"
-            EXE="$(pick_latest_exe "build_XX")"
-          fi
-
+          [ -z "$EXE" ] && EXE="$(pick_latest_exe "build_XX")"
           if [ -z "$EXE" ] || [ ! -f "$EXE" ]; then
             echo "Falha ao localizar .exe final."
-            echo "Listando executáveis candidatos em build_XX:"
             find build_XX -type f -iname "*.exe" -print 2>/dev/null || true
             exit 1
           fi
-
-          echo "Executável escolhido (mais recente): $EXE"
-          echo "exe_unix=$EXE"                        >> $GITHUB_OUTPUT
-          echo "exe_win=$(cygpath -w "$EXE")"         >> $GITHUB_OUTPUT
-          echo "exe_dir_unix=$(dirname "$EXE")"       >> $GITHUB_OUTPUT
+          echo "Executável escolhido: $EXE"
+          echo "exe_unix=$EXE"                                 >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")"                  >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$(dirname "$EXE")"                >> $GITHUB_OUTPUT
           echo "exe_dir_win=$(cygpath -w "$(dirname "$EXE")")" >> $GITHUB_OUTPUT
 
-      - name: windeployqt (gerar pasta portable)
+      - name: windeployqt (gerar pasta portable com fallback)
         shell: msys2 {0}
+        env:
+          QT_PLUGIN_PATH: ${{ env.QT_PLUGIN_PATH }}
         run: |
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
           EXE_WIN="${{ steps.exe.outputs.exe_win }}"
+          EXE_DIR_UNIX="${{ steps.exe.outputs.exe_dir_unix }}"
+          PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
+          echo "EXE_WIN=$EXE_WIN"
+          echo "EXE_DIR_UNIX=$EXE_DIR_UNIX"
+          echo "QT_PLUGIN_PATH=$PLUG_DIR"
+
           if [ ! -f "$(cygpath -u "$EXE_WIN")" ]; then
             echo "O caminho do .exe não existe (antes do windeployqt): $EXE_WIN"
-            ls -la "${{ steps.exe.outputs.exe_dir_unix }}" || true
+            ls -la "$EXE_DIR_UNIX" || true
             exit 1
           fi
-          # Copia DLLs do Qt + runtime MinGW para a mesma pasta do .exe
-          "$WINDEPLOY" --release --compiler-runtime "$EXE_WIN"
+
+          # 1) Tenta sem --release (workaround bug MSYS2)
+          if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
+            echo "windeployqt OK."
+          else
+            echo "windeployqt falhou. Aplicando fallback…"
+
+            # 2) Fallback: rodar sem plugins e copiar manualmente os essenciais
+            "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
+
+            # Copiar platform plugin qwindows.dll (release) e, se existir, qwindowsd.dll (debug) por segurança
+            mkdir -p "$EXE_DIR_UNIX/platforms"
+            for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
+              [ -f "$f" ] && cp -f "$f" "$EXE_DIR_UNIX/platforms/" || true
+            done
+
+            # Plugins comuns úteis (se existirem na instalação)
+            for sub in imageformats iconengines audio mediaservice printsupport; do
+              [ -d "$PLUG_DIR/$sub" ] || continue
+              mkdir -p "$EXE_DIR_UNIX/$sub"
+              cp -f "$PLUG_DIR/$sub"/*.dll "$EXE_DIR_UNIX/$sub/" 2>/dev/null || true
+            done
+
+            # Verificação final do platform plugin
+            if [ ! -f "$EXE_DIR_UNIX/platforms/qwindows.dll" ] && [ ! -f "$EXE_DIR_UNIX/platforms/qwindowsd.dll" ]; then
+              echo "Falha: platform plugin qwindows*.dll não foi encontrado nem copiado."
+              echo "Conteúdo de $EXE_DIR_UNIX/platforms:"
+              ls -la "$EXE_DIR_UNIX/platforms" || true
+              exit 1
+            fi
+          fi
 
       - name: Empacotar ZIP (portable)
         id: zip
