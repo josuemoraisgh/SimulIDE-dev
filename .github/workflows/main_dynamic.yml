@@ -71,11 +71,13 @@ jobs:
           fi
           echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Detectar Qt bin e qmake
+      - name: Detectar Qt bin, qmake e windeployqt
         id: qt
         shell: msys2 {0}
         run: |
           set -euo pipefail
+
+          # qmake
           if command -v qmake >/dev/null 2>&1; then
             QMAKE=qmake
           elif command -v qmake-qt5 >/dev/null 2>&1; then
@@ -83,16 +85,29 @@ jobs:
           else
             echo "qmake (Qt5) não encontrado."; exit 1
           fi
-          QT_BINDIR="$(dirname "$(which "$QMAKE")")"
           echo "Usando qmake: $QMAKE"
           "$QMAKE" -v || true
+
+          # windeployqt (algumas distros usam windeployqt-qt5)
+          if command -v windeployqt >/dev/null 2>&1; then
+            WINDEPLOY=windeployqt
+          elif command -v windeployqt-qt5 >/dev/null 2>&1; then
+            WINDEPLOY=windeployqt-qt5
+          else
+            echo "windeployqt não encontrado (nem windeployqt-qt5)."; exit 1
+          fi
+          echo "Usando windeploy: $WINDEPLOY"
+
+          QT_BINDIR="$(dirname "$(which "$QMAKE")")"
           echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
-          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
+          echo "QMAKE=$QMAKE"       >> $GITHUB_ENV
+          echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
           echo "$QT_BINDIR" >> $GITHUB_PATH
-          which lrelease || true
-          which uic || true
-          which moc || true
-          which windeployqt || true
+
+          which lrelease   || true
+          which uic        || true
+          which moc        || true
+          which "$WINDEPLOY" || true
 
       - name: Preflight (qmake build)
         shell: msys2 {0}
@@ -141,9 +156,10 @@ jobs:
             find . -maxdepth 4 -print 2>/dev/null || true
             exit 1
           fi
+          # Normaliza para ambos os formatos
           echo "Pasta encontrada: $OUT_DIR"
+          echo "outdir_unix=$OUT_DIR"           >> $GITHUB_OUTPUT
           echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
-          echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
 
       - name: Localizar executável (.exe) com fallback robusto
         id: exe
@@ -165,17 +181,14 @@ jobs:
             exit 1
           fi
           echo "Executável encontrado (MSYS): $EXE"
-          EXE_WIN=$(cygpath -w "$EXE")
-          EXE_DIR_WIN=$(cygpath -w "$OUT_DIR")
-          echo "exe_win=$EXE_WIN" >> $GITHUB_OUTPUT
-          echo "exe_dir_win=$EXE_DIR_WIN" >> $GITHUB_OUTPUT
-          echo "exe_dir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$OUT_DIR"         >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")"  >> $GITHUB_OUTPUT
+          echo "exe_dir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
 
       - name: windeployqt (portable folder)
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          which windeployqt
           echo "Executável (WIN): ${{ steps.exe.outputs.exe_win }}"
           if [ ! -f "$(cygpath -u "${{ steps.exe.outputs.exe_win }}")" ]; then
             echo "O caminho do .exe não existe (antes do windeployqt)."
@@ -183,8 +196,9 @@ jobs:
             exit 1
           fi
           # Copia DLLs do Qt e runtime do compilador para a mesma pasta do .exe
-          windeployqt --release --compiler-runtime "${{ steps.exe.outputs.exe_win }}"
-          # (Opcional) reduzir tamanho:
+          "$WINDEPLOY" --release --compiler-runtime "${{ steps.exe.outputs.exe_win }}"
+
+          # (Opcional) reduzir tamanho: descomente para strip em DLLs copiadas
           # find "${{ steps.exe.outputs.exe_dir_unix }}" -name "*.dll" -exec strip -s {} \; 2>/dev/null || true
 
       - name: Empacotar ZIP (pasta pronta / portable)
