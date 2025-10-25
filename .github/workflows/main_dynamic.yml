@@ -35,25 +35,31 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      # Instala MSYS2, toolchain MinGW64 e Qt5
+      - name: Habilitar long paths no Git (preventivo)
+        shell: pwsh
+        run: |
+          git config --system core.longpaths true
+          git config --global core.longpaths true
+
+      # MSYS2 + MinGW64 + Qt5 (instala pacotes específicos; sem grupos interativos; sem AVR)
       - name: Setup MSYS2 + MinGW64 + Qt5
         uses: msys2/setup-msys2@v2
         with:
           release: true
           update: true
           msystem: MINGW64
+          path-type: minimal
+          cache: true
           install: >-
             base-devel
             git
             zip
             mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-qt5
+            mingw-w64-x86_64-qt5-base
             mingw-w64-x86_64-qt5-svg
             mingw-w64-x86_64-qt5-multimedia
             mingw-w64-x86_64-qt5-serialport
             mingw-w64-x86_64-qt5-script
-            avr-gcc
-            avr-libc
 
       - name: Validar versão
         shell: bash
@@ -63,51 +69,75 @@ jobs:
           fi
           echo "Versão/Tag alvo: ${VERSION}"
 
-      # Compila seguindo o README: entrar em build_XX, rodar qmake e make
+      - name: Detectar qmake e exibir versão
+        id: qmake
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          if command -v qmake >/dev/null 2>&1; then
+            QMAKE=qmake
+          elif command -v qmake-qt5 >/dev/null 2>&1; then
+            QMAKE=qmake-qt5
+          else
+            echo "qmake (Qt5) não encontrado."; exit 1
+          fi
+          echo "Usando: $QMAKE"
+          $QMAKE -v
+          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
+
+      # Compila conforme README: build_XX -> qmake -> make
       - name: Compilar (qmake + mingw32-make)
         shell: msys2 {0}
         run: |
           set -euo pipefail
           cd build_XX
-          # garante que estamos usando o qmake do MinGW64
-          which qmake
-          qmake
-          # Use o mingw32-make (geralmente é o gerado pelo qmake no MinGW)
-          mingw32-make -j"$(nproc || echo 2)"
+          "$QMAKE"
+          # mingw32-make é o padrão no MinGW
+          CORES=$(nproc || echo 2)
+          mingw32-make -j"${CORES}"
+          echo "Árvore pós-build (até 3 níveis):"
+          find . -maxdepth 3 -type d -print
 
       - name: Localizar pasta do executável
         id: find_outdir
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          # Padrão principal (executables/)
-          OUT_DIR=$(ls -d build_XX/executables/SimulIDE_* 2>/dev/null || true)
-          # Fallback (release/)
-          [ -z "$OUT_DIR" ] && OUT_DIR=$(ls -d build_XX/release/SimulIDE_* 2>/dev/null || true)
-          # Se o build gerou dentro do cwd (por variação), tenta sem o prefixo build_XX/
-          [ -z "$OUT_DIR" ] && OUT_DIR=$(ls -d executables/SimulIDE_* 2>/dev/null || true)
-          [ -z "$OUT_DIR" ] && OUT_DIR=$(ls -d release/SimulIDE_* 2>/dev/null || true)
-
+          cd build_XX
+          shopt -s nullglob
+          CANDIDATES=(
+            "executables/SimulIDE_*"
+            "release/SimulIDE_*"
+            "./executables/SimulIDE_*"
+            "./release/SimulIDE_*"
+          )
+          OUT_DIR=""
+          for pat in "${CANDIDATES[@]}"; do
+            for d in $pat; do
+              if [ -d "$d" ]; then OUT_DIR="$d"; break 2; fi
+            done
+          done
           if [ -z "$OUT_DIR" ]; then
             echo "Não foi possível encontrar a pasta de saída (executables/ ou release/)."
+            echo "Conteúdo de build_XX:"
+            find . -maxdepth 4 -print
             exit 1
           fi
-
-          OUT_ABS=$(cygpath -w "$OUT_DIR")
-          echo "Pasta encontrada (Windows path): $OUT_ABS"
-          echo "outdir=$OUT_ABS" >> $GITHUB_OUTPUT
+          echo "Pasta encontrada: $OUT_DIR"
+          echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
+          echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
 
       - name: Empacotar ZIP
         id: pack
         shell: pwsh
         run: |
           $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
-          $outDir  = "${{ steps.find_outdir.outputs.outdir }}"
-          $parent  = Split-Path -Path $outDir -Parent
-          $base    = Split-Path -Path $outDir -Leaf
-          $zipPath = Join-Path $parent $zipName
+          $outDirWin = "${{ steps.find_outdir.outputs.outdir_win }}"
+          $parent    = Split-Path -Path $outDirWin -Parent
+          $base      = Split-Path -Path $outDirWin -Leaf
+          $zipPath   = Join-Path $parent $zipName
           if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-          Compress-Archive -Path (Join-Path $outDir '*') -DestinationPath $zipPath
+          Compress-Archive -Path (Join-Path $outDirWin '*') -DestinationPath $zipPath
           Write-Host "ZIP: $zipPath"
           echo "zip=$zipPath" >> $env:GITHUB_OUTPUT
 
