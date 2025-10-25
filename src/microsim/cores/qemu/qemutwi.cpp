@@ -10,19 +10,15 @@
 #include "iopin.h"
 #include "simulator.h"
 
-QemuTwi::QemuTwi()
-       : TwiModule("")
+QemuTwi::QemuTwi( QemuDevice* mcu, QString name, int number )
+       : TwiModule( name )
        , m_runner( this )
 {
-}
-QemuTwi::~QemuTwi(){}
-
-void QemuTwi::setDevice( QemuDevice* dev )
-{
-    m_device = dev;
+    m_mcu = mcu;
     m_nextAction = nullptr;
     m_lastAction = nullptr;
 }
+QemuTwi::~QemuTwi(){}
 
 void QemuTwi::reset()
 {

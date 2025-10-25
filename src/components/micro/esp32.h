@@ -37,6 +37,4 @@ class Esp32 : public QemuDevice
         uint64_t m_pullUps;
         uint64_t m_pullDown;
         uint64_t m_inputEn;
-
-        QemuTwi m_i2c[2];
 };
