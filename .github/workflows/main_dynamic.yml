@@ -53,16 +53,16 @@ jobs:
             base-devel
             git
             zip
-            ntldd
-            mingw-w64-x86_64-ntldd-git
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
+            mingw-w64-x86_64-binutils
             mingw-w64-x86_64-qt5-base
             mingw-w64-x86_64-qt5-svg
             mingw-w64-x86_64-qt5-multimedia
             mingw-w64-x86_64-qt5-serialport
             mingw-w64-x86_64-qt5-script
             mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-ntldd-git
 
       - name: Validar versão
         shell: bash
@@ -98,7 +98,6 @@ jobs:
           fi
           echo "Usando windeploy: $WINDEPLOY"
 
-          # Plugins path (qwindows.dll etc.)
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
           if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
             for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
@@ -157,7 +156,7 @@ jobs:
             done
           done
           if [ -z "$OUT_DIR" ]; then
-            echo "Não foi possível encontrar a pasta de saída (executables/ ou release/)."
+            echo "Não foi possível encontrar a pasta de saída."
             find . -maxdepth 4 -print 2>/dev/null || true
             exit 1
           fi
@@ -205,12 +204,12 @@ jobs:
           echo "QT_PLUGIN_PATH=$PLUG_DIR"
 
           if [ ! -f "$(cygpath -u "$EXE_WIN")" ]; then
-            echo "O caminho do .exe não existe (antes do windeployqt): $EXE_WIN"
+            echo "O caminho do .exe não existe: $EXE_WIN"
             ls -la "$EXE_DIR_UNIX" || true
             exit 1
           fi
 
-          # 1) Tenta windeployqt (sem --release, workaround MSYS2)
+          # Tenta padrão (sem --release, workaround MSYS2)
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
             echo "windeployqt OK."
           else
@@ -227,7 +226,7 @@ jobs:
             done
           fi
 
-      - name: Copiar runtimes MinGW e 3rd-party (ntldd)
+      - name: Copiar runtimes MinGW/3rd-party (ntldd ou objdump)
         shell: msys2 {0}
         run: |
           set -euo pipefail
@@ -236,32 +235,47 @@ jobs:
           EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
           MINGW_BIN="/mingw64/bin"
 
-          echo "Resolvendo dependências com ntldd…"
+          echo "Descobrindo dependências…"
           TMPD="$(mktemp -d)"
           touch "$TMPD/deps.txt"
 
-          # dependências do exe
-          ntldd -R "$EXE_UNIX" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
-          # e de todas as DLLs já na pasta (Qt e plugins)
-          find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
-            ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
-          done
+          have_ntldd=0
+          if command -v ntldd >/dev/null 2>&1; then
+            have_ntldd=1
+            echo "Usando ntldd"
+            ntldd -R "$EXE_UNIX" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
+            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
+              ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
+            done
+          else
+            echo "ntldd não disponível — usando objdump"
+            list_needed () {
+              objdump -p "$1" 2>/dev/null | awk '/DLL Name:/ {print $3}'
+            }
+            # Do exe
+            for n in $(list_needed "$EXE_UNIX"); do
+              find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" 2>/dev/null || true
+            done
+            # DLLs já na pasta
+            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
+              for n in $(list_needed "$f"); do
+                find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" 2>/dev/null || true
+              done
+            done
+          fi
 
           sort -u "$TMPD/deps.txt" | while read src; do
             [ -f "$src" ] || continue
             base="$(basename "$src")"
             dst="$EXE_DIR/$base"
             if [ ! -f "$dst" ]; then
-              # só copie DLLs que moram em /mingw64/bin (evita copiar do Windows/System32)
               case "$src" in
-                /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*)
-                  cp -f "$src" "$dst" || true
-                  ;;
+                /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*) cp -f "$src" "$dst" || true ;;
               esac
             fi
           done
 
-          # Garantias mínimas (caso ntldd deixe passar algo):
+          # Garantias mínimas
           for d in \
             libgcc_s_seh-1.dll \
             libstdc++-6.dll \
