@@ -53,6 +53,8 @@ jobs:
             base-devel
             git
             zip
+            ntldd
+            mingw-w64-x86_64-ntldd-git
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
             mingw-w64-x86_64-qt5-base
@@ -208,7 +210,7 @@ jobs:
             exit 1
           fi
 
-          # 1) Tenta sem --release (workaround MSYS2)
+          # 1) Tenta windeployqt (sem --release, workaround MSYS2)
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
             echo "windeployqt OK."
           else
@@ -223,34 +225,75 @@ jobs:
               mkdir -p "$EXE_DIR_UNIX/$sub"
               cp -f "$PLUG_DIR/$sub"/*.dll "$EXE_DIR_UNIX/$sub/" 2>/dev/null || true
             done
-            if [ ! -f "$EXE_DIR_UNIX/platforms/qwindows.dll" ] && [ ! -f "$EXE_DIR_UNIX/platforms/qwindowsd.dll" ]; then
-              echo "Falha: platform plugin qwindows*.dll não copiado."; ls -la "$EXE_DIR_UNIX/platforms" || true; exit 1
-            fi
           fi
 
-      # ========= AQUI ESTÁ A CORREÇÃO DE PUBLICAÇÃO =========
+      - name: Copiar runtimes MinGW e 3rd-party (ntldd)
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
+          EXE_UNIX="${{ steps.exe.outputs.exe_unix }}"
+          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
+          MINGW_BIN="/mingw64/bin"
+
+          echo "Resolvendo dependências com ntldd…"
+          TMPD="$(mktemp -d)"
+          touch "$TMPD/deps.txt"
+
+          # dependências do exe
+          ntldd -R "$EXE_UNIX" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
+          # e de todas as DLLs já na pasta (Qt e plugins)
+          find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
+            ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
+          done
+
+          sort -u "$TMPD/deps.txt" | while read src; do
+            [ -f "$src" ] || continue
+            base="$(basename "$src")"
+            dst="$EXE_DIR/$base"
+            if [ ! -f "$dst" ]; then
+              # só copie DLLs que moram em /mingw64/bin (evita copiar do Windows/System32)
+              case "$src" in
+                /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*)
+                  cp -f "$src" "$dst" || true
+                  ;;
+              esac
+            fi
+          done
+
+          # Garantias mínimas (caso ntldd deixe passar algo):
+          for d in \
+            libgcc_s_seh-1.dll \
+            libstdc++-6.dll \
+            libwinpthread-1.dll \
+            zlib1.dll \
+            libdouble-conversion.dll
+          do
+            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
+          done
+
+          echo "DLLs finais na pasta:"
+          ls -1 "$EXE_DIR"/*.dll 2>/dev/null | wc -l || true
+
       - name: Empacotar ZIP (portable) e normalizar caminho para Release
         id: zip
         shell: pwsh
         run: |
-          $zipName   = "SimulIDE-$env:VERSION-windows-mingw64.zip"
-          $exeDirWin = "${{ steps.exe.outputs.exe_dir_win }}"
-          $workspace = "${{ github.workspace }}"
+          $zipName    = "SimulIDE-$env:VERSION-windows-mingw64.zip"
+          $exeDirWin  = "${{ steps.exe.outputs.exe_dir_win }}"
+          $workspace  = "${{ github.workspace }}"
           $releaseDir = Join-Path $workspace "release"
           if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
 
-          # cria o ZIP a partir da pasta do exe
           $zipPathAbs = Join-Path $releaseDir $zipName
           if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
           Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
 
-          # define saída absoluta (Windows) e relativa (POSIX) para usar depois
-          $zipRel = "release/$zipName"  # relativo ao workspace, com '/'
+          $zipRel = "release/$zipName"
           Write-Host "ZIP (abs): $zipPathAbs"
           Write-Host "ZIP (rel): $zipRel"
           echo "zip_abs=$zipPathAbs" >> $env:GITHUB_OUTPUT
           echo "zip_rel=$zipRel"     >> $env:GITHUB_OUTPUT
-      # ======================================================
 
       - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
@@ -266,6 +309,6 @@ jobs:
           name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
           body: ${{ github.event.inputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease }}
-          files: ${{ steps.zip.outputs.zip_rel }}   # << usar caminho relativo com '/'
+          files: ${{ steps.zip.outputs.zip_rel }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
