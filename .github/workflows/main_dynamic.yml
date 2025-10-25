@@ -65,6 +65,7 @@ jobs:
       - name: Validar versão
         shell: bash
         run: |
+          set -euo pipefail
           if [ -z "${VERSION}" ]; then
             echo "Versão não informada."; exit 1
           fi
