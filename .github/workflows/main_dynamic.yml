@@ -78,7 +78,6 @@ jobs:
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          # qmake (Qt5)
           if command -v qmake >/dev/null 2>&1; then
             QMAKE=qmake
           elif command -v qmake-qt5 >/dev/null 2>&1; then
@@ -86,10 +85,8 @@ jobs:
           else
             echo "qmake (Qt5) não encontrado."; exit 1
           fi
-          echo "Usando qmake: $QMAKE"
-          "$QMAKE" -v || true
+          echo "Usando qmake: $QMAKE"; "$QMAKE" -v || true
 
-          # windeployqt (pode vir como windeployqt ou windeployqt-qt5)
           if command -v windeployqt >/dev/null 2>&1; then
             WINDEPLOY=windeployqt
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then
@@ -99,22 +96,21 @@ jobs:
           fi
           echo "Usando windeploy: $WINDEPLOY"
 
-          # Onde estão os plugins do Qt (ex.: /mingw64/share/qt5/plugins ou /mingw64/plugins)
+          # Plugins path (qwindows.dll etc.)
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
           if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
             for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
               [ -d "$d" ] && PLUG_DIR="$d" && break
             done
           fi
-          echo "QT_INSTALL_PLUGINS: $PLUG_DIR"
           echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
 
           QT_BINDIR="$(dirname "$(which "$QMAKE")")"
-          echo "QT_BINDIR=$QT_BINDIR"   >> $GITHUB_ENV
-          echo "QMAKE=$QMAKE"           >> $GITHUB_ENV
-          echo "WINDEPLOY=$WINDEPLOY"   >> $GITHUB_ENV
-          echo "/mingw64/bin"           >> $GITHUB_PATH
-          echo "$QT_BINDIR"             >> $GITHUB_PATH
+          echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
+          echo "QMAKE=$QMAKE"         >> $GITHUB_ENV
+          echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
+          echo "/mingw64/bin"         >> $GITHUB_PATH
+          echo "$QT_BINDIR"           >> $GITHUB_PATH
 
       - name: Preflight (qmake build)
         shell: msys2 {0}
@@ -160,7 +156,6 @@ jobs:
           done
           if [ -z "$OUT_DIR" ]; then
             echo "Não foi possível encontrar a pasta de saída (executables/ ou release/)."
-            echo "Conteúdo de build_XX (nível 4):"
             find . -maxdepth 4 -print 2>/dev/null || true
             exit 1
           fi
@@ -213,65 +208,64 @@ jobs:
             exit 1
           fi
 
-          # 1) Tenta sem --release (workaround bug MSYS2)
+          # 1) Tenta sem --release (workaround MSYS2)
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
             echo "windeployqt OK."
           else
             echo "windeployqt falhou. Aplicando fallback…"
-
-            # 2) Fallback: rodar sem plugins e copiar manualmente os essenciais
             "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
-
-            # Copiar platform plugin qwindows.dll (release) e, se existir, qwindowsd.dll (debug) por segurança
             mkdir -p "$EXE_DIR_UNIX/platforms"
             for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
               [ -f "$f" ] && cp -f "$f" "$EXE_DIR_UNIX/platforms/" || true
             done
-
-            # Plugins comuns úteis (se existirem na instalação)
             for sub in imageformats iconengines audio mediaservice printsupport; do
               [ -d "$PLUG_DIR/$sub" ] || continue
               mkdir -p "$EXE_DIR_UNIX/$sub"
               cp -f "$PLUG_DIR/$sub"/*.dll "$EXE_DIR_UNIX/$sub/" 2>/dev/null || true
             done
-
-            # Verificação final do platform plugin
             if [ ! -f "$EXE_DIR_UNIX/platforms/qwindows.dll" ] && [ ! -f "$EXE_DIR_UNIX/platforms/qwindowsd.dll" ]; then
-              echo "Falha: platform plugin qwindows*.dll não foi encontrado nem copiado."
-              echo "Conteúdo de $EXE_DIR_UNIX/platforms:"
-              ls -la "$EXE_DIR_UNIX/platforms" || true
-              exit 1
+              echo "Falha: platform plugin qwindows*.dll não copiado."; ls -la "$EXE_DIR_UNIX/platforms" || true; exit 1
             fi
           fi
 
-      - name: Empacotar ZIP (portable)
+      # ========= AQUI ESTÁ A CORREÇÃO DE PUBLICAÇÃO =========
+      - name: Empacotar ZIP (portable) e normalizar caminho para Release
         id: zip
         shell: pwsh
         run: |
-          $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
-          $outDir  = "${{ steps.exe.outputs.exe_dir_win }}"
-          $parent  = Split-Path -Path $outDir -Parent
-          $zipPath = Join-Path $parent $zipName
-          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-          Compress-Archive -Path (Join-Path $outDir '*') -DestinationPath $zipPath
-          Write-Host "ZIP: $zipPath"
-          echo "zip=$zipPath" >> $env:GITHUB_OUTPUT
+          $zipName   = "SimulIDE-$env:VERSION-windows-mingw64.zip"
+          $exeDirWin = "${{ steps.exe.outputs.exe_dir_win }}"
+          $workspace = "${{ github.workspace }}"
+          $releaseDir = Join-Path $workspace "release"
+          if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
+
+          # cria o ZIP a partir da pasta do exe
+          $zipPathAbs = Join-Path $releaseDir $zipName
+          if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
+          Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
+
+          # define saída absoluta (Windows) e relativa (POSIX) para usar depois
+          $zipRel = "release/$zipName"  # relativo ao workspace, com '/'
+          Write-Host "ZIP (abs): $zipPathAbs"
+          Write-Host "ZIP (rel): $zipRel"
+          echo "zip_abs=$zipPathAbs" >> $env:GITHUB_OUTPUT
+          echo "zip_rel=$zipRel"     >> $env:GITHUB_OUTPUT
+      # ======================================================
 
       - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
         with:
           name: SimulIDE-${{ env.VERSION }}-windows-mingw64
-          path: ${{ steps.zip.outputs.zip }}
+          path: ${{ steps.zip.outputs.zip_abs }}
           if-no-files-found: error
 
-      - name: Criar Release + Tag
+      - name: Criar Release + Tag (anexando o ZIP correto)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
           name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
           body: ${{ github.event.inputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease }}
-          files: |
-            ${{ steps.zip.outputs.zip }}
+          files: ${{ steps.zip.outputs.zip_rel }}   # << usar caminho relativo com '/'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
