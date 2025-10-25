@@ -74,14 +74,15 @@ jobs:
             mingw-w64-x86_64-freetype
             mingw-w64-x86_64-graphite2
             mingw-w64-x86_64-brotli
+            mingw-w64-x86_64-glib2
+            mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-libiconv
 
       - name: Validar versão
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${VERSION}" ]; then
-            echo "Versão não informada."; exit 1
-          fi
+          test -n "${VERSION}" || { echo "Versão não informada."; exit 1; }
           echo "Versão/Tag alvo: ${VERSION}"
 
       - name: Detectar Qt (qmake e windeployqt) + PATH
@@ -91,23 +92,13 @@ jobs:
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          if command -v qmake >/dev/null 2>&1; then
-            QMAKE=qmake
-          elif command -v qmake-qt5 >/dev/null 2>&1; then
-            QMAKE=qmake-qt5
-          else
-            echo "qmake (Qt5) não encontrado."; exit 1
-          fi
-          echo "Usando qmake: $QMAKE"; "$QMAKE" -v || true
+          if command -v qmake >/dev/null 2>&1; then QMAKE=qmake;
+          elif command -v qmake-qt5 >/dev/null 2>&1; then QMAKE=qmake-qt5;
+          else echo "qmake (Qt5) não encontrado."; exit 1; fi
 
-          if command -v windeployqt >/dev/null 2>&1; then
-            WINDEPLOY=windeployqt
-          elif command -v windeployqt-qt5 >/dev/null 2>&1; then
-            WINDEPLOY=windeployqt-qt5
-          else
-            echo "windeployqt não encontrado."; exit 1
-          fi
-          echo "Usando windeploy: $WINDEPLOY"
+          if command -v windeployqt >/dev/null 2>&1; then WINDEPLOY=windeployqt;
+          elif command -v windeployqt-qt5 >/dev/null 2>&1; then WINDEPLOY=windeployqt-qt5;
+          else echo "windeployqt não encontrado."; exit 1; fi
 
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
           if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
@@ -115,23 +106,17 @@ jobs:
               [ -d "$d" ] && PLUG_DIR="$d" && break
             done
           fi
-          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
 
-          QT_BINDIR="$(dirname "$(which "$QMAKE")")"
-          echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
-          echo "QMAKE=$QMAKE"         >> $GITHUB_ENV
+          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
+          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
           echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
-          echo "/mingw64/bin"         >> $GITHUB_PATH
-          echo "$QT_BINDIR"           >> $GITHUB_PATH
+          echo "/mingw64/bin" >> $GITHUB_PATH
 
       - name: Preflight (qmake build)
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          if [ ! -d "build_XX" ]; then
-            echo "Pasta build_XX não encontrada no repositório."; exit 1
-          fi
-          echo "Arquivos .pro (nível 2):"
+          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
           find . -maxdepth 2 -name "*.pro" -print 2>/dev/null || true
           ls -la build_XX || true
 
@@ -144,7 +129,6 @@ jobs:
           "$QMAKE" "CONFIG+=release"
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
-          echo "Estrutura pós-build:"
           find . -maxdepth 3 -type d -print 2>/dev/null || true
 
       - name: Localizar pasta do executável
@@ -154,50 +138,23 @@ jobs:
           set -euo pipefail
           cd build_XX
           shopt -s nullglob
-          CANDIDATES=(
-            "executables/SimulIDE_*"
-            "release/SimulIDE_*"
-            "./executables/SimulIDE_*"
-            "./release/SimulIDE_*"
-          )
-          OUT_DIR=""
-          for pat in "${CANDIDATES[@]}"; do
-            for d in $pat; do
-              if [ -d "$d" ]; then OUT_DIR="$d"; break 2; fi
-            done
+          for pat in "executables/SimulIDE_*" "release/SimulIDE_*" "./executables/SimulIDE_*" "./release/SimulIDE_*"; do
+            for d in $pat; do [ -d "$d" ] && { echo "outdir_unix=$d" >> $GITHUB_OUTPUT; exit 0; }; done
           done
-          if [ -z "$OUT_DIR" ]; then
-            echo "Não foi possível encontrar a pasta de saída."
-            find . -maxdepth 4 -print 2>/dev/null || true
-            exit 1
-          fi
-          echo "Pasta encontrada: $OUT_DIR"
-          echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
-          echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
+          echo "Não foi possível encontrar a pasta de saída."; find . -maxdepth 4 -print; exit 1
 
       - name: Localizar executável (.exe) – mais recente com fallback
         id: exe
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          pick_latest_exe () {
-            local base="$1"
-            local cand
-            cand=$(find "$base" -maxdepth 3 -type f -iname "*.exe" -printf "%T@ %p\n" 2>/dev/null | sort -nr | awk 'NR==1{print substr($0, index($0,$2))}')
-            echo "$cand"
-          }
+          pick_latest_exe () { find "$1" -maxdepth 3 -type f -iname "*.exe" -printf "%T@ %p\n" | sort -nr | awk 'NR==1{print substr($0, index($0,$2))}'; }
           OUT_DIR="${{ steps.find_outdir.outputs.outdir_unix }}"
-          EXE="$(pick_latest_exe "$OUT_DIR")"
-          [ -z "$EXE" ] && EXE="$(pick_latest_exe "build_XX")"
-          if [ -z "$EXE" ] || [ ! -f "$EXE" ]; then
-            echo "Falha ao localizar .exe final."
-            find build_XX -type f -iname "*.exe" -print 2>/dev/null || true
-            exit 1
-          fi
-          echo "Executável escolhido: $EXE"
-          echo "exe_unix=$EXE"                                 >> $GITHUB_OUTPUT
-          echo "exe_win=$(cygpath -w "$EXE")"                  >> $GITHUB_OUTPUT
-          echo "exe_dir_unix=$(dirname "$EXE")"                >> $GITHUB_OUTPUT
+          EXE="$(pick_latest_exe "$OUT_DIR")"; [ -z "$EXE" ] && EXE="$(pick_latest_exe "build_XX")"
+          [ -n "$EXE" ] && [ -f "$EXE" ] || { echo "Falha ao localizar .exe final."; find build_XX -type f -iname "*.exe" -print; exit 1; }
+          echo "exe_unix=$EXE" >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$(dirname "$EXE")" >> $GITHUB_OUTPUT
           echo "exe_dir_win=$(cygpath -w "$(dirname "$EXE")")" >> $GITHUB_OUTPUT
 
       - name: windeployqt (gerar pasta portable com fallback)
@@ -210,20 +167,12 @@ jobs:
           EXE_WIN="${{ steps.exe.outputs.exe_win }}"
           EXE_DIR_UNIX="${{ steps.exe.outputs.exe_dir_unix }}"
           PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
-          echo "EXE_WIN=$EXE_WIN"
-          echo "EXE_DIR_UNIX=$EXE_DIR_UNIX"
-          echo "QT_PLUGIN_PATH=$PLUG_DIR"
-
-          if [ ! -f "$(cygpath -u "$EXE_WIN")" ]; then
-            echo "O caminho do .exe não existe: $EXE_WIN"
-            ls -la "$EXE_DIR_UNIX" || true
-            exit 1
-          fi
+          [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR_UNIX"; exit 1; }
 
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
             echo "windeployqt OK."
           else
-            echo "windeployqt falhou. Aplicando fallback…"
+            echo "windeployqt falhou. Fallback de plugins…"
             "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
             mkdir -p "$EXE_DIR_UNIX/platforms"
             for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
@@ -245,77 +194,50 @@ jobs:
           EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
           MINGW_BIN="/mingw64/bin"
 
-          echo "Descobrindo dependências…"
-          TMPD="$(mktemp -d)"
-          : > "$TMPD/deps.txt"
+          TMPD="$(mktemp -d)"; : > "$TMPD/deps.txt"
 
           if command -v ntldd >/dev/null 2>&1; then
-            echo "Usando ntldd -R"
             ntldd -R "$EXE_UNIX" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
-            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
+            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print | while read f; do
               ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
             done
           else
-            echo "ntldd indisponível — usando objdump"
             list_needed () { objdump -p "$1" 2>/dev/null | awk '/DLL Name:/ {print $3}'; }
-            for n in $(list_needed "$EXE_UNIX"); do
-              find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" 2>/dev/null || true
-            done
-            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
-              for n in $(list_needed "$f"); do
-                find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" 2>/dev/null || true
-              done
+            for n in $(list_needed "$EXE_UNIX"); do find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" || true; done
+            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print | while read f; do
+              for n in $(list_needed "$f"); do find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" || true; done
             done
           fi
 
-          # Copia o que foi resolvido
+          # Copia resolvidos
           sort -u "$TMPD/deps.txt" | while read src; do
             [ -f "$src" ] || continue
             case "$src" in
-              /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*)
-                base="$(basename "$src")"
-                [ -f "$EXE_DIR/$base" ] || cp -f "$src" "$EXE_DIR/" || true
-                ;;
+              /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*) base="$(basename "$src")"; [ -f "$EXE_DIR/$base" ] || cp -f "$src" "$EXE_DIR/" || true ;;
             esac
           done
 
-          # ------- GARANTIAS EXTRAS -------
+          # ------ GARANTIAS EXTRAS ------
           # MinGW runtime básico
           for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
-
-          # Imagens/markdown/text shaping
-          for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll" "libfreetype*.dll" "libgraphite2*.dll" "libbrotli*.dll"; do
-            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
-              base="$(basename "$f")"
-              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
-            done
+          # Texto/imagem/markdown/fontes/compressores
+          for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll" "libfreetype*.dll" "libgraphite2*.dll" "libbrotli*.dll" "libzstd*.dll"; do
+            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do base="$(basename "$f")"; [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true; done
           done
-
-          # ICU (varia por versão; cobre ambos com/sem prefixo lib)
-          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libicu*.dll" -o -iname "icu*.dll" -print 2>/dev/null); do
+          # ICU (com e sem prefixo lib)
+          for f in $(find "$MINGW_BIN" -maxdepth 1 \( -iname "libicu*.dll" -o -iname "icu*.dll" \) -print 2>/dev/null); do
             base="$(basename "$f")"
-            case "$base" in
-              libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll)
-                [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
-                ;;
-            esac
+            case "$base" in libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll) [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true ;; esac
           done
-
-          # PCRE2 e Zstd
-          for pat in "libpcre2-*.dll" "libzstd*.dll"; do
-            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
-              base="$(basename "$f")"
-              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
-            done
-          done
-
-          # zlib e double-conversion (já vistos antes)
-          for d in zlib1.dll libdouble-conversion.dll; do
-            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
-          done
-          # --------------------------------
+          # PCRE2
+          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libpcre2-*.dll" -print 2>/dev/null); do base="$(basename "$f")"; [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true; done
+          # zlib / double-conversion
+          for d in zlib1.dll libdouble-conversion.dll; do [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true; done
+          # GLib2 / bzip2 / iconv
+          for d in libglib-2.0-0.dll libbz2-1.dll libiconv-2.dll; do [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true; done
+          # -------------------------------
 
           echo "DLLs finais na pasta:"
           ls -1 "$EXE_DIR"/*.dll 2>/dev/null | wc -l || true
@@ -327,7 +249,6 @@ jobs:
           $workspace  = "${{ github.workspace }}"
           $releaseDir = Join-Path $workspace "release"
           if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
-
           $zipPathAbs = Join-Path $releaseDir "${{ env.ZIP_NAME }}"
           if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
           Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
