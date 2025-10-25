@@ -1,166 +1,20 @@
-name: Build & Release (Windows MinGW)
-
-on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Versão/Tag (ex.: V2.0.0-RC1)"
-        required: true
-        type: string
-      prerelease:
-        description: "Marcar como pré-release?"
-        required: false
-        default: false
-        type: boolean
-      notes:
-        description: "Notas da release (opcional)"
-        required: false
-        type: string
-
-permissions:
-  contents: write
-
-env:
-  VERSION: ${{ github.event.inputs.version }}
-
-jobs:
-  build-windows-mingw:
-    name: Windows (MSYS2/MinGW64 + Qt5)
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Habilitar long paths no Git (preventivo)
-        shell: pwsh
-        run: |
-          git config --system core.longpaths true
-          git config --global core.longpaths true
-
-      - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
-        uses: msys2/setup-msys2@v2
-        with:
-          release: true
-          update: true
-          msystem: MINGW64
-          path-type: minimal
-          cache: true
-          install: >-
-            base-devel
-            git
-            zip
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-qt5-base
-            mingw-w64-x86_64-qt5-svg
-            mingw-w64-x86_64-qt5-multimedia
-            mingw-w64-x86_64-qt5-serialport
-            mingw-w64-x86_64-qt5-script
-            mingw-w64-x86_64-qt5-tools   # <-- lrelease, lupdate, windeployqt
-
-      - name: Validar versão
-        shell: bash
-        run: |
-          if [ -z "${VERSION}" ]; then
-            echo "Versão não informada."; exit 1
-          fi
-          echo "Versão/Tag alvo: ${VERSION}"
-
-      - name: Detectar Qt bin e qmake
-        id: qt
-        shell: msys2 {0}
-        run: |
-          set -euo pipefail
-          if command -v qmake >/dev/null 2>&1; then
-            QMAKE=qmake
-          elif command -v qmake-qt5 >/dev/null 2>&1; then
-            QMAKE=qmake-qt5
-          else
-            echo "qmake (Qt5) não encontrado."; exit 1
-          fi
-          QT_BINDIR="$(dirname "$(which "$QMAKE")")"
-          echo "Usando qmake: $QMAKE"
-          "$QMAKE" -v || true
-          echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
-          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
-          # Garante que lrelease/lupdate/uic/moc estarão no PATH
-          echo "$QT_BINDIR" >> $GITHUB_PATH
-          # Debug rápido:
-          which lrelease || true
-          which uic || true
-          which moc || true
-
-      - name: Compilar (qmake + mingw32-make)
-        shell: msys2 {0}
-        run: |
-          set -euo pipefail
-          cd build_XX
-          "$QMAKE"
-          CORES=$(nproc || echo 2)
-          mingw32-make -j"${CORES}"
-          echo "Árvore pós-build (até 3 níveis):"
-          find . -maxdepth 3 -type d -print
-
-      - name: Localizar pasta do executável
-        id: find_outdir
-        shell: msys2 {0}
-        run: |
-          set -euo pipefail
-          cd build_XX
-          shopt -s nullglob
-          CANDIDATES=(
-            "executables/SimulIDE_*"
-            "release/SimulIDE_*"
-            "./executables/SimulIDE_*"
-            "./release/SimulIDE_*"
-          )
-          OUT_DIR=""
-          for pat in "${CANDIDATES[@]}"; do
-            for d in $pat; do
-              if [ -d "$d" ]; then OUT_DIR="$d"; break 2; fi
-            done
-          done
-          if [ -z "$OUT_DIR" ]; then
-            echo "Não foi possível encontrar a pasta de saída (executables/ ou release/)."
-            echo "Conteúdo de build_XX:"
-            find . -maxdepth 4 -print
-            exit 1
-          fi
-          echo "Pasta encontrada: $OUT_DIR"
-          echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
-          echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
-
-      - name: Empacotar ZIP
-        id: pack
-        shell: pwsh
-        run: |
-          $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
-          $outDirWin = "${{ steps.find_outdir.outputs.outdir_win }}"
-          $parent    = Split-Path -Path $outDirWin -Parent
-          $zipPath   = Join-Path $parent $zipName
-          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-          Compress-Archive -Path (Join-Path $outDirWin '*') -DestinationPath $zipPath
-          Write-Host "ZIP: $zipPath"
-          echo "zip=$zipPath" >> $env:GITHUB_OUTPUT
-
-      - name: Publicar artefato (CI)
-        uses: actions/upload-artifact@v4
-        with:
-          name: SimulIDE-${{ env.VERSION }}-windows-mingw64
-          path: ${{ steps.pack.outputs.zip }}
-          if-no-files-found: error
-
-      - name: Criar Release + Tag
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION }}
-          name: SimulIDE ${{ env.VERSION }} (Windows MinGW)
-          body: ${{ github.event.inputs.notes }}
-          prerelease: ${{ github.event.inputs.prerelease }}
-          files: |
-            ${{ steps.pack.outputs.zip }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
+  uses: msys2/setup-msys2@v2
+  with:
+    release: true
+    update: true
+    msystem: MINGW64
+    path-type: minimal
+    cache: true
+    install: >-
+      base-devel
+      git
+      zip
+      mingw-w64-x86_64-gcc
+      mingw-w64-x86_64-make
+      mingw-w64-x86_64-qt5-base
+      mingw-w64-x86_64-qt5-svg
+      mingw-w64-x86_64-qt5-multimedia
+      mingw-w64-x86_64-qt5-serialport
+      mingw-w64-x86_64-qt5-script
+      mingw-w64-x86_64-qt5-tools
