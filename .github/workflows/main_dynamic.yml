@@ -69,6 +69,11 @@ jobs:
             mingw-w64-x86_64-libpng
             mingw-w64-x86_64-icu
             mingw-w64-x86_64-md4c
+            mingw-w64-x86_64-pcre2
+            mingw-w64-x86_64-zstd
+            mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-graphite2
+            mingw-w64-x86_64-brotli
 
       - name: Validar versão
         shell: bash
@@ -100,7 +105,7 @@ jobs:
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then
             WINDEPLOY=windeployqt-qt5
           else
-            echo "windeployqt não encontrado (nem windeployqt-qt5)."; exit 1
+            echo "windeployqt não encontrado."; exit 1
           fi
           echo "Usando windeploy: $WINDEPLOY"
 
@@ -215,7 +220,6 @@ jobs:
             exit 1
           fi
 
-          # Workaround MSYS2: sem --release
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
             echo "windeployqt OK."
           else
@@ -282,24 +286,32 @@ jobs:
           done
 
           # Imagens/markdown/text shaping
-          for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll"; do
+          for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll" "libfreetype*.dll" "libgraphite2*.dll" "libbrotli*.dll"; do
             for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
               base="$(basename "$f")"
               [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
             done
           done
 
-          # ICU (icuin*, icuuc*, icudt*)
-          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "icu*.dll" -print 2>/dev/null); do
+          # ICU (varia por versão; cobre ambos com/sem prefixo lib)
+          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libicu*.dll" -o -iname "icu*.dll" -print 2>/dev/null); do
             base="$(basename "$f")"
             case "$base" in
-              icuin*.dll|icuuc*.dll|icudt*.dll)
+              libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll)
                 [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
                 ;;
             esac
           done
 
-          # zlib e double-conversion
+          # PCRE2 e Zstd
+          for pat in "libpcre2-*.dll" "libzstd*.dll"; do
+            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
+              base="$(basename "$f")"
+              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
+            done
+          done
+
+          # zlib e double-conversion (já vistos antes)
           for d in zlib1.dll libdouble-conversion.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
