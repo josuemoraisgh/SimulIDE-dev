@@ -234,32 +234,32 @@ void Simulator::runCircuit()
             if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
             else               nextTime = endRun;
 
-            m_qemuDevice->runToTime( nextTime );  // This will add events
+            m_qemuDevice->runToTime( nextTime ); // This will add events
         }
         if( !m_firstEvent ) break;
-        if( m_state < SIM_RUNNING ) break;
+
 
         nextTime = m_firstEvent->eventTime;
         if( nextTime > endRun ) break;           // All events for this Timer Tick are done
 
         m_circTime = nextTime;
-        while( m_circTime == nextTime )         // Run all event with same timeStamp
+        while( m_circTime == nextTime )          // Run all event with same timeStamp
         {
             event = m_firstEvent;
             m_firstEvent = event->nextEvent;
 
-            event->nextEvent = nullptr;         // free Event
+            event->nextEvent = nullptr;          // free Event
             event->eventTime = 0;
-            event->runEvent();                  // Run event callback
+            event->runEvent();                   // Run event callback
 #ifdef DEBUG_EVENTS
             m_events--;
 #endif
             if( !m_firstEvent ) break;
-            if( m_state < SIM_RUNNING ) break;  // Needed for QemuDevice
 
             nextTime = m_firstEvent->eventTime;
         }
         solveCircuit();
+        if( m_state < SIM_RUNNING ) break;
     }
     m_loopTime = m_RefTimer.nsecsElapsed();
 
