@@ -63,6 +63,10 @@ jobs:
             mingw-w64-x86_64-qt5-script
             mingw-w64-x86_64-qt5-tools
             mingw-w64-x86_64-ntldd-git
+            mingw-w64-x86_64-harfbuzz
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-icu
+            mingw-w64-x86_64-md4c
 
       - name: Validar versão
         shell: bash
@@ -209,7 +213,7 @@ jobs:
             exit 1
           fi
 
-          # Tenta padrão (sem --release, workaround MSYS2)
+          # Workaround MSYS2: sem --release
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
             echo "windeployqt OK."
           else
@@ -237,26 +241,20 @@ jobs:
 
           echo "Descobrindo dependências…"
           TMPD="$(mktemp -d)"
-          touch "$TMPD/deps.txt"
+          : > "$TMPD/deps.txt"
 
-          have_ntldd=0
           if command -v ntldd >/dev/null 2>&1; then
-            have_ntldd=1
-            echo "Usando ntldd"
+            echo "Usando ntldd -R"
             ntldd -R "$EXE_UNIX" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
             find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
               ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
             done
           else
-            echo "ntldd não disponível — usando objdump"
-            list_needed () {
-              objdump -p "$1" 2>/dev/null | awk '/DLL Name:/ {print $3}'
-            }
-            # Do exe
+            echo "ntldd indisponível — usando objdump"
+            list_needed () { objdump -p "$1" 2>/dev/null | awk '/DLL Name:/ {print $3}'; }
             for n in $(list_needed "$EXE_UNIX"); do
               find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" 2>/dev/null || true
             done
-            # DLLs já na pasta
             find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print 2>/dev/null | while read f; do
               for n in $(list_needed "$f"); do
                 find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" 2>/dev/null || true
@@ -264,27 +262,46 @@ jobs:
             done
           fi
 
+          # Copia o que foi resolvido
           sort -u "$TMPD/deps.txt" | while read src; do
             [ -f "$src" ] || continue
-            base="$(basename "$src")"
-            dst="$EXE_DIR/$base"
-            if [ ! -f "$dst" ]; then
-              case "$src" in
-                /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*) cp -f "$src" "$dst" || true ;;
-              esac
-            fi
+            case "$src" in
+              /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*)
+                base="$(basename "$src")"
+                [ -f "$EXE_DIR/$base" ] || cp -f "$src" "$EXE_DIR/" || true
+                ;;
+            esac
           done
 
-          # Garantias mínimas
-          for d in \
-            libgcc_s_seh-1.dll \
-            libstdc++-6.dll \
-            libwinpthread-1.dll \
-            zlib1.dll \
-            libdouble-conversion.dll
-          do
+          # ------- GARANTIAS EXTRAS -------
+          # MinGW runtime básico
+          for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
+
+          # Imagens/markdown/text shaping
+          for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll"; do
+            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
+              base="$(basename "$f")"
+              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
+            done
+          done
+
+          # ICU (icuin*, icuuc*, icudt*)
+          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "icu*.dll" -print 2>/dev/null); do
+            base="$(basename "$f")"
+            case "$base" in
+              icuin*.dll|icuuc*.dll|icudt*.dll)
+                [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
+                ;;
+            esac
+          done
+
+          # zlib e double-conversion
+          for d in zlib1.dll libdouble-conversion.dll; do
+            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
+          done
+          # --------------------------------
 
           echo "DLLs finais na pasta:"
           ls -1 "$EXE_DIR"/*.dll 2>/dev/null | wc -l || true
@@ -306,8 +323,8 @@ jobs:
           $zipRel = "release/$zipName"
           Write-Host "ZIP (abs): $zipPathAbs"
           Write-Host "ZIP (rel): $zipRel"
-          echo "zip_abs=$zipPathAbs" >> $env:GITHUB_OUTPUT
-          echo "zip_rel=$zipRel"     >> $env:GITHUB_OUTPUT
+          echo "zip_abs=$zipPathAbs" >> $GITHUB_OUTPUT
+          echo "zip_rel=$zipRel"     >> $GITHUB_OUTPUT
 
       - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
