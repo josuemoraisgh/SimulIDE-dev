@@ -41,8 +41,7 @@ jobs:
           git config --system core.longpaths true
           git config --global core.longpaths true
 
-      # MSYS2 + MinGW64 + Qt5 (instala pacotes específicos; sem grupos interativos; sem AVR)
-      - name: Setup MSYS2 + MinGW64 + Qt5
+      - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
         uses: msys2/setup-msys2@v2
         with:
           release: true
@@ -60,6 +59,7 @@ jobs:
             mingw-w64-x86_64-qt5-multimedia
             mingw-w64-x86_64-qt5-serialport
             mingw-w64-x86_64-qt5-script
+            mingw-w64-x86_64-qt5-tools   # <-- lrelease, lupdate, windeployqt
 
       - name: Validar versão
         shell: bash
@@ -69,8 +69,8 @@ jobs:
           fi
           echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Detectar qmake e exibir versão
-        id: qmake
+      - name: Detectar Qt bin e qmake
+        id: qt
         shell: msys2 {0}
         run: |
           set -euo pipefail
@@ -81,18 +81,24 @@ jobs:
           else
             echo "qmake (Qt5) não encontrado."; exit 1
           fi
-          echo "Usando: $QMAKE"
-          $QMAKE -v
+          QT_BINDIR="$(dirname "$(which "$QMAKE")")"
+          echo "Usando qmake: $QMAKE"
+          "$QMAKE" -v || true
+          echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
           echo "QMAKE=$QMAKE" >> $GITHUB_ENV
+          # Garante que lrelease/lupdate/uic/moc estarão no PATH
+          echo "$QT_BINDIR" >> $GITHUB_PATH
+          # Debug rápido:
+          which lrelease || true
+          which uic || true
+          which moc || true
 
-      # Compila conforme README: build_XX -> qmake -> make
       - name: Compilar (qmake + mingw32-make)
         shell: msys2 {0}
         run: |
           set -euo pipefail
           cd build_XX
           "$QMAKE"
-          # mingw32-make é o padrão no MinGW
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}"
           echo "Árvore pós-build (até 3 níveis):"
@@ -134,7 +140,6 @@ jobs:
           $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
           $outDirWin = "${{ steps.find_outdir.outputs.outdir_win }}"
           $parent    = Split-Path -Path $outDirWin -Parent
-          $base      = Split-Path -Path $outDirWin -Leaf
           $zipPath   = Join-Path $parent $zipName
           if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
           Compress-Archive -Path (Join-Path $outDirWin '*') -DestinationPath $zipPath
