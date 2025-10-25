@@ -1,3 +1,195 @@
+name: Build & Release (Windows MinGW)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão/Tag (ex.: V2.0.0-RC1)"
+        required: true
+        type: string
+      prerelease:
+        description: "Marcar como pré-release?"
+        required: false
+        default: false
+        type: boolean
+      notes:
+        description: "Notas da release (opcional)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ github.event.inputs.version }}
+
+jobs:
+  build-windows-mingw:
+    name: Windows (MSYS2/MinGW64 + Qt5) + Portable SFX
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Habilitar long paths no Git (preventivo)
+        shell: pwsh
+        run: |
+          git config --system core.longpaths true
+          git config --global core.longpaths true
+
+      - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
+        uses: msys2/setup-msys2@v2
+        with:
+          release: true
+          update: true
+          msystem: MINGW64
+          path-type: minimal
+          cache: true
+          install: >-
+            base-devel
+            git
+            zip
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-qt5-base
+            mingw-w64-x86_64-qt5-svg
+            mingw-w64-x86_64-qt5-multimedia
+            mingw-w64-x86_64-qt5-serialport
+            mingw-w64-x86_64-qt5-script
+            mingw-w64-x86_64-qt5-tools
+
+      - name: Validar versão
+        shell: bash
+        run: |
+          if [ -z "${VERSION}" ]; then
+            echo "Versão não informada."; exit 1
+          fi
+          echo "Versão/Tag alvo: ${VERSION}"
+
+      - name: Detectar Qt bin e qmake
+        id: qt
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          if command -v qmake >/dev/null 2>&1; then
+            QMAKE=qmake
+          elif command -v qmake-qt5 >/dev/null 2>&1; then
+            QMAKE=qmake-qt5
+          else
+            echo "qmake (Qt5) não encontrado."; exit 1
+          fi
+          QT_BINDIR="$(dirname "$(which "$QMAKE")")"
+          echo "Usando qmake: $QMAKE"
+          "$QMAKE" -v || true
+          echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
+          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
+          echo "$QT_BINDIR" >> $GITHUB_PATH
+          which lrelease || true
+          which uic || true
+          which moc || true
+          which windeployqt || true
+
+      - name: Compilar (qmake + mingw32-make)
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          cd build_XX
+          "$QMAKE"
+          CORES=$(nproc || echo 2)
+          mingw32-make -j"${CORES}"
+          echo "Árvore pós-build (até 3 níveis):"
+          find . -maxdepth 3 -type d -print
+
+      - name: Localizar pasta do executável
+        id: find_outdir
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          cd build_XX
+          shopt -s nullglob
+          CANDIDATES=(
+            "executables/SimulIDE_*"
+            "release/SimulIDE_*"
+            "./executables/SimulIDE_*"
+            "./release/SimulIDE_*"
+          )
+          OUT_DIR=""
+          for pat in "${CANDIDATES[@]}"; do
+            for d in $pat; do
+              if [ -d "$d" ]; then OUT_DIR="$d"; break 2; fi
+            done
+          done
+          if [ -z "$OUT_DIR" ]; then
+            echo "Não foi possível encontrar a pasta de saída (executables/ ou release/)."
+            echo "Conteúdo de build_XX:"
+            find . -maxdepth 4 -print
+            exit 1
+          fi
+          echo "Pasta encontrada: $OUT_DIR"
+          echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
+          echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
+
+      - name: Localizar executável (.exe) com fallback robusto
+        id: exe
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          cd build_XX
+          OUT_DIR="${{ steps.find_outdir.outputs.outdir_unix }}"
+          EXE=$(
+            (find "$OUT_DIR" -maxdepth 1 -type f -iname "SimulIDE*.exe" -print; \
+             find "$OUT_DIR" -maxdepth 1 -type f -iname "simulide*.exe" -print; \
+             find "$OUT_DIR" -maxdepth 1 -type f -iname "*.exe" -print) \
+            | head -n1
+          )
+          if [ -z "$EXE" ]; then
+            echo "Nenhum .exe encontrado em $OUT_DIR"
+            echo "Listando conteúdo:"
+            find "$OUT_DIR" -maxdepth 2 -print
+            exit 1
+          fi
+          echo "Executável encontrado (MSYS): $EXE"
+          EXE_WIN=$(cygpath -w "$EXE")
+          EXE_DIR_WIN=$(cygpath -w "$OUT_DIR")
+          echo "exe_win=$EXE_WIN" >> $GITHUB_OUTPUT
+          echo "exe_dir_win=$EXE_DIR_WIN" >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
+          if [ ! -f "$EXE" ]; then
+            echo "Arquivo não existe: $EXE"; exit 1
+          fi
+
+      - name: windeployqt (portable folder)
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          which windeployqt
+          echo "Executável (WIN): ${{ steps.exe.outputs.exe_win }}"
+          if [ ! -f "$(cygpath -u "${{ steps.exe.outputs.exe_win }}")" ]; then
+            echo "O caminho do .exe não existe (antes do windeployqt)."
+            ls -la "${{ steps.find_outdir.outputs.outdir_unix }}"
+            exit 1
+          fi
+          windeployqt --release --compiler-runtime "${{ steps.exe.outputs.exe_win }}"
+          # (Opcional) reduzir tamanho:
+          # find "${{ steps.exe.outputs.exe_dir_unix }}" -name "*.dll" -exec strip -s {} \; || true
+
+      - name: Empacotar ZIP (pasta pronta)
+        id: zip
+        shell: pwsh
+        run: |
+          $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
+          $outDir  = "${{ steps.find_outdir.outputs.outdir_win }}"
+          $parent  = Split-Path -Path $outDir -Parent
+          $zipPath = Join-Path $parent $zipName
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path (Join-Path $outDir '*') -DestinationPath $zipPath
+          Write-Host "ZIP: $zipPath"
+          echo "zip=$zipPath" >> $env:GITHUB_OUTPUT
+
       - name: Criar EXE SFX (autoextrai e executa)
         id: sfx
         shell: pwsh
@@ -6,11 +198,11 @@
           $exePath  = "${{ steps.exe.outputs.exe_win }}"
           $parent   = Split-Path -Path $outDir -Parent
 
-          # 1) 7-Zip (verifica instalação padrão do runner)
+          # 1) 7-Zip (instalado no runner)
           $sevenZip = "${env:ProgramFiles}\7-Zip\7z.exe"
           if (-not (Test-Path $sevenZip)) { throw "7-Zip não encontrado em $sevenZip" }
 
-          # 2) Compactar toda a pasta em .7z (máxima compressão)
+          # 2) Compactar toda a pasta em .7z
           $archive7z = Join-Path $parent ("SimulIDE-" + $env:VERSION + "-portable.7z")
           if (Test-Path $archive7z) { Remove-Item $archive7z -Force }
           & "$sevenZip" a -t7z -mx=9 $archive7z "$outDir\*"
@@ -36,10 +228,4 @@
           $bytesCfg = [System.IO.File]::ReadAllBytes($configPath)
           $bytes7z  = [System.IO.File]::ReadAllBytes($archive7z)
           $outBytes = New-Object byte[] ($bytesSfx.Length + $bytesCfg.Length + $bytes7z.Length)
-          [Array]::Copy($bytesSfx, 0, $outBytes, 0, $bytesSfx.Length)
-          [Array]::Copy($bytesCfg, 0, $outBytes, $bytesSfx.Length, $bytesCfg.Length)
-          [Array]::Copy($bytes7z, 0, $outBytes, $bytesSfx.Length + $bytesCfg.Length, $bytes7z.Length)
-          [System.IO.File]::WriteAllBytes($sfxExe, $outBytes)
-
-          Write-Host "SFX EXE: $sfxExe"
-          echo "sfx=$sfxExe" >> $env:GITHUB_OUTPUT
+          [Array]::Copy($bytesSfx, 0, $outBytes, 0, $b
