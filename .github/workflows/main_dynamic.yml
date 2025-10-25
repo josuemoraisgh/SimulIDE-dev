@@ -1,171 +1,131 @@
-name: Windows Qt Build (SimulIDE MinGW)
+name: Build & Release (Windows MinGW)
 
 on:
-  push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão manual (ex.: v2.0.0-RC1)"
+        description: "Versão/Tag (ex.: V2.0.0-RC1)"
+        required: true
+        type: string
+      prerelease:
+        description: "Marcar como pré-release?"
+        required: false
+        default: false
+        type: boolean
+      notes:
+        description: "Notas da release (opcional)"
         required: false
         type: string
-      publish_release:
-        description: "Publicar release?"
-        required: true
-        default: true
-        type: boolean
 
 permissions:
   contents: write
 
+env:
+  VERSION: ${{ github.event.inputs.version }}
+
 jobs:
-  build-win-mingw:
+  build-windows-mingw:
+    name: Windows (MSYS2/MinGW64 + Qt5)
     runs-on: windows-latest
-    env:
-      QT_VERSION: '5.15.2'
-      QT_ARCH: 'win64_mingw81'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 0
 
-      - name: Install Qt (5.15.2 MinGW)
-        uses: jurplel/install-qt-action@v4
+      # Instala MSYS2, toolchain MinGW64 e Qt5
+      - name: Setup MSYS2 + MinGW64 + Qt5
+        uses: msys2/setup-msys2@v2
         with:
-          version: ${{ env.QT_VERSION }}
-          host: windows
-          target: desktop
-          arch: ${{ env.QT_ARCH }}
-          archives: 'qtbase qtsvg qtmultimedia qtserialport qttools'
-          cache: true
+          release: true
+          update: true
+          msystem: MINGW64
+          install: >-
+            base-devel
+            git
+            zip
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-qt5
+            mingw-w64-x86_64-qt5-svg
+            mingw-w64-x86_64-qt5-multimedia
+            mingw-w64-x86_64-qt5-serialport
+            mingw-w64-x86_64-qt5-script
+            avr-gcc
+            avr-libc
 
-      - name: Compute version
-        shell: pwsh
+      - name: Validar versão
+        shell: bash
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.version }}") {
-            $ver = "${{ inputs.version }}"
-          } elseif ("${{ github.ref }}".StartsWith("refs/tags/")) {
-            $ver = "${{ github.ref_name }}"
-          } else {
-            $ver = "dev${{ github.run_number }}"
-          }
-          $ver = $ver -replace '[^0-9A-Za-z._-]', ''
-          "APP_VER=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host ">> Versão definida: $ver"
+          if [ -z "${VERSION}" ]; then
+            echo "Versão não informada."; exit 1
+          fi
+          echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Configure project (qmake MinGW)
-        shell: pwsh
+      # Compila seguindo o README: entrar em build_XX, rodar qmake e make
+      - name: Compilar (qmake + mingw32-make)
+        shell: msys2 {0}
         run: |
+          set -euo pipefail
           cd build_XX
-          qmake -spec win32-g++ "CONFIG+=release" `
-                "VERSION=${{ env.APP_VER }}" `
-                "DESTDIR=executables/SimulIDE_${{ env.APP_VER }}" `
-                "TARGET=simulide"
-          if ($LASTEXITCODE -ne 0) { throw "qmake falhou" }
+          # garante que estamos usando o qmake do MinGW64
+          which qmake
+          qmake
+          # Use o mingw32-make (geralmente é o gerado pelo qmake no MinGW)
+          mingw32-make -j"$(nproc || echo 2)"
 
-      - name: Ensure executables directory exists
+      - name: Localizar pasta do executável
+        id: find_outdir
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          # Padrão principal (executables/)
+          OUT_DIR=$(ls -d build_XX/executables/SimulIDE_* 2>/dev/null || true)
+          # Fallback (release/)
+          [ -z "$OUT_DIR" ] && OUT_DIR=$(ls -d build_XX/release/SimulIDE_* 2>/dev/null || true)
+          # Se o build gerou dentro do cwd (por variação), tenta sem o prefixo build_XX/
+          [ -z "$OUT_DIR" ] && OUT_DIR=$(ls -d executables/SimulIDE_* 2>/dev/null || true)
+          [ -z "$OUT_DIR" ] && OUT_DIR=$(ls -d release/SimulIDE_* 2>/dev/null || true)
+
+          if [ -z "$OUT_DIR" ]; then
+            echo "Não foi possível encontrar a pasta de saída (executables/ ou release/)."
+            exit 1
+          fi
+
+          OUT_ABS=$(cygpath -w "$OUT_DIR")
+          echo "Pasta encontrada (Windows path): $OUT_ABS"
+          echo "outdir=$OUT_ABS" >> $GITHUB_OUTPUT
+
+      - name: Empacotar ZIP
+        id: pack
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "build_XX\executables\SimulIDE_${{ env.APP_VER }}" | Out-Null
+          $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
+          $outDir  = "${{ steps.find_outdir.outputs.outdir }}"
+          $parent  = Split-Path -Path $outDir -Parent
+          $base    = Split-Path -Path $outDir -Leaf
+          $zipPath = Join-Path $parent $zipName
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path (Join-Path $outDir '*') -DestinationPath $zipPath
+          Write-Host "ZIP: $zipPath"
+          echo "zip=$zipPath" >> $env:GITHUB_OUTPUT
 
-      # Gera .qm antes do make (qrc_application.qrc exige resources/qm/qt_*.qm)
-      - name: Precompile translations (lrelease -> resources/qm)
-        shell: pwsh
-        run: |
-          $lrel = (Get-Command lrelease.exe).Path
-          if (-not (Test-Path "resources\qm")) {
-            New-Item -ItemType Directory -Force -Path "resources\qm" | Out-Null
-          }
-          $tsList = @()
-          if (Test-Path "resources\translations") { $tsList += Get-ChildItem "resources\translations" -Filter *.ts -File -Recurse }
-          if (Test-Path "resources\translations\qt") { $tsList += Get-ChildItem "resources\translations\qt" -Filter *.ts -File -Recurse }
-          foreach ($ts in $tsList) {
-            $outQm = Join-Path "resources\qm" ("{0}.qm" -f [IO.Path]::GetFileNameWithoutExtension($ts.Name))
-            & $lrel $ts.FullName -qm $outQm
-            if ($LASTEXITCODE -ne 0) { throw "lrelease falhou em $($ts.FullName)" }
-            Write-Host ">> Gerado: $outQm"
-          }
-
-      # Remove linhas problemáticas e força DESTDIR/TARGET no Makefile
-      - name: Patch Makefile.Release (fix translations + DESTDIR/TARGET)
-        shell: pwsh
-        run: |
-          $mf = "build_XX\Makefile.Release"
-          if (-not (Test-Path $mf)) { throw "Makefile.Release não encontrado" }
-          $c = Get-Content $mf -Raw
-
-          # Remove toda e qualquer linha lrelease/move que bagunça o make
-          $c = $c -replace '(?m)^.*\blrelease\b .*$', '# lrelease removido'
-          $c = $c -replace '(?m)^.*\bmove\b .*\.qm.*$', '# move removido'
-
-          # Força DESTDIR e TARGET, independente do que o .pro colocou
-          $dest = "executables/SimulIDE_${{ env.APP_VER }}"
-          if ($c -match '(?m)^\s*DESTDIR\s*=\s*.*$') {
-            $c = $c -replace '(?m)^\s*DESTDIR\s*=.*$', "DESTDIR = $dest"
-          } else {
-            $c = "DESTDIR = $dest`r`n" + $c
-          }
-          if ($c -match '(?m)^\s*TARGET\s*=\s*.*$') {
-            $c = $c -replace '(?m)^\s*TARGET\s*=.*$', "TARGET = simulide"
-          } else {
-            $c = "TARGET = simulide`r`n" + $c
-          }
-
-          Set-Content $mf $c -Encoding UTF8
-          Write-Host ">> Makefile.Release ajustado (DESTDIR/TARGET + sem lrelease/move)"
-
-      - name: Debug Makefile (DESTDIR/TARGET)
-        shell: pwsh
-        run: |
-          Select-String -Path "build_XX\Makefile.Release" -Pattern "^\s*DESTDIR|^\s*TARGET" | ForEach-Object { $_.Line }
-
-      - name: Build (mingw32-make)
-        shell: pwsh
-        run: |
-          cd build_XX
-          mingw32-make -j4
-          if ($LASTEXITCODE -ne 0) { throw "mingw32-make falhou" }
-
-      # Não assumir caminho: localizar o simulide.exe onde quer que esteja
-      - name: Locate built EXE
-        id: findexe
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem -Path "build_XX" -Filter "simulide.exe" -Recurse | Select-Object -First 1
-          if (-not $exe) { throw "Nenhum simulide.exe encontrado" }
-          "FINAL_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host ">> EXE: $($exe.FullName)"
-
-      - name: Deploy Qt DLLs (windeployqt)
-        shell: pwsh
-        run: |
-          $qtbin = (Get-Command windeployqt.exe).Path
-          & $qtbin "${{ env.FINAL_EXE }}" --no-angle --no-opengl-sw
-          Write-Host ">> windeployqt concluído"
-
-      - name: Package ZIP
-        shell: pwsh
-        run: |
-          $root = Split-Path "${{ env.FINAL_EXE }}"
-          $zip  = "SimulIDE-${{ env.APP_VER }}-win64-MinGW.zip"
-          Compress-Archive -Path "$root\*" -DestinationPath $zip -Force
-          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host ">> ZIP pronto: $zip"
-
-      - name: Upload artifact
+      - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
         with:
-          name: SimulIDE-${{ env.APP_VER }}-win64-MinGW
-          path: ${{ env.ZIP_NAME }}
+          name: SimulIDE-${{ env.VERSION }}-windows-mingw64
+          path: ${{ steps.pack.outputs.zip }}
           if-no-files-found: error
 
-      - name: Publish GitHub Release
-        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish_release) }}
+      - name: Criar Release + Tag
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.APP_VER }}
-          files: ${{ env.ZIP_NAME }}
-          generate_release_notes: true
+          tag_name: ${{ env.VERSION }}
+          name: SimulIDE ${{ env.VERSION }} (Windows MinGW)
+          body: ${{ github.event.inputs.notes }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            ${{ steps.pack.outputs.zip }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
