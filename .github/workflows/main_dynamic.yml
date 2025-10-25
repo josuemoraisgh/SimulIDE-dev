@@ -1,4 +1,4 @@
-name: Build & Release (Windows MinGW, portable slim)
+name: Build & Release (Windows MinGW, portable)
 
 on:
   workflow_dispatch:
@@ -25,7 +25,7 @@ env:
 
 jobs:
   build-windows-mingw:
-    name: Windows (MSYS2/MinGW64 + Qt5) – Portable (slim)
+    name: Windows (MSYS2/MinGW64 + Qt5) – Portable
     runs-on: windows-latest
 
     steps:
@@ -71,11 +71,13 @@ jobs:
           fi
           echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Detectar Qt (qmake e windeployqt)
+      - name: Detectar Qt (qmake e windeployqt) + PATH
         id: qt
         shell: msys2 {0}
         run: |
           set -euo pipefail
+          # Garante /mingw64/bin no PATH para todas as ferramentas Qt/MinGW
+          export PATH="/mingw64/bin:$PATH"
 
           # qmake (Qt5)
           if command -v qmake >/dev/null 2>&1; then
@@ -99,10 +101,12 @@ jobs:
           echo "Usando windeploy: $WINDEPLOY"
 
           QT_BINDIR="$(dirname "$(which "$QMAKE")")"
-          echo "QT_BINDIR=$QT_BINDIR" >> $GITHUB_ENV
-          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
-          echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
-          echo "$QT_BINDIR" >> $GITHUB_PATH
+          echo "QT_BINDIR=$QT_BINDIR"   >> $GITHUB_ENV
+          echo "QMAKE=$QMAKE"           >> $GITHUB_ENV
+          echo "WINDEPLOY=$WINDEPLOY"   >> $GITHUB_ENV
+          # Aumenta PATH do job para outras steps MSYS2
+          echo "/mingw64/bin"           >> $GITHUB_PATH
+          echo "$QT_BINDIR"             >> $GITHUB_PATH
 
           which lrelease   || true
           which uic        || true
@@ -124,6 +128,7 @@ jobs:
         shell: msys2 {0}
         run: |
           set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
           cd build_XX
           "$QMAKE"
           CORES=$(nproc || echo 2)
@@ -160,12 +165,11 @@ jobs:
           echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
           echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
 
-      - name: Localizar executável (.exe) — robusto
+      - name: Localizar executável (.exe)
         id: exe
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          cd build_XX
           OUT_DIR="${{ steps.find_outdir.outputs.outdir_unix }}"
           EXE=$(
             (find "$OUT_DIR" -maxdepth 1 -type f -iname "SimulIDE*.exe" -print 2>/dev/null; \
@@ -180,88 +184,25 @@ jobs:
             exit 1
           fi
           echo "Executável encontrado (MSYS): $EXE"
-          echo "exe_dir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
-          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")"     >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$OUT_DIR"           >> $GITHUB_OUTPUT
           echo "exe_dir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
 
-      - name: windeployqt (gerar pasta portable – base enxuta)
+      - name: windeployqt (gerar pasta portable)
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          echo "Executável (WIN): ${{ steps.exe.outputs.exe_win }}"
-          if [ ! -f "$(cygpath -u "${{ steps.exe.outputs.exe_win }}")" ]; then
-            echo "O caminho do .exe não existe (antes do windeployqt)."
+          export PATH="/mingw64/bin:$PATH"
+          EXE_WIN="${{ steps.exe.outputs.exe_win }}"
+          if [ ! -f "$(cygpath -u "$EXE_WIN")" ]; then
+            echo "O caminho do .exe não existe (antes do windeployqt): $EXE_WIN"
             ls -la "${{ steps.find_outdir.outputs.outdir_unix }}" || true
             exit 1
           fi
-          # Copia DLLs do Qt + runtime MinGW (sem SW OpenGL e sem traduções do Qt)
-          "$WINDEPLOY" --release --compiler-runtime --no-opengl-sw --no-translations "${{ steps.exe.outputs.exe_win }}"
+          # Copia DLLs do Qt + runtime MinGW para a mesma pasta do .exe
+          "$WINDEPLOY" --release --compiler-runtime "$EXE_WIN"
 
-      - name: Poda de plugins/diretórios não essenciais (slim)
-        shell: pwsh
-        run: |
-          $outDir = "${{ steps.find_outdir.outputs.outdir_win }}"
-          if (-not (Test-Path $outDir)) { throw "Pasta de saída não existe: $outDir" }
-
-          # 1) Remover diretórios raramente necessários em desktop
-          $dirsToRemove = @(
-            "qml",                # QML/QtQuick (não usado pela app)
-            "bearer",             # backends de rede antigos
-            "position",           # posicionamento/GPS
-            "sensors",            # sensores
-            "networkinformation", # info de rede
-            "printsupport"        # plugins de impressão (DLL base continua caso copiada)
-          )
-          foreach ($d in $dirsToRemove) {
-            $p = Join-Path $outDir $d
-            if (Test-Path $p) { Remove-Item -Recurse -Force $p -ErrorAction SilentlyContinue }
-          }
-
-          # 2) Poda de plugins de imagem: manter apenas os essenciais
-          $imgDir = Join-Path $outDir "imageformats"
-          if (Test-Path $imgDir) {
-            Get-ChildItem $imgDir -Filter "*.dll" | ForEach-Object {
-              $keep = @("qjpeg.dll","qpng.dll","qico.dll","qsvg.dll")
-              if ($keep -notcontains $_.Name.ToLower()) {
-                Remove-Item -Force $_.FullName -ErrorAction SilentlyContinue
-              }
-            }
-          }
-
-          # 3) Icon engines: manter SVG (útil p/ ícones SVG)
-          $iconDir = Join-Path $outDir "iconengines"
-          if (Test-Path $iconDir) {
-            Get-ChildItem $iconDir -Filter "*.dll" | ForEach-Object {
-              if ($_.Name.ToLower() -ne "qsvgicon.dll") {
-                Remove-Item -Force $_.FullName -ErrorAction SilentlyContinue
-              }
-            }
-          }
-
-          # 4) (Opcional) Remover drivers SQL se não usados
-          $sqlDir = Join-Path $outDir "sqldrivers"
-          if (Test-Path $sqlDir) {
-            Remove-Item -Recurse -Force $sqlDir -ErrorAction SilentlyContinue
-          }
-
-          # 5) (Opcional) Remover estilos extras (Fusion é leve; Windows é padrão)
-          # $stylesDir = Join-Path $outDir "styles"
-          # if (Test-Path $stylesDir) {
-          #   Get-ChildItem $stylesDir -Filter "*.dll" | ForEach-Object {
-          #     if ($_.Name.ToLower() -ne "qwindowsvistastyle.dll" -and $_.Name.ToLower() -ne "qfusionstyle.dll") {
-          #       Remove-Item -Force $_.FullName -ErrorAction SilentlyContinue
-          #     }
-          #   }
-          # }
-
-      # - name: (Opcional) strip de DLLs/EXE para reduzir tamanho
-      #   shell: msys2 {0}
-      #   run: |
-      #     set -euo pipefail
-      #     OUT="${{ steps.find_outdir.outputs.outdir_unix }}"
-      #     find "$OUT" -maxdepth 2 -type f \( -iname "*.dll" -o -iname "*.exe" \) -exec strip -s {} \; 2>/dev/null || true
-
-      - name: Empacotar ZIP (portable slim)
+      - name: Empacotar ZIP (portable)
         id: zip
         shell: pwsh
         run: |
@@ -285,7 +226,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
-          name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable slim)
+          name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
           body: ${{ github.event.inputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
