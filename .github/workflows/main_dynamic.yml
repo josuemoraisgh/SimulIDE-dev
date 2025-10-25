@@ -25,7 +25,7 @@ env:
 
 jobs:
   build-windows-mingw:
-    name: Windows (MSYS2/MinGW64 + Qt5)
+    name: Windows (MSYS2/MinGW64 + Qt5) + Portable SFX
     runs-on: windows-latest
 
     steps:
@@ -41,7 +41,6 @@ jobs:
           git config --system core.longpaths true
           git config --global core.longpaths true
 
-      # MSYS2 + MinGW64 + Qt5 (pacotes explícitos e Qt Tools p/ lrelease/lupdate/windeployqt)
       - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
         uses: msys2/setup-msys2@v2
         with:
@@ -94,7 +93,6 @@ jobs:
           which moc || true
           which windeployqt || true
 
-      # Compila conforme README: entrar em build_XX, rodar qmake e mingw32-make
       - name: Compilar (qmake + mingw32-make)
         shell: msys2 {0}
         run: |
@@ -135,53 +133,116 @@ jobs:
           echo "outdir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
           echo "outdir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
 
-      # Descobre o .exe gerado para rodar windeployqt
-      - name: Localizar executável (.exe)
+      - name: Localizar executável (.exe) com fallback robusto
         id: exe
         shell: msys2 {0}
         run: |
           set -euo pipefail
           cd build_XX
           OUT_DIR="${{ steps.find_outdir.outputs.outdir_unix }}"
-          EXE=$(ls "$OUT_DIR"/*.exe 2>/dev/null | head -n1 || true)
+          # Busca priorizando nomes típicos; -iname = case-insensitive
+          EXE=$(
+            (find "$OUT_DIR" -maxdepth 1 -type f -iname "SimulIDE*.exe" -print; \
+             find "$OUT_DIR" -maxdepth 1 -type f -iname "simulide*.exe" -print; \
+             find "$OUT_DIR" -maxdepth 1 -type f -iname "*.exe" -print) \
+            | head -n1
+          )
           if [ -z "$EXE" ]; then
             echo "Nenhum .exe encontrado em $OUT_DIR"
             echo "Listando conteúdo:"
             find "$OUT_DIR" -maxdepth 2 -print
             exit 1
           fi
-          echo "Executável encontrado: $EXE"
-          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
-          echo "exe_dir_win=$(cygpath -w "$OUT_DIR")" >> $GITHUB_OUTPUT
+          echo "Executável encontrado (MSYS): $EXE"
+          EXE_WIN=$(cygpath -w "$EXE")
+          EXE_DIR_WIN=$(cygpath -w "$OUT_DIR")
+          echo "exe_win=$EXE_WIN" >> $GITHUB_OUTPUT
+          echo "exe_dir_win=$EXE_DIR_WIN" >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$OUT_DIR" >> $GITHUB_OUTPUT
+          # Checagem extra
+          if [ ! -f "$EXE" ]; then
+            echo "Arquivo não existe: $EXE"; exit 1
+          fi
 
-      # Adiciona DLLs do Qt e runtime de compilador (pacote portable)
-      - name: windeployqt (portable)
+      - name: windeployqt (portable folder)
         shell: msys2 {0}
         run: |
           set -euo pipefail
           which windeployqt
+          echo "Executável (WIN): ${{ steps.exe.outputs.exe_win }}"
+          # Sanity-check antes
+          if [ ! -f "$(cygpath -u "${{ steps.exe.outputs.exe_win }}")" ]; then
+            echo "O caminho do .exe não existe (antes do windeployqt)."
+            ls -la "${{ steps.find_outdir.outputs.outdir_unix }}"
+            exit 1
+          fi
+          # Copia DLLs do Qt e runtime do compilador para a mesma pasta do .exe
           windeployqt --release --compiler-runtime "${{ steps.exe.outputs.exe_win }}"
-          # Opcional: se quiser remover símbolos de debug de DLLs copiadas, habilite strip (descomentando):
-          # find "${{ steps.find_outdir.outputs.outdir_unix }}" -name "*.dll" -exec strip -s {} \; || true
+          # (Opcional) strip das DLLs para reduzir tamanho
+          # find "${{ steps.exe.outputs.exe_dir_unix }}" -name "*.dll" -exec strip -s {} \; || true
 
-      - name: Empacotar ZIP
-        id: pack
+      - name: Empacotar ZIP (pasta pronta)
+        id: zip
         shell: pwsh
         run: |
           $zipName = "SimulIDE-$env:VERSION-windows-mingw64.zip"
-          $outDirWin = "${{ steps.find_outdir.outputs.outdir_win }}"
-          $parent    = Split-Path -Path $outDirWin -Parent
-          $zipPath   = Join-Path $parent $zipName
+          $outDir  = "${{ steps.find_outdir.outputs.outdir_win }}"
+          $parent  = Split-Path -Path $outDir -Parent
+          $zipPath = Join-Path $parent $zipName
           if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-          Compress-Archive -Path (Join-Path $outDirWin '*') -DestinationPath $zipPath
+          Compress-Archive -Path (Join-Path $outDir '*') -DestinationPath $zipPath
           Write-Host "ZIP: $zipPath"
           echo "zip=$zipPath" >> $env:GITHUB_OUTPUT
 
-      - name: Publicar artefato (CI)
+      - name: Criar EXE SFX (autoextrai e executa)
+        id: sfx
+        shell: pwsh
+        run: |
+          $outDir   = "${{ steps.find_outdir.outputs.outdir_win }}"
+          $exePath  = "${{ steps.exe.outputs.exe_win }}"
+          $parent   = Split-Path -Path $outDir -Parent
+
+          $sevenZip = "${env:ProgramFiles}\7-Zip\7z.exe"
+          if (-not (Test-Path $sevenZip)) { throw "7-Zip não encontrado em $sevenZip" }
+
+          $archive7z = Join-Path $parent ("SimulIDE-" + $env:VERSION + "-portable.7z")
+          if (Test-Path $archive7z) { Remove-Item $archive7z -Force }
+          & "$sevenZip" a -t7z -mx=9 $archive7z "$outDir\*"
+
+          $sfxMod = Join-Path ${env:ProgramFiles} "7-Zip\7z.sfx"
+          if (-not (Test-Path $sfxMod)) { throw "Módulo SFX não encontrado em $sfxMod" }
+
+          $configPath = Join-Path $parent "config.txt"
+          @"
+;!@Install@!UTF-8!
+Title="SimulIDE Portable"
+RunProgram="`"$(Split-Path -Path $exePath -Leaf)`""
+;!@InstallEnd@!
+"@ | Out-File -FilePath $configPath -Encoding UTF8 -Force
+
+          $sfxExe = Join-Path $parent ("SimulIDE-" + $env:VERSION + "-windows-mingw64-portable.exe")
+          if (Test-Path $sfxExe) { Remove-Item $sfxExe -Force }
+
+          $bytesSfx = [System.IO.File]::ReadAllBytes($sfxMod)
+          $bytesCfg = [System.IO.File]::ReadAllBytes($configPath)
+          $bytes7z  = [System.IO.File]::ReadAllBytes($archive7z)
+          $outBytes = New-Object byte[] ($bytesSfx.Length + $bytesCfg.Length + $bytes7z.Length)
+          [Array]::Copy($bytesSfx, 0, $outBytes, 0, $bytesSfx.Length)
+          [Array]::Copy($bytesCfg, 0, $outBytes, $bytesSfx.Length, $bytesCfg.Length)
+          [Array]::Copy($bytes7z, 0, $outBytes, $bytesSfx.Length + $bytesCfg.Length, $bytes7z.Length)
+          [System.IO.File]::WriteAllBytes($sfxExe, $outBytes)
+
+          Write-Host "SFX EXE: $sfxExe"
+          echo "sfx=$sfxExe" >> $env:GITHUB_OUTPUT
+
+      - name: Publicar artefatos (CI)
         uses: actions/upload-artifact@v4
         with:
           name: SimulIDE-${{ env.VERSION }}-windows-mingw64
-          path: ${{ steps.pack.outputs.zip }}
+        # Publica ambos
+          path: |
+            ${{ steps.zip.outputs.zip }}
+            ${{ steps.sfx.outputs.sfx }}
           if-no-files-found: error
 
       - name: Criar Release + Tag
@@ -192,6 +253,7 @@ jobs:
           body: ${{ github.event.inputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
-            ${{ steps.pack.outputs.zip }}
+            ${{ steps.zip.outputs.zip }}
+            ${{ steps.sfx.outputs.sfx }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
