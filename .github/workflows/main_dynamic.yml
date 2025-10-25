@@ -22,6 +22,8 @@ permissions:
 
 env:
   VERSION: ${{ github.event.inputs.version }}
+  ZIP_NAME: SimulIDE-${{ github.event.inputs.version }}-windows-mingw64.zip
+  ZIP_REL_PATH: release/SimulIDE-${{ github.event.inputs.version }}-windows-mingw64.zip
 
 jobs:
   build-windows-mingw:
@@ -306,40 +308,34 @@ jobs:
           echo "DLLs finais na pasta:"
           ls -1 "$EXE_DIR"/*.dll 2>/dev/null | wc -l || true
 
-      - name: Empacotar ZIP (portable) e normalizar caminho para Release
-        id: zip
+      - name: Empacotar ZIP (portable) em release/
         shell: pwsh
         run: |
-          $zipName    = "SimulIDE-$env:VERSION-windows-mingw64.zip"
           $exeDirWin  = "${{ steps.exe.outputs.exe_dir_win }}"
           $workspace  = "${{ github.workspace }}"
           $releaseDir = Join-Path $workspace "release"
           if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
 
-          $zipPathAbs = Join-Path $releaseDir $zipName
+          $zipPathAbs = Join-Path $releaseDir "${{ env.ZIP_NAME }}"
           if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
           Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
-
-          $zipRel = "release/$zipName"
-          Write-Host "ZIP (abs): $zipPathAbs"
-          Write-Host "ZIP (rel): $zipRel"
-          echo "zip_abs=$zipPathAbs" >> $GITHUB_OUTPUT
-          echo "zip_rel=$zipRel"     >> $GITHUB_OUTPUT
+          if (-not (Test-Path $zipPathAbs)) { throw "ZIP não foi gerado em: $zipPathAbs" }
+          Write-Host "ZIP gerado: $zipPathAbs"
 
       - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
         with:
           name: SimulIDE-${{ env.VERSION }}-windows-mingw64
-          path: ${{ steps.zip.outputs.zip_abs }}
+          path: ${{ env.ZIP_REL_PATH }}
           if-no-files-found: error
 
-      - name: Criar Release + Tag (anexando o ZIP correto)
+      - name: Criar Release + Tag (anexando o ZIP)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
           name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
           body: ${{ github.event.inputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease }}
-          files: ${{ steps.zip.outputs.zip_rel }}
+          files: ${{ env.ZIP_REL_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
