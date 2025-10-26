@@ -77,6 +77,7 @@ jobs:
             mingw-w64-x86_64-glib2
             mingw-w64-x86_64-bzip2
             mingw-w64-x86_64-libiconv
+            mingw-w64-x86_64-gettext
 
       - name: Validar versão
         shell: bash
@@ -99,7 +100,6 @@ jobs:
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then WINDEPLOY=windeployqt-qt5;
           else echo "windeployqt não encontrado."; exit 1; fi
 
-          # Plugins Qt
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
           if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
             for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
@@ -117,7 +117,6 @@ jobs:
         run: |
           set -euo pipefail
           [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
-          echo "Raiz do build:"
           find build_XX -maxdepth 1 -print 2>/dev/null || true
 
       - name: Compilar (qmake + mingw32-make Release)
@@ -129,10 +128,8 @@ jobs:
           "$QMAKE" "CONFIG+=release"
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
-          echo "Pastas criadas:"
           find . -maxdepth 3 -type d -print 2>/dev/null || true
 
-      # Procura o .exe EM QUALQUER LUGAR dentro de build_XX (sem caminhos fixos)
       - name: Localizar executável (.exe) – varredura total
         id: exe
         shell: bash
@@ -220,19 +217,39 @@ jobs:
           done
 
           # ------ GARANTIAS EXTRAS ------
+          # MinGW runtime básico
           for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
+          # Texto/imagem/markdown/fontes/compressores
           for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll" "libfreetype*.dll" "libgraphite2*.dll" "libbrotli*.dll" "libzstd*.dll"; do
-            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do base="$(basename "$f")"; [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true; done
+            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
+              base="$(basename "$f")"
+              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
+            done
           done
+          # ICU (com e sem prefixo lib)
           for f in $(find "$MINGW_BIN" -maxdepth 1 \( -iname "libicu*.dll" -o -iname "icu*.dll" \) -print 2>/dev/null); do
             base="$(basename "$f")"
-            case "$base" in libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll) [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true ;; esac
+            case "$base" in
+              libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll)
+                [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
+                ;;
+            esac
           done
-          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libpcre2-*.dll" -print 2>/dev/null); do base="$(basename "$f")"; [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true; done
-          for d in zlib1.dll libdouble-conversion.dll; do [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true; done
-          for d in libglib-2.0-0.dll libbz2-1.dll libiconv-2.dll; do [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true; done
+          # PCRE2
+          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libpcre2-*.dll" -print 2>/dev/null); do
+            base="$(basename "$f")"
+            [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
+          done
+          # zlib / double-conversion
+          for d in zlib1.dll libdouble-conversion.dll; do
+            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
+          done
+          # GLib2 / bzip2 / iconv / gettext (libintl-8)
+          for d in libglib-2.0-0.dll libbz2-1.dll libiconv-2.dll libintl-8.dll; do
+            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
+          done
           # -------------------------------
 
           echo "DLLs finais na pasta:"
