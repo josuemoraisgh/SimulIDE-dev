@@ -29,6 +29,8 @@ class I51Timer : public McuTimer
         virtual void doUpdateEnable();
 
     protected:
+        int m_number;
+
         bool m_gate;
         bool m_trEnabled; // states of the TR flag
 

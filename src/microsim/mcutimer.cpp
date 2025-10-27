@@ -13,10 +13,8 @@
 
 McuTimer::McuTimer( eMcu* mcu, QString name )
         : McuPrescaled( mcu, name )
-        , eElement( mcu->getId()+"-"+name )
+        , eElement( /*mcu->getId()+"-"+*/name )
 {
-    m_number = name.right(1).toInt();
-
     m_clockPin = nullptr;
     m_outputClk = nullptr;
     m_countL = nullptr;
@@ -53,7 +51,7 @@ void McuTimer::initialize()
     //m_clkSrc  = clkMCU;
     m_clkEdge = 1;
 
-    m_psPerTick = m_prescaler*m_mcu->psInst();
+    if( m_mcu ) m_psPerTick = m_prescaler*m_mcu->psInst();
 }
 
 void McuTimer::voltChanged()  // External Clock Pin changed voltage
@@ -124,15 +122,13 @@ void McuTimer::sheduleEvents()
         Simulator::self()->cancelEvents( this );
         for( McuOcUnit* ocUnit : m_ocUnit ) Simulator::self()->cancelEvents( ocUnit );
     }else{
-        uint64_t circTime = Simulator::self()->circTime();
-
         uint64_t ovfPeriod = m_ovfPeriod;
         if( m_countVal > m_ovfMatch ) ovfPeriod += m_maxCount; // OVF before counter: next OVF missed
 
-        uint64_t time2ovf = (ovfPeriod-m_countVal)*m_psPerTick; // time in ps from now to OVF
+        double time2ovf = double(ovfPeriod-m_countVal)*m_psPerTick+0.5; // time in ps from now to OVF
         if( m_timeOffset ) time2ovf -= m_psPerTick-m_timeOffset;
 
-        uint64_t ovfTime = circTime + time2ovf;// Absolute simulation time (ps) when OVF will occur
+        uint64_t ovfTime = Simulator::self()->circTime() + time2ovf;// Absolute simulation time (ps) when OVF will occur
 
         if( m_ovfTime != ovfTime )
         {
@@ -192,13 +188,17 @@ void McuTimer::calcCounter()
     if( m_circTime == circTime ) return;
     m_circTime = circTime;
 
-    uint64_t time2ovf   = m_ovfTime-circTime; // Next overflow time - current time
-    uint64_t cycles2ovf = time2ovf/m_psPerTick; // Number of Timer ticks to OVF
+    double time2ovf   = m_ovfTime-circTime; // Next overflow time - current time
+    double cycles2ovf = time2ovf/m_psPerTick; // Number of Timer ticks to OVF
 
     if( m_ovfMatch > cycles2ovf )
     {
         m_countVal   = m_ovfMatch-cycles2ovf;
-        m_timeOffset = time2ovf%m_psPerTick;
+
+        uint64_t cycles = cycles2ovf;
+        m_timeOffset = cycles2ovf - (double)cycles;
+        //m_timeOffset = time2ovf%m_psPerTick;
+
         if( m_timeOffset ) m_countVal--;
     }
 }

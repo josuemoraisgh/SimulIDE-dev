@@ -55,10 +55,10 @@ class McuTimer : public McuPrescaled, public eElement
 
         uint32_t getCount();
         QString  name()      { return m_name; }
-        uint64_t psPerTick() { return m_psPerTick; }
+        double   psPerTick() { return m_psPerTick; }
         uint16_t ovfMatch()  { return m_ovfMatch; }
         bool     reverse()   { return m_reverse; }
-        uint64_t timeOffset(){ return m_timeOffset; }
+        double   timeOffset(){ return m_timeOffset; }
         
 
     protected:
@@ -67,12 +67,10 @@ class McuTimer : public McuPrescaled, public eElement
         void clockStep();
         void calcCounter();
 
-        int m_number;
-
-        uint64_t m_psPerTick;  // Picoseconds per timer Tick
+        double m_psPerTick;  // Picoseconds per timer Tick
 
         uint64_t m_circTime;   // Last time m_countVal was updated
-        uint64_t m_timeOffset; // Offset between "now" and theoric begin of timer tick
+        double   m_timeOffset; // Offset between "now" and theoric begin of timer tick
 
         bool m_running;        // is Timer running?
         bool m_bidirec;        // is Timer bidirectional?
