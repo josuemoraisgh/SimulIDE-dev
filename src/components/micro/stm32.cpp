@@ -188,8 +188,7 @@ void Stm32::doAction()
             //qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
 
             if( id < 2 ) m_i2cs[id]->doAction( event, data );
-            break;
-        }
+        } break;
         case SIM_USART:
         {
             uint16_t    id = m_arena->data16;
@@ -199,18 +198,14 @@ void Stm32::doAction()
             //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
             if( id < 3 ) m_usarts[id]->doAction( event, data );
         } break;
-
         case SIM_TIMER:
         {
             uint16_t    id = m_arena->data16;
-            uint8_t  event = m_arena->data8;
-            uint32_t  data = m_arena->data32;
 
-            if( id < 5 ) m_timers[id]->doAction( event, data );
-            //qDebug() << "Stm32::doAction SIM_TIMER Uart:"<< id << "action:"<< event<< "byte:" << data;
-        }
-        default:
-            qDebug() << "Stm32::doAction Unimplemented"<< m_arena->simuAction;
+            if( id < 5 ) m_timers[id]->doAction();
+            //qDebug() << "Stm32::doAction SIM_TIMER Timer:"<< id << "action:"<< m_arena->simuAction<< "byte:" << data;
+        } break;
+        default: qDebug() << "Stm32::doAction Unimplemented"<< m_arena->simuAction;
     }
 }
 

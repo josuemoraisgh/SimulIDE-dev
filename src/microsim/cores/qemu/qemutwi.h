@@ -6,8 +6,8 @@
 #pragma once
 
 #include "twimodule.h"
+#include "qemumodule.h"
 
-class QemuDevice;
 class QemuTwi;
 
 class I2cRunner : public eElement
@@ -19,7 +19,7 @@ class I2cRunner : public eElement
         QemuTwi* m_twi;
 };
 
-class QemuTwi : public TwiModule
+class QemuTwi : public QemuModule, public TwiModule
 {
     friend class I2cRunner;
 
@@ -65,8 +65,6 @@ class QemuTwi : public TwiModule
 
         i2cPending_t* m_nextAction;
         i2cPending_t* m_lastAction;
-
-        QemuDevice* m_mcu;
 
         I2cRunner m_runner;
 };

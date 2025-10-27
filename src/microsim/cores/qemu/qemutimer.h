@@ -6,17 +6,30 @@
 #pragma once
 
 #include "mcutimer.h"
+#include "qemumodule.h"
 
-class QemuDevice;
-
-class QemuTimer : public McuTimer
+class QemuTimer : public QemuModule, public McuTimer
 {
     public:
         QemuTimer( QemuDevice* mcu, QString name, int number );
         ~QemuTimer();
 
-        void doAction( uint32_t action, uint32_t data );
+        enum timerAction_t{
+            QTIMER_CR1=1,
+            QTIMER_READ,
+            QTIMER_WRITE,
+            QTIMER_SET_FREQ,
+            QTIMER_SET_LIMIT,
+            QTIMER_OVF,
+        };
+
+        virtual void initialize() override;
+        virtual void runEvent() override;
+
+        void doAction();
 
     private:
-        QemuDevice* m_mcu;
+        void writeCR1();
+
+        bool m_oneShot;
 };

@@ -11,10 +11,10 @@
 #include "simulator.h"
 
 QemuTwi::QemuTwi( QemuDevice* mcu, QString name, int number )
-       : TwiModule( name )
+       : QemuModule( mcu, number )
+       , TwiModule( name )
        , m_runner( this )
 {
-    m_mcu = mcu;
     m_nextAction = nullptr;
     m_lastAction = nullptr;
 }

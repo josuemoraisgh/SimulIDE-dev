@@ -19,11 +19,9 @@
 //#include "datautils.h"
 
 QemuUsart::QemuUsart( QemuDevice* mcu, QString name, int number )
-         : UsartModule( nullptr, mcu->getId()+"-"+name )
+         : QemuModule( mcu, number )
+         , UsartModule( nullptr, mcu->getId()+"-"+name )
 {
-    m_number = number;
-    m_mcu = mcu;
-
     /// FIXME ----------------------------
 
     this->setBaudRate( 9600 );
@@ -70,17 +68,16 @@ void QemuUsart::readByte( uint8_t )
 void QemuUsart::byteReceived( uint8_t data )
 {
     UsartModule::byteReceived( data );
-    volatile qemuArena_t* arena = m_mcu->getArena();
 
-    while( arena->qemuAction )        // Wait for previous action executed
+    while( m_arena->qemuAction )        // Wait for previous action executed
     {
         ; /// TODO: add timeout
     }
-    arena->mask8  = QUSART_READ;
-    arena->data8  = m_number;
-    arena->data16 = m_receiver->getData();
+    m_arena->mask8  = QUSART_READ;
+    m_arena->data8  = m_number;
+    m_arena->data16 = m_receiver->getData();
     //qDebug() << "QemuUsart::readByte" << arena->data16 << "at time" << Simulator::self()->circTime();
-    arena->qemuAction = SIM_USART;
+    m_arena->qemuAction = SIM_USART;
 }
 
 uint8_t QemuUsart::getBit9Tx()
