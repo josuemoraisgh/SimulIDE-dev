@@ -119,6 +119,21 @@ jobs:
           [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
           find build_XX -maxdepth 1 -print 2>/dev/null || true
 
+      # 🔧 HOTFIX: corrige shift de double em mcuocunit.cpp
+      - name: Hotfix GCC (shift de double em mcuocunit.cpp)
+        shell: bash
+        run: |
+          set -euo pipefail
+          F="src/microsim/mcuocunit.cpp"
+          if [ -f "$F" ] && grep -q 'time2ovf *>> *rot' "$F"; then
+            echo "Aplicando hotfix em $F"
+            cp "$F" "$F.bak"
+            sed -E -i 's/(addEvent\()\s*time2ovf\s*>>\s*rot(\s*,\s*this\s*\))/\1 static_cast<unsigned long long>(time2ovf) >> rot\2/' "$F"
+            grep -n 'addEvent' "$F" || true
+          else
+            echo "Hotfix não necessário (arquivo/trecho não encontrado)."
+          fi
+
       - name: Compilar (qmake + mingw32-make Release)
         shell: msys2 {0}
         run: |
@@ -217,36 +232,29 @@ jobs:
           done
 
           # ------ GARANTIAS EXTRAS ------
-          # MinGW runtime básico
           for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
-          # Texto/imagem/markdown/fontes/compressores
           for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll" "libfreetype*.dll" "libgraphite2*.dll" "libbrotli*.dll" "libzstd*.dll"; do
             for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
               base="$(basename "$f")"
               [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
             done
           done
-          # ICU (com e sem prefixo lib)
           for f in $(find "$MINGW_BIN" -maxdepth 1 \( -iname "libicu*.dll" -o -iname "icu*.dll" \) -print 2>/dev/null); do
             base="$(basename "$f")"
             case "$base" in
               libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll)
-                [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
-                ;;
+              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true ;;
             esac
           done
-          # PCRE2
           for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libpcre2-*.dll" -print 2>/dev/null); do
             base="$(basename "$f")"
             [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
           done
-          # zlib / double-conversion
           for d in zlib1.dll libdouble-conversion.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
-          # GLib2 / bzip2 / iconv / gettext (libintl-8)
           for d in libglib-2.0-0.dll libbz2-1.dll libiconv-2.dll libintl-8.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
