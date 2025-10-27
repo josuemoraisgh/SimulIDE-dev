@@ -12,9 +12,10 @@
 #define COUNT_L m_countL[0]
 #define COUNT_H m_countH[0]
 
-I51Timer::I51Timer( eMcu* mcu, QString name)
+I51Timer::I51Timer( eMcu* mcu, QString name )
         : McuTimer( mcu, name )
 {
+    m_number = name.right(1).toInt();
 }
 I51Timer::~I51Timer(){}
 

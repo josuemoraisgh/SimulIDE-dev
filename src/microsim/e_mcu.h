@@ -90,7 +90,7 @@ class eMcu : public DataSpace, public eIou
         double freq() { return m_freq; }
         void setFreq( double freq );
         void forceFreq( double freq );
-        uint64_t psInst() { return m_psInst; }  // picoseconds per instruction cycle
+        double psInst() { return m_psInst; }  // picoseconds per instruction cycle
         void setInstCycle( double p ){ m_cPerInst = m_cPerTick = p; }
 
         McuTimer* getTimer( QString name );
@@ -155,8 +155,8 @@ class eMcu : public DataSpace, public eIou
         double m_freq;         // Clock Frequency in MegaHerzs
         double m_cPerInst;     // Clock ticks per Instruction Cycle
         double m_cPerTick;     // Clock ticks  per cpu Cycle
-        uint64_t m_psInst;     // picoseconds per Instruction Cycle
-        uint64_t m_psTick;     // picoseconds per Clock Cycle
+        double m_psInst;     // picoseconds per Instruction Cycle
+        double m_psTick;     // picoseconds per Clock Cycle
 
         bool m_clkState;
 

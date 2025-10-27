@@ -6,16 +6,15 @@
 #pragma once
 
 #include "usartmodule.h"
+#include "qemumodule.h"
 
-class QemuDevice;
-
-class QemuUsart : public UsartModule
+class QemuUsart : public QemuModule, public UsartModule
 {
     public:
         QemuUsart( QemuDevice* mcu, QString name, int number );
         virtual ~QemuUsart();
 
-        enum usart_action_t{
+        enum usartAction_t{
             QUSART_READ=1,
             QUSART_WRITE,
             QUSART_BAUD
@@ -38,10 +37,6 @@ class QemuUsart : public UsartModule
 
     protected:
         //void readBuffer();
-
-        QemuDevice* m_mcu;
-
-        int m_number;
 
         bool m_speedx2;
 
