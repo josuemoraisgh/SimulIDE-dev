@@ -104,7 +104,8 @@ win32 {
 }
 linux {
     OS = Linux
-    contains( QMAKE_HOST.arch, arm64 ) {
+#    contains( QMAKE_HOST.arch, arm64 ) {
+    contains( QMAKE_CC, aarch64.* ) {
         SOURCES += $$PWD/src/angel/src/as_callfunc_arm_gcc.S
     }
 }
