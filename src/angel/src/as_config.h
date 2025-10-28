@@ -700,6 +700,97 @@
             // Only with GCC 4.1 was the atomic instructions available
             #define AS_NO_ATOMIC
         #endif
+
+        // Android
+    #elif defined(ANDROID) || defined(__ANDROID__)
+        #define AS_ANDROID
+
+        // Android 2.3+ supports posix threads
+        #define AS_POSIX_THREADS
+
+        // Common configuration with Android arm and x86
+        #define CDECL_RETURN_SIMPLE_IN_MEMORY
+        #define STDCALL_RETURN_SIMPLE_IN_MEMORY
+        #define THISCALL_RETURN_SIMPLE_IN_MEMORY
+
+        #undef COMPLEX_MASK
+        #define COMPLEX_MASK (asOBJ_APP_CLASS_DESTRUCTOR | asOBJ_APP_CLASS_COPY_CONSTRUCTOR | asOBJ_APP_ARRAY)
+        #undef COMPLEX_RETURN_MASK
+        #define COMPLEX_RETURN_MASK (asOBJ_APP_CLASS_DESTRUCTOR | asOBJ_APP_CLASS_COPY_CONSTRUCTOR | asOBJ_APP_ARRAY)
+
+        #if (defined(_ARM_) || defined(__arm__) || defined(__aarch64__) || defined(__AARCH64EL__))
+            // Android ARM
+
+            #undef THISCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE
+            #undef CDECL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE
+            #undef STDCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE
+
+            // The stdcall calling convention is not used on the arm cpu
+            #undef STDCALL
+            #define STDCALL
+
+            #undef GNU_STYLE_VIRTUAL_METHOD
+            #undef AS_NO_THISCALL_FUNCTOR_METHOD
+
+            #if (!defined(__LP64__))
+                // TODO: The stack unwind on exceptions currently fails due to the assembler code in as_callfunc_arm_gcc.S
+                #define AS_NO_EXCEPTIONS
+
+                #define THISCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 2
+                #define CDECL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 2
+                #define STDCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 2
+
+                #define AS_ARM
+                #define AS_SOFTFP
+                #define AS_CALLEE_DESTROY_OBJ_BY_VAL
+            #elif (defined(__LP64__) || defined(__aarch64__))
+                #define AS_ARM64
+
+                #define HAS_128_BIT_PRIMITIVES
+
+                #define THISCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 5
+                #define CDECL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE    5
+                #define STDCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE  5
+            #endif
+        #elif (defined(i386) || defined(__i386) || defined(__i386__)) && !defined(__LP64__)
+            // Android Intel x86 (same config as Linux x86). Tested with Intel x86 Atom System Image.
+
+            // Support native calling conventions on Intel 32bit CPU
+            #define THISCALL_PASS_OBJECT_POINTER_ON_THE_STACK
+            #define AS_X86
+            #undef AS_NO_THISCALL_FUNCTOR_METHOD
+        #elif defined(__LP64__) && !defined(__aarch64__)
+            // Android Intel x86_64 (same config as Linux x86_64). Tested with Intel x86_64 Atom System Image.
+            #define AS_X64_GCC
+            #undef AS_NO_THISCALL_FUNCTOR_METHOD
+            #define HAS_128_BIT_PRIMITIVES
+            #define SPLIT_OBJS_BY_MEMBER_TYPES
+            #define AS_LARGE_OBJS_PASSED_BY_REF
+            #define AS_LARGE_OBJ_MIN_SIZE 5
+            // STDCALL is not available on 64bit Linux
+            #undef STDCALL
+            #define STDCALL
+        #elif defined(__mips__)
+            #define AS_MIPS
+            #undef STDCALL
+            #define STDCALL
+
+            #ifdef _ABIO32
+                #define AS_MIPS
+
+                // All structures are returned in memory regardless of size or complexity
+                #define THISCALL_RETURN_SIMPLE_IN_MEMORY
+                #define    THISCALL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 0
+                #define CDECL_RETURN_SIMPLE_IN_MEMORY
+                #define CDECL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 0
+                #define STDCALL_RETURN_SIMPLE_IN_MEMORY
+                #define CDECL_RETURN_SIMPLE_IN_MEMORY_MIN_SIZE 0
+                #undef AS_NO_THISCALL_FUNCTOR_METHOD
+            #else
+                // For other ABIs the native calling convention is not available (yet)
+                #define AS_MAX_PORTABILITY
+            #endif
+        #endif
     #endif
 
     #define UNREACHABLE_RETURN
