@@ -85,8 +85,6 @@ QMAKE_CXXFLAGS += -fno-strict-aliasing      #AngelScript
 QMAKE_CXXFLAGS += -Wno-cast-function-type   #AngelScript
 QMAKE_CXXFLAGS += -Wno-deprecated-copy      #AngelScript
 QMAKE_CXXFLAGS += -Wno-invalid-offsetof     #AngelScript
-QMAKE_CXXFLAGS -= -fPIC
-QMAKE_CXXFLAGS += -fno-pic
 QMAKE_CXXFLAGS += -Ofast
 QMAKE_CXXFLAGS_DEBUG += -D_GLIBCXX_ASSERTIONS
 QMAKE_CXXFLAGS_DEBUG -= -O
@@ -104,18 +102,11 @@ win32 {
 }
 linux {
     OS = Linux
-#    contains( QMAKE_HOST.arch, arm64 ) {
-    contains( QMAKE_CC, aarch64.* ) {
-        SOURCES += $$PWD/src/angel/src/as_callfunc_arm_gcc.S
-    }
 }
 macx {
     OS = MacOs
     ICON = $$PWD/resources/icons/simulide.icns
 
-    contains( QMAKE_HOST.arch, arm64 ) {
-        SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_xcode.S
-    }
     QMAKE_CXXFLAGS -= -stdlib=libc++
     QMAKE_LFLAGS   -= -stdlib=libc++
 
@@ -124,6 +115,10 @@ macx {
     QMAKE_CC   = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gcc-7
     QMAKE_CXX  = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
     QMAKE_LINK = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
+}
+
+contains( QMAKE_HOST.arch, arm64|aarch64 ) | contains( QMAKE_CC, .*aarch64.* ){
+    SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_gcc.S
 }
 
 contains( QMAKE_HOST.os, Windows ) {
