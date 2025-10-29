@@ -20,7 +20,7 @@ enum ArmActions{
     ARM_GPIO_OUT = 1,
     ARM_GPIO_CRx,
     ARM_GPIO_IN,
-    ARM_UART_TX
+    ARM_ALT_OUT
 };
 
 
@@ -159,12 +159,8 @@ void Stm32::doAction()
             m_state[port] = state;
 
             //qDebug() << "Stm32::doAction GPIO_OUT Port:"<< port << "State:" << state;
-            switch( port ) {
-                case 1: setPortState( &m_portA, state ); break;
-                case 2: setPortState( &m_portB, state ); break;
-                case 3: setPortState( &m_portC, state ); break;
-                case 4: setPortState( &m_portD, state ); break;
-            }
+
+            setPortState( port, state );
         } break;
         case ARM_GPIO_CRx:       // Configure Pins
         {
@@ -178,6 +174,14 @@ void Stm32::doAction()
         {
             uint8_t  port   = m_arena->data8;
             m_arena->data16 = readInputs( port );
+        } break;
+        case ARM_ALT_OUT:
+        {
+            uint8_t port  = m_arena->data8;
+            uint8_t pin   = m_arena->mask8;
+            bool    state = (m_arena->data16 > 0);
+
+            setPinState( port, pin, state );
         } break;
         case SIM_I2C:
         {
@@ -211,14 +215,7 @@ void Stm32::doAction()
 
 uint16_t Stm32::readInputs( uint8_t port )
 {
-    std::vector<Stm32Pin*>* ioPort = nullptr;
-
-    switch( port ) {
-        case 1: ioPort = &m_portA; break;
-        case 2: ioPort = &m_portB; break;
-        case 3: ioPort = &m_portC; break;
-        case 4: ioPort = &m_portD; break;
-    }
+    std::vector<Stm32Pin*>* ioPort = getPort( port );
     if( !ioPort ) return 0;
 
     uint16_t state = 0;
@@ -231,28 +228,35 @@ uint16_t Stm32::readInputs( uint8_t port )
     return state;
 }
 
-void Stm32::setPortState( std::vector<Stm32Pin*>* port, uint16_t state )
+void Stm32::setPortState( uint8_t port, uint16_t state )
 {
-    for( uint8_t i=0; i<port->size(); ++i )
+    std::vector<Stm32Pin*>* ioPort = getPort( port );
+    if( !ioPort ) return;
+
+    for( uint8_t i=0; i<ioPort->size(); ++i )
     {
-        Stm32Pin* ioPin = port->at( i );
+        Stm32Pin* ioPin = ioPort->at( i );
         ioPin->setPortState( state & (1<<i) );
     }
 }
 
+void Stm32::setPinState( uint8_t port, uint8_t pin, bool state )
+{
+    std::vector<Stm32Pin*>* ioPort = getPort( port );
+    if( !ioPort ) return;
+
+    //qDebug() << "Stm32::setPinState" << port << pin << state;
+
+    Stm32Pin* ioPin = ioPort->at( pin );
+    ioPin->setOutState( state );
+}
+
 void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
 {
-    std::vector<Stm32Pin*>* ioPort = nullptr;
+    std::vector<Stm32Pin*>* ioPort = getPort( port );
+    if( !ioPort ) return;
 
     //qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << m_direction;
-
-    switch( port ) {
-        case 1: ioPort = &m_portA; break;
-        case 2: ioPort = &m_portB; break;
-        case 3: ioPort = &m_portC; break;
-        case 4: ioPort = &m_portD; break;
-    }
-    if( !ioPort ) return;
 
     for( uint8_t i=shift; i<shift+8; ++i )
     {

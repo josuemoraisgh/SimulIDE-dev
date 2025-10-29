@@ -34,9 +34,21 @@ class Stm32 : public QemuDevice
 
         void cofigPort( uint8_t port,  uint32_t config, uint8_t shift );
 
-        void setPortState( std::vector<Stm32Pin*>* port, uint16_t state );
+        void setPortState( uint8_t port, uint16_t state );
+        void setPinState( uint8_t port, uint8_t pin, bool state );
 
         uint16_t readInputs( uint8_t port );
+
+        std::vector<Stm32Pin*>* getPort( uint8_t number )
+        {
+            switch( number ) {
+            case 1: return &m_portA;
+            case 2: return &m_portB;
+            case 3: return &m_portC;
+            case 4: return &m_portD;
+            }
+            return nullptr;
+        }
 
         uint16_t m_state[4]; // Port states
 
