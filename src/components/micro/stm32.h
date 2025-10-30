@@ -27,7 +27,7 @@ class Stm32 : public QemuDevice
         Pin* addPin( QString id, QString type, QString label,
                     int n, int x, int y, int angle , int length=8, int space=0 ) override;
 
-        void createPort( std::vector<Stm32Pin*>* port, QString pId, uint8_t n );
+        void createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pId, uint8_t n );
         void createPins();
         bool createArgs() override;
         void doAction() override;

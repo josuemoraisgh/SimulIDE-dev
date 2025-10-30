@@ -79,19 +79,19 @@ void Stm32::stamp()
 
 void Stm32::createPins()
 {
-    createPort( &m_portA, "A", 16 );
-    createPort( &m_portB, "B", 16 );
-    createPort( &m_portC, "C", 16 );
-    createPort( &m_portD, "D",  3 );
+    createPort( &m_portA, 1, "A", 16 );
+    createPort( &m_portB, 2, "B", 16 );
+    createPort( &m_portC, 3, "C", 16 );
+    createPort( &m_portD, 4, "D",  3 );
 
     setPackageFile("./data/STM32/stm32.package");
 }
 
-void Stm32::createPort( std::vector<Stm32Pin*>* port, QString pId, uint8_t n )
+void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pId, uint8_t n )
 {
     for( int i=0; i<n; ++i )
     {
-        Stm32Pin* pin = new Stm32Pin( i, m_id+"-P"+pId+QString::number(i), this );
+        Stm32Pin* pin = new Stm32Pin( number, i, m_id+"-P"+pId+QString::number(i), this );
         port->emplace_back( pin );
     }
 }
