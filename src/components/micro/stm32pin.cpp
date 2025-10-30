@@ -8,12 +8,12 @@
 
 #include "stm32pin.h"
 
-Stm32Pin::Stm32Pin( /*IoPort* port,*/ int i, QString id, Component* mcu )
+Stm32Pin::Stm32Pin( uint8_t port, int i, QString id, QemuDevice* mcu )
         : IoPin( 0, QPoint(0,0), id, 0, mcu, input )
+        , QemuModule( mcu, i )
 {
     //m_id     = id;
-    //m_port   = port;
-    //m_number = i;
+    m_port   = port;
 
     m_pullAdmit = 1e5; // 10k
 
@@ -57,6 +57,23 @@ void Stm32Pin::stamp()
     //setPullup( m_puMask ? 1e5 : 0 );
     //if( !m_outCtrl && m_outMask ) IoPin::setOutState( true );
     //update();
+}
+
+void Stm32Pin::voltChanged()
+{
+    bool oldState = m_inpState;
+    bool newState = IoPin::getInpState();
+
+    if( oldState == newState ) return;
+
+    while( m_arena->qemuAction )        // Wait for previous action executed
+    {
+        ; /// TODO: add timeout
+    }
+    m_arena->data8 = m_port;
+    m_arena->mask8 = m_number;
+    m_arena->data16 = newState;
+    m_arena->qemuAction = SIM_GPIO_IN;
 }
 
 void Stm32Pin::setPull( bool p )
