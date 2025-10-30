@@ -208,11 +208,13 @@ void QemuDevice::voltChanged()
 
 void QemuDevice::runToTime( uint64_t time )
 {
+    if( this->eventTime ) return;// Our event still not executed
     //if( m_arena->qemuTime ) return; // Our event still not executed
-    if( m_arena->simuTime ) return; // Our event still not executed
+    //if( m_arena->simuTime ) return; // Our event still not executed
 
     //qDebug() << "\nQemuDevice::runToTime"<< time;
 
+    m_arena->simuTime = 0;
     m_arena->qemuTime = time; // Tell Qemu to run up to time
     //m_arena->qemuAction = SIM_EVENT;
 
@@ -229,8 +231,8 @@ void QemuDevice::runEvent()
     //qDebug() << "QemuDevice::runEvent"<< m_arena->simuAction<< Simulator::self()->circTime();
     if( m_arena->simuAction < SIM_EVENT ) doAction();
     //m_arena->simuAction = 0;
-    m_arena->qemuTime = 0;       // Qemu will wait for next time
-    m_arena->simuTime = 0;
+    //m_arena->qemuTime = 0;       // Qemu will wait for next time
+    //m_arena->simuTime = 0;
 }
 
 void QemuDevice::slotOpenTerm( int num )
