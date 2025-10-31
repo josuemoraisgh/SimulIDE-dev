@@ -70,7 +70,7 @@ void Stm32Pin::voltChanged()
     {
         ; /// TODO: add timeout
     }
-    m_arena->data8 = m_port;
+    m_arena->data8 = m_port-1;
     m_arena->mask8 = m_number;
     m_arena->data16 = newState;
     m_arena->qemuAction = SIM_GPIO_IN;

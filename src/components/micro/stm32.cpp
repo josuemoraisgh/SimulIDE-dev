@@ -75,6 +75,9 @@ void Stm32::stamp()
     m_usarts[1]->enable( true );
     m_usarts[2]->enable( true );
     QemuDevice::stamp();
+
+    Stm32Pin* pin = m_portB.at(3);
+    pin->changeCallBack( pin, true );
 }
 
 void Stm32::createPins()
