@@ -76,6 +76,12 @@ void Stm32Pin::voltChanged()
     m_arena->qemuAction = SIM_GPIO_IN;
 }
 
+void Stm32Pin::setPinMode( pinMode_t mode )
+{
+    IoPin::setPinMode( mode );
+    changeCallBack( this, mode == input );
+}
+
 void Stm32Pin::setPull( bool p )
 {
     if( m_pull == p ) return;

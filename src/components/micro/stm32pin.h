@@ -23,6 +23,8 @@ class Stm32Pin : public IoPin, public QemuModule
 
         void voltChanged() override;
 
+        void setPinMode( pinMode_t mode );
+
         void setOutState( bool high ) override;
         void scheduleState( bool high, uint64_t time ) override;
 
