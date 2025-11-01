@@ -521,10 +521,10 @@ void Esp32::doAction()
             //qDebug() << "---";
             //qDebug() << m_arena->time/1000000 << "Esp32::doAction";
             uint16_t    id = m_arena->data16;
-            uint8_t   data = m_arena->data8;
-            uint32_t event = m_arena->data32;
+            /// FIXME: uint8_t   data = m_arena->data8;
+            /// FIXME: uint32_t event = m_arena->data32;
 
-            if( id < 2 ) m_i2cs[id]->doAction( event, data );
+            if( id < 2 ) m_i2cs[id]->doAction();
         } break;
     }
 }

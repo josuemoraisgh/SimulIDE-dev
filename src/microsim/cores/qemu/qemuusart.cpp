@@ -38,8 +38,10 @@ void QemuUsart::enable( bool e )
     //m_receiving = false;
 }
 
-void QemuUsart::doAction( uint32_t action, uint32_t data )
+void QemuUsart::doAction()
 {
+    uint8_t  action = m_arena->data8;
+    uint32_t  data  = m_arena->data32;
     switch( action ) {
         case QUSART_READ:  /*readByte( data );*/ break;
         case QUSART_WRITE: sendByte( data ); break;

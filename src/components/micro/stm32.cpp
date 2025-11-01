@@ -20,7 +20,8 @@ enum ArmActions{
     ARM_GPIO_OUT = 1,
     ARM_GPIO_CRx,
     ARM_GPIO_IN,
-    ARM_ALT_OUT
+    ARM_ALT_OUT,
+    ARM_REMAP
 };
 
 
@@ -51,18 +52,12 @@ Stm32::Stm32( QString type, QString id )
     m_i2cs.resize( 2 );
     for( int i=0; i<2; ++i ) m_i2cs[i] = new QemuTwi( this, "I2C"+QString::number(i), i );
 
-    m_i2cs[0]->setSclPin( m_portB.at(6) );
-    m_i2cs[0]->setSdaPin( m_portB.at(7) );
 
-    m_i2cs[1]->setSclPin( m_portB.at(10) );
-    m_i2cs[1]->setSdaPin( m_portB.at(11) );
 
     m_usarts.resize( 3 );
     for( int i=0; i<3; ++i ) m_usarts[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
 
-    m_usarts[0]->setPins({m_portA.at(9), m_portA.at(10)}); // Remap (TX/PB6, RX/PB7)
-    m_usarts[1]->setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
-    m_usarts[2]->setPins({m_portB.at(10), m_portB.at(11)});
+
 
     m_timers.resize( 5 );
     for( int i=0; i<5; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
@@ -71,9 +66,20 @@ Stm32::~Stm32(){}
 
 void Stm32::stamp()
 {
+    m_i2cs[0]->setSclPin( m_portB.at(6) );
+    m_i2cs[0]->setSdaPin( m_portB.at(7) );
+
+    m_i2cs[1]->setSclPin( m_portB.at(10) );
+    m_i2cs[1]->setSdaPin( m_portB.at(11) );
+
+    m_usarts[0]->setPins({m_portA.at(9), m_portA.at(10)}); // No Remap (TX/PB6, RX/PB7)
+    m_usarts[1]->setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+    m_usarts[2]->setPins({m_portB.at(10), m_portB.at(11)});
+
     m_usarts[0]->enable( true );
     m_usarts[1]->enable( true );
     m_usarts[2]->enable( true );
+
     QemuDevice::stamp();
 
     Stm32Pin* pin = m_portB.at(3);
@@ -186,28 +192,75 @@ void Stm32::doAction()
 
             setPinState( port, pin, state );
         } break;
+        case ARM_REMAP:
+        {
+            uint32_t mapr = m_arena->data32;
+
+            uint8_t spi1Map = mapr & 1;
+            switch( spi1Map )       // SPI1
+            {
+                case 0:{        // No remap (NSS/PA4, SCK/PA5, MISO/PA6, MOSI/PA7)
+                    /// TODO
+                }break;
+                case 1:{        // Remap (NSS/PA15, SCK/PB3, MISO/PB4, MOSI/PB5)
+                    /// TODO
+                }break;
+            }
+            mapr >>= 1;
+
+            switch( mapr & 1 )      // I2C1
+            {
+                case 0:{        // No remap (SCL/PB6, SDA/PB7)
+                    m_i2cs[0]->setSclPin( m_portB.at(6) );
+                    m_i2cs[0]->setSdaPin( m_portB.at(7) );
+                }break;
+                case 1:{        // Remap (SCL/PB8, SDA/PB9)
+                    m_i2cs[0]->setSclPin( m_portB.at(8) );
+                    m_i2cs[0]->setSdaPin( m_portB.at(9) );
+                }break;
+            }
+            mapr >>= 1;
+
+            switch( mapr & 1 )      // USART1
+            {
+                case 0: m_usarts[0]->setPins({m_portA.at(9), m_portA.at(10)}); break; //No remap (TX/PA9, RX/PA10)
+                case 1: m_usarts[0]->setPins({m_portB.at(6), m_portB.at(7)});  break;  //Remap (TX/PB6, RX/PB7)
+            }
+            mapr >>= 1;
+
+            switch( mapr & 1 )      // USART2
+            {
+                case 0: m_usarts[1]->setPins({m_portA.at(3), m_portA.at(3)}); break; //No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4)
+                case 1: m_usarts[1]->setPins({m_portD.at(5), m_portD.at(6)}); break;  //Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+            }
+            mapr >>= 1;
+
+            switch( mapr & 0b11 )   // USART3
+            {
+                case 0: m_usarts[2]->setPins({m_portB.at(10), m_portB.at(11)}); break; //No remap (TX/PB10, RX/PB11, CK/PB12, CTS/PB13, RTS/PB14)
+                case 1: m_usarts[2]->setPins({m_portC.at(10), m_portC.at(11)}); break; //Partial remap (TX/PC10, RX/PC11, CK/PC12, CTS/PB13, RTS/PB14)
+                case 2:                                                         break; //not used
+                case 3: m_usarts[2]->setPins({m_portD.at(8), m_portD.at(9)});   break; // Full remap (TX/PD8, RX/PD9, CK/PD10, CTS/PD11, RTS/PD12)
+            }
+        }break;
         case SIM_I2C:
         {
             uint16_t    id = m_arena->data16;
-            uint8_t   data = m_arena->data32;
-            uint8_t  event = m_arena->data8;
 
             //qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
 
-            if( id < 2 ) m_i2cs[id]->doAction( event, data );
+            if( id < 2 ) m_i2cs[id]->doAction();
         } break;
         case SIM_USART:
         {
-            uint16_t    id = m_arena->data16;
-            uint8_t  event = m_arena->data8;
-            uint32_t  data = m_arena->data32;
+            uint16_t id = m_arena->data16;
 
             //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
-            if( id < 3 ) m_usarts[id]->doAction( event, data );
+            if( id < 3 ) m_usarts[id]->doAction();
         } break;
         case SIM_TIMER:
         {
-            uint16_t    id = m_arena->data16;
+            uint16_t id = m_arena->data16;
 
             if( id < 5 ) m_timers[id]->doAction();
             //qDebug() << "Stm32::doAction SIM_TIMER Timer:"<< id << "action:"<< m_arena->simuAction<< "byte:" << data;
