@@ -382,7 +382,7 @@ void SubPackage::deleteEventPin()
 
     m_pkgePins.removeOne( m_eventPin );
 
-    delete m_eventPin;
+    Component::deletePin( m_eventPin );
     m_eventPin = nullptr;
     
     Circuit::self()->update();
