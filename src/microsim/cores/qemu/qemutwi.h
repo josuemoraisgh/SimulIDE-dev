@@ -47,14 +47,14 @@ class QemuTwi : public QemuModule, public TwiModule
 
         void reset();
 
-        void doAction( uint32_t action, uint8_t data );
-
         void readByte() override;
 
         void writeByte() override;
         //void sendByte( uint8_t data );
 
         void setMode( twiMode_t mode ) override;
+
+        void doAction();
 
     protected:
         void setTwiState( twiState_t state ) override;

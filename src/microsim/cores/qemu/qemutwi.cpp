@@ -26,8 +26,11 @@ void QemuTwi::reset()
     m_lastAction = nullptr;
 }
 
-void QemuTwi::doAction( uint32_t action, uint8_t data )
+void QemuTwi::doAction()
 {
+    uint8_t   data = m_arena->data32;
+    uint8_t action = m_arena->data8;
+
     if( m_mode != TWI_MASTER )
     {
         setFreqKHz( 100 );

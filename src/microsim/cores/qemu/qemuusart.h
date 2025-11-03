@@ -33,7 +33,7 @@ class QemuUsart : public QemuModule, public UsartModule
 
         void setPins( QList<IoPin*> pinList );
 
-        void doAction( uint32_t action, uint32_t data );
+        void doAction();
 
     protected:
         //void readBuffer();
