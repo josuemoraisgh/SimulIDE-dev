@@ -104,7 +104,6 @@
 #include "scr.h"
 #include "ssd1306.h"
 #include "stepper.h"
-#include "stm32.h"
 #include "strain.h"
 #include "subcircuit.h"
 #include "subpackage.h"
@@ -234,12 +233,13 @@ void ItemLibrary::loadItems()
         addItem( new LibraryItem("Espressif", "Micro", ":/ic2.png", "Espressif", nullptr) );
         addItem( esp32 );
     }
-    LibraryItem* stm32 = Stm32::libraryItem();
-    if( stm32 )
-    {
-        addItem( new LibraryItem("STM32", "Micro", ":/ic2.png", "STM32", nullptr) );
-        addItem( stm32 );
-    }
+    addItem( QemuDevice::libraryItem() );
+    //LibraryItem* stm32 = Stm32::libraryItem();
+    //if( stm32 )
+    //{
+    //    addItem( new LibraryItem("STM32", "Micro", ":/ic2.png", "STM32", nullptr) );
+    //    addItem( stm32 );
+    //}
     addItem( new LibraryItem( QObject::tr("Sensors"), "Micro", "1to2.png","Sensors", nullptr ) );
     addItem( Mcu::libraryItem() );
     addItem( SR04::libraryItem() );

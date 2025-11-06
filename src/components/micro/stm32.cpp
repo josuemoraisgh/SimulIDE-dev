@@ -8,15 +8,13 @@
 #include <QFileInfo>
 
 #include "stm32.h"
-#include "itemlibrary.h"
-//#include "iopin.h"
 #include "stm32pin.h"
 #include "qemuusart.h"
 #include "qemutimer.h"
 
 #define tr(str) simulideTr("Stm32",str)
 
-enum ArmActions{
+enum armActions{
     ARM_GPIO_OUT = 1,
     ARM_GPIO_CRx,
     ARM_GPIO_IN,
@@ -25,75 +23,99 @@ enum ArmActions{
 };
 
 
-Component* Stm32::construct( QString type, QString id )
-{ return new Stm32( type, id ); }
-
-LibraryItem* Stm32::libraryItem()
-{
-    return new LibraryItem(
-        "Stm32",
-        "STM32",
-        "ic2.png",
-        "Stm32",
-        Stm32::construct );
-}
-
-Stm32::Stm32( QString type, QString id )
+Stm32::Stm32( QString type, QString id, QString device )
      : QemuDevice( type, id )
 {
     m_area = QRect(-32,-32, 64, 64 );
 
+    m_device = device;
+    QString model = device.right( 3 );
+
+    QStringList pkgs = { "T", "C", "R", "V", "Z" };
+    uint32_t pkg = pkgs.indexOf( model.mid(1,1) );
+    switch( pkg ){
+    case 0: m_packageFile = "stm32_dip36.package";  break; // T
+    case 1: m_packageFile = "stm32_dip48.package";  break; // C
+    case 2: m_packageFile = "stm32_dip64.package";  break; // R
+    case 3: m_packageFile = "stm32_dip100.package"; break; // V
+    //case 4: m_packageFile = "stm32_dip144.package"; break; // Z
+
+    default: m_packageFile = "stm32_dip64.package";  break;
+    }
+
+    QStringList vars = { "4", "6", "8", "B", "C", "D", "E", "F", "G" };
+    uint32_t var = vars.indexOf( model.right(1) );
+    switch( var ){
+        case 0:                                                               // 4
+        case 1: { m_portN = 4; m_usartN = 2; m_i2cN = 1; m_spiN = 1; } break; // 6
+        case 2:                                                               // 8
+        case 3: { m_portN = 5; m_usartN = 3; m_i2cN = 2; m_spiN = 2; } break; // B
+        case 4:                                                               // C
+        case 5:                                                               // D
+        case 6: { m_portN = 7; m_usartN = 5; m_i2cN = 2; m_spiN = 3; } break; // E
+        //else if( var == "F" ) m_usartN = 3; m_timerN = 4; m_i2cN = 2;
+        //else if( var == "G" ) m_usartN = 3; m_timerN = 4; m_i2cN = 2;
+        default: break;
+    }
+
+    uint32_t fam = model.left(1).toInt();
+
+    m_model = fam << 16 | pkg << 8 | var;
+    //qDebug() << "Stm32::Stm32 model" << device << m_model;
     m_executable = "./data/STM32/qemu-system-arm";
 
     m_firmware ="";
 
     createPins();
 
-    m_i2cs.resize( 2 );
-    for( int i=0; i<2; ++i ) m_i2cs[i] = new QemuTwi( this, "I2C"+QString::number(i), i );
+    m_i2cs.resize( m_i2cN );
+    for( int i=0; i<m_i2cN; ++i ) m_i2cs[i] = new QemuTwi( this, "I2C"+QString::number(i), i );
 
+    m_usarts.resize( m_usartN );
+    for( int i=0; i<m_usartN; ++i ) m_usarts[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
 
-
-    m_usarts.resize( 3 );
-    for( int i=0; i<3; ++i ) m_usarts[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
-
-
-
-    m_timers.resize( 5 );
-    for( int i=0; i<5; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
+    //m_timers.resize( m_timerN );
+    //for( int i=0; i<m_timerN; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
 }
 Stm32::~Stm32(){}
 
 void Stm32::stamp()
 {
-    m_i2cs[0]->setSclPin( m_portB.at(6) );
-    m_i2cs[0]->setSdaPin( m_portB.at(7) );
-
-    m_i2cs[1]->setSclPin( m_portB.at(10) );
-    m_i2cs[1]->setSdaPin( m_portB.at(11) );
-
-    m_usarts[0]->setPins({m_portA.at(9), m_portA.at(10)}); // No Remap (TX/PB6, RX/PB7)
-    m_usarts[1]->setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
-    m_usarts[2]->setPins({m_portB.at(10), m_portB.at(11)});
-
-    m_usarts[0]->enable( true );
-    m_usarts[1]->enable( true );
-    m_usarts[2]->enable( true );
-
+    if( m_i2cs[0] ){
+        m_i2cs[0]->setSclPin( m_ports[1].at(6) );
+        m_i2cs[0]->setSdaPin( m_ports[1].at(7) );
+    }
+    if( m_i2cs[1] ){
+        m_i2cs[1]->setSclPin( m_ports[1].at(10) );
+        m_i2cs[1]->setSdaPin( m_ports[1].at(11) );
+    }
+    if( m_usarts[0] ){
+        m_usarts[0]->setPins({m_ports[0].at(9), m_ports[0].at(10)}); // No Remap (TX/PB6, RX/PB7)
+        m_usarts[0]->enable( true );
+    }
+    if( m_usarts[1] ){
+        m_usarts[1]->setPins({m_ports[0].at(2), m_ports[0].at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+        m_usarts[1]->enable( true );
+    }
+    if( m_usarts[2] ){
+        m_usarts[2]->setPins({m_ports[1].at(10), m_ports[1].at(11)});
+        m_usarts[2]->enable( true );
+    }
     QemuDevice::stamp();
-
-    Stm32Pin* pin = m_portB.at(3);
-    pin->changeCallBack( pin, true );
 }
 
 void Stm32::createPins()
 {
-    createPort( &m_portA, 1, "A", 16 );
-    createPort( &m_portB, 2, "B", 16 );
-    createPort( &m_portC, 3, "C", 16 );
-    createPort( &m_portD, 4, "D",  3 );
+    m_ports.resize( m_portN );
+    for( int i=0; i<m_portN; ++i )
+        createPort( &m_ports[i], i+1, "A"+i, 16 );
+    //createPort( &m_ports[1], 2, "B", 16 );
+    //createPort( &m_ports[2], 3, "C", 16 );
+    //createPort( &m_ports[3], 4, "D", 16 );
+    //createPort( &m_ports[3], 4, "E", 16 );
 
-    setPackageFile("./data/STM32/stm32.package");
+    setPackageFile("./data/STM32/"+m_packageFile);
+    Chip::setName( m_device );
 }
 
 void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pId, uint8_t n )
@@ -102,6 +124,7 @@ void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pI
     {
         Stm32Pin* pin = new Stm32Pin( number, i, m_id+"-P"+pId+QString::number(i), this );
         port->emplace_back( pin );
+        pin->setVisible( false );
     }
 }
 
@@ -114,6 +137,7 @@ bool Stm32::createArgs()
         qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
         return false;
     }*/
+    m_arena->data32 = m_model;
 
     m_arguments.clear();
 
@@ -135,7 +159,7 @@ bool Stm32::createArgs()
     //m_arguments << "help";
 
     m_arguments << "-M";
-    m_arguments << "stm32-f103c8-simul";
+    m_arguments << "stm32-f10xxx-simul";
 
     m_arguments << "-drive";
     m_arguments << "file="+m_firmware+",if=pflash,format=raw";
@@ -211,36 +235,36 @@ void Stm32::doAction()
             switch( mapr & 1 )      // I2C1
             {
                 case 0:{        // No remap (SCL/PB6, SDA/PB7)
-                    m_i2cs[0]->setSclPin( m_portB.at(6) );
-                    m_i2cs[0]->setSdaPin( m_portB.at(7) );
+                    m_i2cs[0]->setSclPin( m_ports[1].at(6) );
+                    m_i2cs[0]->setSdaPin( m_ports[1].at(7) );
                 }break;
                 case 1:{        // Remap (SCL/PB8, SDA/PB9)
-                    m_i2cs[0]->setSclPin( m_portB.at(8) );
-                    m_i2cs[0]->setSdaPin( m_portB.at(9) );
+                    m_i2cs[0]->setSclPin( m_ports[1].at(8) );
+                    m_i2cs[0]->setSdaPin( m_ports[1].at(9) );
                 }break;
             }
             mapr >>= 1;
 
             switch( mapr & 1 )      // USART1
             {
-                case 0: m_usarts[0]->setPins({m_portA.at(9), m_portA.at(10)}); break; //No remap (TX/PA9, RX/PA10)
-                case 1: m_usarts[0]->setPins({m_portB.at(6), m_portB.at(7)});  break;  //Remap (TX/PB6, RX/PB7)
+                case 0: m_usarts[0]->setPins({m_ports[0].at(9), m_ports[0].at(10)}); break; //No remap (TX/PA9, RX/PA10)
+                case 1: m_usarts[0]->setPins({m_ports[1].at(6), m_ports[1].at(7)});  break;  //Remap (TX/PB6, RX/PB7)
             }
             mapr >>= 1;
 
             switch( mapr & 1 )      // USART2
             {
-                case 0: m_usarts[1]->setPins({m_portA.at(3), m_portA.at(3)}); break; //No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4)
-                case 1: m_usarts[1]->setPins({m_portD.at(5), m_portD.at(6)}); break;  //Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+                case 0: m_usarts[1]->setPins({m_ports[0].at(3), m_ports[0].at(3)}); break; //No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4)
+                case 1: m_usarts[1]->setPins({m_ports[3].at(5), m_ports[3].at(6)}); break;  //Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
             }
             mapr >>= 1;
 
             switch( mapr & 0b11 )   // USART3
             {
-                case 0: m_usarts[2]->setPins({m_portB.at(10), m_portB.at(11)}); break; //No remap (TX/PB10, RX/PB11, CK/PB12, CTS/PB13, RTS/PB14)
-                case 1: m_usarts[2]->setPins({m_portC.at(10), m_portC.at(11)}); break; //Partial remap (TX/PC10, RX/PC11, CK/PC12, CTS/PB13, RTS/PB14)
-                case 2:                                                         break; //not used
-                case 3: m_usarts[2]->setPins({m_portD.at(8), m_portD.at(9)});   break; // Full remap (TX/PD8, RX/PD9, CK/PD10, CTS/PD11, RTS/PD12)
+                case 0: m_usarts[2]->setPins({m_ports[1].at(10), m_ports[1].at(11)}); break; //No remap (TX/PB10, RX/PB11, CK/PB12, CTS/PB13, RTS/PB14)
+                case 1: m_usarts[2]->setPins({m_ports[2].at(10), m_ports[2].at(11)}); break; //Partial remap (TX/PC10, RX/PC11, CK/PC12, CTS/PB13, RTS/PB14)
+                case 2:                                                               break; //not used
+                case 3: m_usarts[2]->setPins({m_ports[3].at(8), m_ports[3].at(9)});   break; // Full remap (TX/PD8, RX/PD9, CK/PD10, CTS/PD11, RTS/PD12)
             }
         }break;
         case SIM_I2C:
@@ -258,26 +282,26 @@ void Stm32::doAction()
             //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
             if( id < 3 ) m_usarts[id]->doAction();
         } break;
-        case SIM_TIMER:
-        {
-            uint16_t id = m_arena->data16;
+        //case SIM_TIMER:
+        //{
+        //    uint16_t id = m_arena->data16;
 
-            if( id < 5 ) m_timers[id]->doAction();
-            //qDebug() << "Stm32::doAction SIM_TIMER Timer:"<< id << "action:"<< m_arena->simuAction<< "byte:" << data;
-        } break;
+        //    if( id < 5 ) m_timers[id]->doAction();
+        //    //qDebug() << "Stm32::doAction SIM_TIMER Timer:"<< id << "action:"<< m_arena->simuAction<< "byte:" << data;
+        //} break;
         default: qDebug() << "Stm32::doAction Unimplemented"<< m_arena->simuAction;
     }
 }
 
 uint16_t Stm32::readInputs( uint8_t port )
 {
-    std::vector<Stm32Pin*>* ioPort = getPort( port );
-    if( !ioPort ) return 0;
+    if( port >= m_portN ) return 0;
+    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     uint16_t state = 0;
-    for( uint8_t i=0; i<ioPort->size(); ++i )
+    for( uint8_t i=0; i<ioPort.size(); ++i )
     {
-        Stm32Pin* ioPin = ioPort->at( i );
+        Stm32Pin* ioPin = ioPort.at( i );
         if( ioPin->getInpState() ) state |= 1<<i;
     }
     //qDebug() << "Stm32::doAction GPIO_IN"<< port << state;
@@ -286,37 +310,37 @@ uint16_t Stm32::readInputs( uint8_t port )
 
 void Stm32::setPortState( uint8_t port, uint16_t state )
 {
-    std::vector<Stm32Pin*>* ioPort = getPort( port );
-    if( !ioPort ) return;
+    if( port >= m_portN ) return;
+    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
-    for( uint8_t i=0; i<ioPort->size(); ++i )
+    for( uint8_t i=0; i<ioPort.size(); ++i )
     {
-        Stm32Pin* ioPin = ioPort->at( i );
+        Stm32Pin* ioPin = ioPort.at( i );
         ioPin->setPortState( state & (1<<i) );
     }
 }
 
 void Stm32::setPinState( uint8_t port, uint8_t pin, bool state )
 {
-    std::vector<Stm32Pin*>* ioPort = getPort( port );
-    if( !ioPort ) return;
+    if( port >= m_portN ) return;
+    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     //qDebug() << "Stm32::setPinState" << port << pin << state;
 
-    Stm32Pin* ioPin = ioPort->at( pin );
+    Stm32Pin* ioPin = ioPort.at( pin );
     ioPin->setOutState( state );
 }
 
 void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
 {
-    std::vector<Stm32Pin*>* ioPort = getPort( port );
-    if( !ioPort ) return;
+    if( port >= m_portN ) return;
+    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     //qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << m_direction;
 
     for( uint8_t i=shift; i<shift+8; ++i )
     {
-        Stm32Pin*  ioPin = ioPort->at( i );
+        Stm32Pin*  ioPin = ioPort.at( i );
         uint8_t cfgShift = i*4;
         uint32_t cfgMask = 0b1111 << cfgShift;
         uint32_t cfgBits = (config & cfgMask) >> cfgShift;
@@ -372,23 +396,26 @@ Pin* Stm32::addPin( QString id, QString type, QString label,
         m_rstPin->setInputLowV( 0.65 );
     }
     else{
+        //qDebug() << "Stm32::addPin"<<id;
         uint n = id.right(2).toInt();
         QString portStr = id.at(1);
         std::vector<Stm32Pin*>* port = nullptr;
-        if     ( portStr == "A" ) port = &m_portA;
-        else if( portStr == "B" ) port = &m_portB;
-        else if( portStr == "C" ) port = &m_portC;
-        else if( portStr == "D" ) port = &m_portD;
+        if     ( portStr == "A" ) port = &m_ports[0];
+        else if( portStr == "B" ) port = &m_ports[1];
+        else if( portStr == "C" ) port = &m_ports[2];
+        else if( portStr == "D" ) port = &m_ports[3];
+        else if( portStr == "E" ) port = &m_ports[4];
 
         if( !port ) return nullptr; //new IoPin( angle, QPoint(x, y), m_id+"-"+id, n-1, this, input );
 
-        if( n > port->size() ) return nullptr;
+        if( n >= port->size() ) return nullptr;
 
         pin = port->at( n );
         if( !pin ) return nullptr;
 
         pin->setPos( x, y );
         pin->setPinAngle( angle );
+        pin->setVisible( true );
     }
     QColor color = Qt::black;
     if( !m_isLS ) color = QColor( 250, 250, 200 );

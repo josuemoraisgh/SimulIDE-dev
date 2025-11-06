@@ -9,19 +9,17 @@
 #include "ioport.h"
 #include "qemutwi.h"
 
-class LibraryItem;
 class Stm32Pin;
+
+typedef std::vector<Stm32Pin*> Stm32Port;
 
 class Stm32 : public QemuDevice
 {
     public:
-        Stm32( QString type, QString id );
+        Stm32( QString type, QString id, QString device );
         ~Stm32();
 
         void stamp() override;
-
- static Component* construct( QString type, QString id );
- static LibraryItem* libraryItem();
 
     protected:
         Pin* addPin( QString id, QString type, QString label,
@@ -39,21 +37,26 @@ class Stm32 : public QemuDevice
 
         uint16_t readInputs( uint8_t port );
 
-        std::vector<Stm32Pin*>* getPort( uint8_t number )
-        {
-            switch( number ) {
-            case 1: return &m_portA;
-            case 2: return &m_portB;
-            case 3: return &m_portC;
-            case 4: return &m_portD;
-            }
-            return nullptr;
-        }
+        //std::vector<Stm32Pin*>* getPort( uint8_t number )
+        //{
+        //    switch( number ) {
+        //    case 1: return &m_portA;
+        //    case 2: return &m_portB;
+        //    case 3: return &m_portC;
+        //    case 4: return &m_portD;
+        //    }
+        //    return nullptr;
+        //}
 
-        uint16_t m_state[4]; // Port states
+        uint16_t m_state[5]; // Port states
 
-        std::vector<Stm32Pin*> m_portA;
-        std::vector<Stm32Pin*> m_portB;
-        std::vector<Stm32Pin*> m_portC;
-        std::vector<Stm32Pin*> m_portD;
+        std::vector<Stm32Port> m_ports;
+
+        //std::vector<Stm32Pin*> m_portA;
+        //std::vector<Stm32Pin*> m_portB;
+        //std::vector<Stm32Pin*> m_portC;
+        //std::vector<Stm32Pin*> m_portD;
+        //std::vector<Stm32Pin*> m_portE;
+
+        uint32_t m_model;
 };

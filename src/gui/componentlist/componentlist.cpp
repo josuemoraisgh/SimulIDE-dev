@@ -246,20 +246,13 @@ void ComponentList::loadXml( QString xmlFile )
 
         QString type = reader.attributes().value("type").toString();
         QString folder = reader.attributes().value("folder").toString();
+        QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
 
         while( reader.readNextStartElement() )
         {
             if( reader.name() != "item") continue;
 
             QString name = reader.attributes().value("name").toString();
-
-            if( reader.attributes().hasAttribute("icon") )
-            {
-                icon = reader.attributes().value("icon").toString();
-                if( !icon.startsWith(":/") )
-                    icon = MainWindow::self()->getDataFilePath("images/"+icon);
-            }
-            else icon = getIcon( folder, name );
 
             if( m_components.contains( name ) ) // Component exists, move to new position
             {
@@ -272,16 +265,22 @@ void ComponentList::loadXml( QString xmlFile )
             }
             else
             {
+                if( reader.attributes().hasAttribute("icon") )
+                {
+                    icon = reader.attributes().value("icon").toString();
+                    if( !icon.startsWith(":/") )
+                        icon = MainWindow::self()->getDataFilePath("images/"+icon);
+                }
+                else icon = getIcon( folder, name );
+
                 if( type == "Subcircuit" )
                 {
-                    QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
                     QString nameFolder = compFolder+"/"+name;
 
                     if( !QFile::exists( nameFolder+".sim2" )
                      && !QFile::exists( nameFolder+".sim1" ) ) compFolder = nameFolder;
-
-                    m_dirFileList[ name ] = compFolder;
                 }
+                m_dirFileList[ name ] = compFolder;
                 m_dataFileList[ name ] = xmlFile;   // Save xml File used to create this item
                 if( reader.attributes().hasAttribute("info") )
                     name += "???"+reader.attributes().value("info").toString();
@@ -320,7 +319,7 @@ void ComponentList::addItem( QString caption, TreeItem* catItem, QIcon &icon, QS
     QString info = "";
     if( nameFull.size() > 1 ) info = "   "+nameFull.last();
 
-    QString name = ( type == "Subcircuit" || type == "MCU" ) ? nameTr : type;
+    QString name = ( type == "Subcircuit" || type == "MCU" || type == "QemuDevice" ) ? nameTr : type;
 
     TreeItem* item = new TreeItem( catItem, name, nameTr, type, component, icon, m_customComp );
 

@@ -198,8 +198,10 @@ void Chip::setName( QString name )
     m_name = name;
     m_label.setPlainText( m_name );
     m_label.adjustSize();
-    m_label.setY( m_area.height()/2+m_label.textWidth()/2 );
-    m_label.setX( ( m_area.width()/2-m_label.boundingRect().height()/2 ) );
+
+    if( m_width == m_height ) m_label.setRotation( 0 );
+    else                      m_label.setRotation(-90 );
+
     setflip();
 }
 
@@ -342,7 +344,7 @@ void Chip::addNewPin( QString id, QString type, QString label, int pos, int xpos
         pin = updatePin( id, type, label, xpos, ypos, angle, length, space );
     }
     if( !pin ){
-        if( type == "unused" || type == "nc" )
+        if( type == "nc" )
         {
             if( m_pinMap.contains( id ) )
             {
@@ -462,9 +464,14 @@ void Chip::setPkgColorStr( QString color )
 void Chip::updateColor()
 {
     if( m_customColor ) m_color = m_pkgColor;
-    else if( m_isLS   ) m_color = m_lsColor;
-    else                m_color = m_icColor;
-
+    else if( m_isLS   )
+    {
+        m_color = m_lsColor;
+        m_label.setDefaultTextColor( QColor( 135, 135, 120 ) );
+    }else{
+        m_color = m_icColor;
+        m_label.setDefaultTextColor( QColor( 155, 155, 170 ) );
+    }
     update();
 }
 
@@ -472,10 +479,15 @@ void Chip::setflip()
 {
     Component::setflip();
     m_label.setTransform( QTransform::fromScale( m_Hflip, m_Vflip ) );
-    int xDelta = m_Hflip*m_label.boundingRect().height()/2;
-    int yDelta = m_Vflip*m_label.textWidth()/2;
-    m_label.setY( m_area.height()/2+yDelta );
-    m_label.setX( ( m_area.width()/2-xDelta ) );
+
+    if( m_width == m_height )
+    {
+        m_label.setY( m_area.height()/2-m_Vflip*m_label.boundingRect().height()/2 );
+        m_label.setX( m_area.width()/2-m_Hflip*m_label.textWidth()/2 );
+    } else {
+        m_label.setY( m_area.height()/2+m_Vflip*m_label.textWidth()/2 );
+        m_label.setX( m_area.width()/2-m_Hflip*m_label.boundingRect().height()/2 );
+    }
 }
 
 void Chip::findHelp()

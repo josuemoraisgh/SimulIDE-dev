@@ -36,6 +36,7 @@ class IoPin;
 class QemuUsart;
 class QemuTimer;
 class QemuTwi;
+class LibraryItem;
 
 class QemuDevice : public Chip
 {
@@ -67,6 +68,9 @@ class QemuDevice : public Chip
         void slotReload();
         void slotOpenTerm( int num );
 
+ static Component* construct( QString type, QString id );
+ static LibraryItem* libraryItem();
+
     protected:
         virtual bool createArgs(){ return false;}
 
@@ -77,6 +81,7 @@ class QemuDevice : public Chip
         QString m_lastFirmDir;  // Last firmware folder used
         QString m_firmware;
         QString m_executable;
+        QString m_packageFile;
 
         QString m_extraArgs;
 
@@ -94,7 +99,13 @@ class QemuDevice : public Chip
         QProcess m_qemuProcess;
         QStringList m_arguments;
 
+        uint8_t m_portN;
+        uint8_t m_usartN;
+        //uint8_t m_timerN;
+        uint8_t m_i2cN;
+        uint8_t m_spiN;
+
         std::vector<QemuTwi*> m_i2cs;
         std::vector<QemuUsart*> m_usarts;
-        std::vector<QemuTimer*> m_timers;
+        //std::vector<QemuTimer*> m_timers;
 };

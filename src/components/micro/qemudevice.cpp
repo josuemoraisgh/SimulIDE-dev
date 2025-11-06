@@ -22,17 +22,41 @@
 #endif
 
 #include "qemudevice.h"
+#include "itemlibrary.h"
 #include "qemuusart.h"
 #include "circuitwidget.h"
 #include "iopin.h"
 
+#include "stm32.h"
+
 #include "circuit.h"
 #include "simulator.h"
+#include "componentlist.h"
 #include "utils.h"
+
 #include "stringprop.h"
 
-
 #define tr(str) simulideTr("QemuDevice",str)
+
+Component* QemuDevice::construct( QString type, QString id )
+{
+    QString device = Chip::getDevice( id );
+
+    QemuDevice* qdev = nullptr;
+
+    if( device.startsWith("STM32") ) qdev = new Stm32( type, id, device );
+    return qdev;
+}
+
+LibraryItem* QemuDevice::libraryItem()
+{
+    return new LibraryItem(
+        "QemuDevice",
+        "",
+        "ic2.png",
+        "QemuDevice",
+        QemuDevice::construct );
+}
 
 QemuDevice::QemuDevice( QString type, QString id )
           : Chip( type, id )
