@@ -62,8 +62,7 @@ void QemuTwi::runNextAction()
 {
     if( !m_nextAction ) return;
 
-uint64_t simTime = Simulator::self()->circTime()/1000000;
-
+    uint64_t simTime = Simulator::self()->circTime()/1000000;
 
     switch( m_nextAction->action )
     {
@@ -182,7 +181,8 @@ void QemuTwi::setMode( twiMode_t mode )
 // -----------  Class I2cRunner  ---------------------------
 //----------------------------------------------------------
 
-I2cRunner::I2cRunner( QemuTwi* twi ) : eElement("")
+I2cRunner::I2cRunner( QemuTwi* twi )
+         : eElement("")
 {
     m_twi = twi;
 }

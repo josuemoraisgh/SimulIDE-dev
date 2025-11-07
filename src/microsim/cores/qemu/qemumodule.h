@@ -13,6 +13,8 @@ class QemuModule
         QemuModule( QemuDevice* mcu, int number );
         ~QemuModule();
 
+        virtual void doAction() {;}
+
     protected:
 
         int m_number;

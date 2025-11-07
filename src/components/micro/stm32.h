@@ -7,7 +7,6 @@
 
 #include "qemudevice.h"
 #include "ioport.h"
-#include "qemutwi.h"
 
 class Stm32Pin;
 
@@ -48,7 +47,7 @@ class Stm32 : public QemuDevice
         //    return nullptr;
         //}
 
-        uint16_t m_state[5]; // Port states
+        uint16_t m_state[7]; // Port states
 
         std::vector<Stm32Port> m_ports;
 

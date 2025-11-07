@@ -26,6 +26,7 @@ typedef struct qemuArena{
 
 enum simuAction{
     SIM_I2C=10,
+    SIM_SPI,
     SIM_USART,
     SIM_TIMER,
     SIM_GPIO_IN,
@@ -36,6 +37,7 @@ class IoPin;
 class QemuUsart;
 class QemuTimer;
 class QemuTwi;
+class QemuSpi;
 class LibraryItem;
 
 class QemuDevice : public Chip
@@ -106,6 +108,7 @@ class QemuDevice : public Chip
         uint8_t m_spiN;
 
         std::vector<QemuTwi*> m_i2cs;
+        std::vector<QemuSpi*> m_spis;
         std::vector<QemuUsart*> m_usarts;
         //std::vector<QemuTimer*> m_timers;
 };

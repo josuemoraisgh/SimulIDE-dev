@@ -66,6 +66,7 @@ INCLUDEPATH += $$PWD/src \
     $$PWD/src/microsim/cores/z80 \
     $$PWD/src/microsim/cores/scripted \
     $$PWD/src/microsim/cores/qemu \
+    $$PWD/src/microsim/cores/qemu/stm32 \
     $$PWD/src/microsim/modules \
     $$PWD/src/microsim/modules/memory \
     $$PWD/src/microsim/modules/usart \

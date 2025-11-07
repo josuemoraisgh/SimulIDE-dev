@@ -9,6 +9,8 @@
 
 #include "stm32.h"
 #include "stm32pin.h"
+#include "qemutwi.h"
+#include "stm32spi.h"
 #include "qemuusart.h"
 #include "qemutimer.h"
 
@@ -70,6 +72,9 @@ Stm32::Stm32( QString type, QString id, QString device )
 
     m_i2cs.resize( m_i2cN );
     for( int i=0; i<m_i2cN; ++i ) m_i2cs[i] = new QemuTwi( this, "I2C"+QString::number(i), i );
+
+    m_spis.resize( m_spiN );
+    for( int i=0; i<m_spiN; ++i ) m_spis[i] = new Stm32Spi( this, "I2C"+QString::number(i), i );
 
     m_usarts.resize( m_usartN );
     for( int i=0; i<m_usartN; ++i ) m_usarts[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
@@ -188,6 +193,7 @@ void Stm32::doAction()
             uint8_t  port  = m_arena->data8;
             uint16_t state = m_arena->data16;
 
+            if( port >= m_portN ) return;
             if( m_state[port] == state ) return;
             m_state[port] = state;
 
@@ -201,22 +207,22 @@ void Stm32::doAction()
             uint8_t  shift  = m_arena->mask8;
             uint32_t config = m_arena->data32;
 
-            cofigPort( port, config, shift );
+            if( port < m_portN ) cofigPort( port, config, shift );
         } break;
-        case ARM_GPIO_IN:                  // Read Inputs
+        case ARM_GPIO_IN:       // Read Inputs
         {
-            uint8_t  port   = m_arena->data8;
-            m_arena->data16 = readInputs( port );
+            uint8_t port = m_arena->data8;
+            if( port < m_portN ) m_arena->data16 = readInputs( port );
         } break;
-        case ARM_ALT_OUT:
+        case ARM_ALT_OUT:      // Set Alternate Output
         {
             uint8_t port  = m_arena->data8;
             uint8_t pin   = m_arena->mask8;
             bool    state = (m_arena->data16 > 0);
 
-            setPinState( port, pin, state );
+            if( port < m_portN ) setPinState( port, pin, state );
         } break;
-        case ARM_REMAP:
+        case ARM_REMAP:       // AFIO Remap
         {
             uint32_t mapr = m_arena->data32;
 
@@ -267,20 +273,25 @@ void Stm32::doAction()
                 case 3: m_usarts[2]->setPins({m_ports[3].at(8), m_ports[3].at(9)});   break; // Full remap (TX/PD8, RX/PD9, CK/PD10, CTS/PD11, RTS/PD12)
             }
         }break;
-        case SIM_I2C:
+        case SIM_I2C:         // I2C
         {
-            uint16_t    id = m_arena->data16;
+            uint16_t id = m_arena->data16;
 
             //qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
 
-            if( id < 2 ) m_i2cs[id]->doAction();
+            if( id < m_i2cN ) m_i2cs[id]->doAction();
         } break;
-        case SIM_USART:
+        case SIM_SPI:        // SPI
+        {
+            uint16_t id = m_arena->data16;
+            if( id < m_spiN ) m_spis[id]->doAction();
+        }break;
+        case SIM_USART:      // USART
         {
             uint16_t id = m_arena->data16;
 
             //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
-            if( id < 3 ) m_usarts[id]->doAction();
+            if( id < m_usartN ) m_usarts[id]->doAction();
         } break;
         //case SIM_TIMER:
         //{
@@ -295,7 +306,6 @@ void Stm32::doAction()
 
 uint16_t Stm32::readInputs( uint8_t port )
 {
-    if( port >= m_portN ) return 0;
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     uint16_t state = 0;
@@ -310,7 +320,6 @@ uint16_t Stm32::readInputs( uint8_t port )
 
 void Stm32::setPortState( uint8_t port, uint16_t state )
 {
-    if( port >= m_portN ) return;
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     for( uint8_t i=0; i<ioPort.size(); ++i )
@@ -322,7 +331,6 @@ void Stm32::setPortState( uint8_t port, uint16_t state )
 
 void Stm32::setPinState( uint8_t port, uint8_t pin, bool state )
 {
-    if( port >= m_portN ) return;
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     //qDebug() << "Stm32::setPinState" << port << pin << state;
@@ -333,7 +341,6 @@ void Stm32::setPinState( uint8_t port, uint8_t pin, bool state )
 
 void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
 {
-    if( port >= m_portN ) return;
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     //qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << m_direction;
