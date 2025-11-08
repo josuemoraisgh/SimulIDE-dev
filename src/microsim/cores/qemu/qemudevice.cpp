@@ -38,8 +38,15 @@
 
 #define tr(str) simulideTr("QemuDevice",str)
 
+QemuDevice* QemuDevice::m_pSelf = nullptr;
+
 Component* QemuDevice::construct( QString type, QString id )
 {
+    if( QemuDevice::self() )
+    {
+        qDebug() << "\nQemuDevice::construct ERROR: only one QemuDevice allowed\n";
+        return nullptr;
+    }
     QString device = Chip::getDevice( id );
 
     QemuDevice* qdev = nullptr;
@@ -61,6 +68,7 @@ LibraryItem* QemuDevice::libraryItem()
 QemuDevice::QemuDevice( QString type, QString id )
           : Chip( type, id )
 {
+    m_pSelf = this;
     m_rstPin = nullptr;
 
     uint64_t pid = QCoreApplication::applicationPid();
@@ -97,13 +105,11 @@ QemuDevice::QemuDevice( QString type, QString id )
     if( arena )
     {
         m_arena = (qemuArena_t*)arena;
-        qDebug() << "Shared Mem created" << shMemSize << "bytes";
-
-        Simulator::self()->m_qemuDevice = this;
+        qDebug() << "QemuDevice::QemuDevice Shared Mem created" << shMemSize << "bytes";
     }else{
         m_arena = nullptr;
         m_shMemId = -1;
-        qDebug() << "Error creating arena";
+        qDebug() << "QemuDevice::QemuDevice Error creating arena";
     }
 
     m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
@@ -112,7 +118,7 @@ QemuDevice::QemuDevice( QString type, QString id )
 
     addPropGroup( { tr("Main"),{
         new StrProp<QemuDevice>("Program", tr("Firmware"),""
-                         , this, &QemuDevice::firmware, &QemuDevice::setFirmware ),
+                               , this, &QemuDevice::firmware, &QemuDevice::setFirmware ),
 
         new StrProp<QemuDevice>("Args", tr("Extra arguments"),""
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
@@ -130,6 +136,7 @@ QemuDevice::~QemuDevice()
         CloseHandle( (HANDLE)m_wHandle );
     }
 #endif
+    m_pSelf = nullptr;
 }
 
 void QemuDevice::initialize()

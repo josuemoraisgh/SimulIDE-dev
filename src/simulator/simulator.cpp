@@ -229,12 +229,12 @@ void Simulator::runCircuit()
 
     while( true )          // Simulator event loop
     {
-        if( m_qemuDevice )
+        if( QemuDevice::self() )
         {
             if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
             else               nextTime = endRun;
 
-            m_qemuDevice->runToTime( nextTime ); // This will add events
+            QemuDevice::self()->runToTime( nextTime ); // This will add events
         }
         if( !m_firstEvent ) break;
 
@@ -530,7 +530,8 @@ void Simulator::addEvent( uint64_t time, eElement* el )
     if( m_state < SIM_STARTING ) return;
 
     if( el->eventTime ){
-        m_warning = 200; //qDebug() << "Warning: Simulator::addEvent Repeated event"<<el->getId();
+        m_warning = 200; //
+        //qDebug() << "Warning: Simulator::addEvent Repeated event"<<el->getId()<<el->eventTime<<time + m_circTime;
         return;
     }
 

@@ -70,10 +70,13 @@ class QemuDevice : public Chip
         void slotReload();
         void slotOpenTerm( int num );
 
+ static QemuDevice* self() { return m_pSelf; }
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
 
     protected:
+ static QemuDevice* m_pSelf;
+
         virtual bool createArgs(){ return false;}
 
         virtual void doAction(){;}
