@@ -86,26 +86,19 @@ Stm32::~Stm32(){}
 
 void Stm32::stamp()
 {
-    if( m_i2cs[0] ){
-        m_i2cs[0]->setSclPin( m_ports[1].at(6) );
-        m_i2cs[0]->setSdaPin( m_ports[1].at(7) );
-    }
-    if( m_i2cs[1] ){
-        m_i2cs[1]->setSclPin( m_ports[1].at(10) );
-        m_i2cs[1]->setSdaPin( m_ports[1].at(11) );
-    }
-    if( m_usarts[0] ){
-        m_usarts[0]->setPins({m_ports[0].at(9), m_ports[0].at(10)}); // No Remap (TX/PB6, RX/PB7)
-        m_usarts[0]->enable( true );
-    }
-    if( m_usarts[1] ){
-        m_usarts[1]->setPins({m_ports[0].at(2), m_ports[0].at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
-        m_usarts[1]->enable( true );
-    }
-    if( m_usarts[2] ){
-        m_usarts[2]->setPins({m_ports[1].at(10), m_ports[1].at(11)});
-        m_usarts[2]->enable( true );
-    }
+    if( m_i2cN > 0 ) m_i2cs[0]->setPins( m_ports[1].at(6) , m_ports[1].at(7)  );
+    if( m_i2cN > 1 ) m_i2cs[1]->setPins( m_ports[1].at(10), m_ports[1].at(11) );
+
+    if( m_spiN > 0 ) m_spis[0]->setPins( m_ports[0].at(7) , m_ports[0].at(6) , m_ports[0].at(5) , m_ports[0].at(4)  );
+    if( m_spiN > 1 ) m_spis[1]->setPins( m_ports[1].at(15), m_ports[1].at(14), m_ports[1].at(13), m_ports[1].at(12) );
+    if( m_spiN > 2 ) m_spis[2]->setPins( m_ports[1].at(5) , m_ports[1].at(4) , m_ports[1].at(3) , m_ports[0].at(15) );
+
+    if( m_usartN > 0 ) m_usarts[0]->setPins({m_ports[0].at(9) , m_ports[0].at(10)}); // No Remap (TX/PB6, RX/PB7)
+    if( m_usartN > 1 ) m_usarts[1]->setPins({m_ports[0].at(2) , m_ports[0].at(3) }); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
+    if( m_usartN > 2 ) m_usarts[2]->setPins({m_ports[1].at(10), m_ports[1].at(11)});
+    if( m_usartN > 3 ) m_usarts[3]->setPins({m_ports[2].at(10), m_ports[2].at(11)});
+    if( m_usartN > 4 ) m_usarts[4]->setPins({m_ports[2].at(12), m_ports[3].at(2) });
+
     QemuDevice::stamp();
 }
 
@@ -113,11 +106,7 @@ void Stm32::createPins()
 {
     m_ports.resize( m_portN );
     for( int i=0; i<m_portN; ++i )
-        createPort( &m_ports[i], i+1, "A"+i, 16 );
-    //createPort( &m_ports[1], 2, "B", 16 );
-    //createPort( &m_ports[2], 3, "C", 16 );
-    //createPort( &m_ports[3], 4, "D", 16 );
-    //createPort( &m_ports[3], 4, "E", 16 );
+        createPort( &m_ports[i], i+1, QString('A'+i), 16 );
 
     setPackageFile("./data/STM32/"+m_packageFile);
     Chip::setName( m_device );
@@ -127,6 +116,7 @@ void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pI
 {
     for( int i=0; i<n; ++i )
     {
+        //qDebug() << "Stm32::createPort" << m_id+"-P"+pId+QString::number(i);
         Stm32Pin* pin = new Stm32Pin( number, i, m_id+"-P"+pId+QString::number(i), this );
         port->emplace_back( pin );
         pin->setVisible( false );
@@ -230,10 +220,10 @@ void Stm32::doAction()
             switch( spi1Map )       // SPI1
             {
                 case 0:{        // No remap (NSS/PA4, SCK/PA5, MISO/PA6, MOSI/PA7)
-                    /// TODO
+                    m_spis[0]->setPins( m_ports[0].at(7), m_ports[0].at(6), m_ports[0].at(5), m_ports[0].at(4) );
                 }break;
                 case 1:{        // Remap (NSS/PA15, SCK/PB3, MISO/PB4, MOSI/PB5)
-                    /// TODO
+                    m_spis[0]->setPins( m_ports[1].at(5), m_ports[1].at(4), m_ports[1].at(3), m_ports[0].at(15) );
                 }break;
             }
             mapr >>= 1;

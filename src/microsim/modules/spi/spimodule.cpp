@@ -174,3 +174,10 @@ void SpiModule::setMode( spiMode_t mode )
     if( m_dataOutPin && m_mode == SPI_MASTER ) m_dataOutPin->setOutState( true );
 }
 
+void SpiModule::setPins( IoPin* mosi, IoPin* miso, IoPin* clk, IoPin* ss )
+{
+    setMosiPin( mosi );
+    setMisoPin( miso );
+    setClockPin( clk );
+    setSsPin( ss );
+}
