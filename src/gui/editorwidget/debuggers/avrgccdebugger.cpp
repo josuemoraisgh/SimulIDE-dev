@@ -159,7 +159,7 @@ bool AvrGccDebugger::getFunctions()
         if( !ok ) continue;
 
         m_functions[funcName] = address;
-        qDebug() << "AvrGccDebugger::getFunctions "<< funcName <<address;
+        //qDebug() << "AvrGccDebugger::getFunctions "<< funcName <<address;
     }
     m_outPane->appendLine( QString::number( m_functions.size() )+" functions found" );
     return true;
