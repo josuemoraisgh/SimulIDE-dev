@@ -119,6 +119,7 @@ void ScriptDisplay::setData( CScriptArray* data )
             int color = 0;
             uint index = *(uint*)column->At(y);
             if( index < m_palette.size() ) color = m_palette.at( index );
+            else                           color = index;
             setPixel( x, y, color );
         }
     }
