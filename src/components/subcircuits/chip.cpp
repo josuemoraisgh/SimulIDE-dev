@@ -470,7 +470,7 @@ void Chip::updateColor()
         m_label.setDefaultTextColor( QColor( 135, 135, 120 ) );
     }else{
         m_color = m_icColor;
-        m_label.setDefaultTextColor( QColor( 155, 155, 170 ) );
+        m_label.setDefaultTextColor( QColor( 160, 160, 180 ) );
     }
     update();
 }
