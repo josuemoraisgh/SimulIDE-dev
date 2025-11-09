@@ -125,7 +125,7 @@ void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pI
 
 bool Stm32::createArgs()
 {
-    QFileInfo fi = QFileInfo( m_firmware );
+    //QFileInfo fi = QFileInfo( m_firmware );
 
     /*if( fi.size() != 1048576 )
     {

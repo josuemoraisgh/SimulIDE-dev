@@ -28,6 +28,7 @@
 #include "iopin.h"
 
 #include "stm32.h"
+#include "esp32.h"
 
 #include "circuit.h"
 #include "simulator.h"
@@ -51,7 +52,8 @@ Component* QemuDevice::construct( QString type, QString id )
 
     QemuDevice* qdev = nullptr;
 
-    if( device.startsWith("STM32") ) qdev = new Stm32( type, id, device );
+    if     ( device.startsWith("STM32") ) qdev = new Stm32( type, id, device );
+    else if( device.startsWith("Esp32") ) qdev = new Esp32( type, id, device );
     return qdev;
 }
 

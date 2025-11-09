@@ -13,11 +13,8 @@ class LibraryItem;
 class Esp32 : public QemuDevice
 {
     public:
-        Esp32( QString type, QString id );
+        Esp32( QString type, QString id, QString device );
         ~Esp32();
-
- static Component* construct( QString type, QString id );
- static LibraryItem* libraryItem();
 
         void stamp() override;
 

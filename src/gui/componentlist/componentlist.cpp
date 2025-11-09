@@ -88,7 +88,7 @@ void ComponentList::createList()
     for( TreeItem* it : m_categoryList ) // Remove empty categories
     {
         if( it->childCount() ) continue;
-        //qDebug() << it->name();
+        qDebug() << it->name();
         it->setHidden( true );
         //QTreeWidgetItem* pa = it->parent();
         //if( pa ) pa->removeChild( it  );
@@ -145,20 +145,15 @@ void ComponentList::LoadLibraryItems()
     for( LibraryItem* item : m_itemLibrary.items() ) addLibraryItem( item );
     m_customComp = true;
 
-    addCategory("AVR"  , "AVR"  , "Micro", ":/ic2.png");
-    addCategory("PIC"  , "PIC"  , "Micro", ":/ic2.png");
-    addCategory("I51"  , "I51"  , "Micro", ":/ic2.png");
-    addCategory("MCS65", "MCS65", "Micro", ":/ic2.png");
-    addCategory("Z80"  , "Z80"  , "Micro", ":/ic2.png");
-    /*LibraryItem* esp32 = Esp32::libraryItem();
-    if( esp32 )
-    {
-        addCategory("Espressif", "Espressif", "Micro", ":/ic2.png");
-        addLibraryItem( esp32 );
-        delete esp32;
-    }*/
-    addCategory("Arduino", "Arduino", "Micro", ":/ic2.png");
-    addCategory("Shields", "Shields", "Micro", ":/ic2.png");
+    //addCategory("AVR"  , "AVR"  , "Micro", ":/ic2.png");
+    //addCategory("PIC"  , "PIC"  , "Micro", ":/ic2.png");
+    //addCategory("I51"  , "I51"  , "Micro", ":/ic2.png");
+    //addCategory("MCS65", "MCS65", "Micro", ":/ic2.png");
+    //addCategory("Z80"  , "Z80"  , "Micro", ":/ic2.png");
+    //addCategory("STM32", "STM32", "Micro", ":/ic2.png");
+    //addCategory("Espressif", "Espressif", "Micro", ":/ic2.png");
+    //addCategory("Arduino", "Arduino", "Micro", ":/ic2.png");
+    //addCategory("Shields", "Shields", "Micro", ":/ic2.png");
 }
 
 void ComponentList::addLibraryItem( LibraryItem* item )
@@ -200,7 +195,7 @@ void ComponentList::LoadCompSetAt( QDir compSetDir )
 void ComponentList::loadXml( QString xmlFile )
 {
     QFile file( xmlFile );
-    if( !file.open(QFile::ReadOnly | QFile::Text) ){
+    if( !file.open( QFile::ReadOnly | QFile::Text ) ){
           qDebug() << "ComponentList::loadXml Cannot read file"<< endl << xmlFile << endl << file.errorString();
           return;
     }

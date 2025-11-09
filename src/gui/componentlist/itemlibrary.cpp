@@ -227,13 +227,24 @@ void ItemLibrary::loadItems()
     addItem( Lamp::libraryItem() );
     // Micro
     addItem( new LibraryItem( QObject::tr("Micro"), "", "","Micro", nullptr ) );
-    LibraryItem* esp32 = Esp32::libraryItem();
-    if( esp32 )
-    {
-        addItem( new LibraryItem("Espressif", "Micro", ":/ic2.png", "Espressif", nullptr) );
-        addItem( esp32 );
-    }
     addItem( QemuDevice::libraryItem() );
+    addItem( new LibraryItem("Arduino", "Micro", "board.png", "Arduino", nullptr) );
+    addItem( new LibraryItem("AVR"    , "Micro", "ic2.png", "AVR"  , nullptr) );
+    addItem( new LibraryItem("PIC"    , "Micro", "ic2.png", "PIC"  , nullptr) );
+    addItem( new LibraryItem("I51"    , "Micro", "ic2.png", "I51"  , nullptr) );
+    addItem( new LibraryItem("MCS65"  , "Micro", "ic2.png", "MCS65", nullptr) );
+    addItem( new LibraryItem("Z80"    , "Micro", "ic2.png", "Z80"  , nullptr) );
+    addItem( new LibraryItem("STM32"  , "Micro", "ic2.png", "STM32", nullptr) );
+    addItem( new LibraryItem("Espressif", "Micro", "ic2.png", "Espressif", nullptr) );
+    addItem( new LibraryItem("Shields", "Micro", "ic2.png", "Shields"  , nullptr) );
+
+    //LibraryItem* esp32 = Esp32::libraryItem();
+    //if( esp32 )
+    //{
+    //    addItem( new LibraryItem("Espressif", "Micro", ":/ic2.png", "Espressif", nullptr) );
+    //    addItem( esp32 );
+    //}
+
     //LibraryItem* stm32 = Stm32::libraryItem();
     //if( stm32 )
     //{
