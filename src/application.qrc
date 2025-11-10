@@ -22,6 +22,22 @@
         <file alias="qt_pt_BR.qm">../resources/qm/qt_pt_BR.qm</file>
         <file alias="qt_zh_TW.qm">../resources/qm/qt_zh_TW.qm</file>
 
+        <file alias="angelscript.xml">../resources/data/codeeditor/compilers/compilers/angelscript.xml</file>
+        <file alias="arduino.xml">../resources/data/codeeditor/compilers/compilers/arduino.xml</file>
+
+        <file alias="codeeditor/syntax/6502asm.syntax">../resources/data/codeeditor/syntax/6502asm.syntax</file>
+        <file alias="codeeditor/syntax/avrasm.syntax">../resources/data/codeeditor/syntax/avrasm.syntax</file>
+        <file alias="codeeditor/syntax/cpp.syntax">../resources/data/codeeditor/syntax/cpp.syntax</file>
+        <file alias="codeeditor/syntax/gcbasic.syntax">../resources/data/codeeditor/syntax/gcbasic.syntax</file>
+        <file alias="codeeditor/syntax/hex.syntax">../resources/data/codeeditor/syntax/hex.syntax</file>
+        <file alias="codeeditor/syntax/i51asm.syntax">../resources/data/codeeditor/syntax/i51asm.syntax</file>
+        <file alias="codeeditor/syntax/js.syntax">../resources/data/codeeditor/syntax/js.syntax</file>
+        <file alias="codeeditor/syntax/makef.syntax">../resources/data/codeeditor/syntax/makef.syntax</file>
+        <file alias="codeeditor/syntax/pic14asm.syntax">../resources/data/codeeditor/syntax/pic14asm.syntax</file>
+        <file alias="codeeditor/syntax/readme_syntax">../resources/data/codeeditor/syntax/readme_syntax</file>
+        <file alias="codeeditor/syntax/xml.syntax">../resources/data/codeeditor/syntax/xml.syntax</file>
+        <file alias="codeeditor/syntax/z80asm.syntax">../resources/data/codeeditor/syntax/z80asm.syntax</file>
+
         <file alias="simulide.png">../resources/icons/simulide.png</file>
 
         <file alias="null.png">../src/icons/components/null.png</file>

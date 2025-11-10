@@ -264,6 +264,9 @@ BaseDebugger* EditorWindow::createDebugger( QString name, CodeEditor* ce, QStrin
 
 void EditorWindow::loadCompilers()
 {
+    m_compilers.insert("Arduino", {":/arduino.xml", "arduino"} );
+    m_compilers.insert("AScript", {":/angelscript.xml", "ascript"} );
+
     // User compiler data
     QString compilsPath = MainWindow::self()->getUserFilePath("codeeditor/compilers");
     loadCompilerSet( compilsPath, &m_compilers );
