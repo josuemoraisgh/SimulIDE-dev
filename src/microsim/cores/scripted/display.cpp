@@ -31,7 +31,6 @@ Display::~Display(){}
 
 void Display::initialize()
 {
-    //if( m_clear ) m_scriptCpu->callFunction( m_clear );
     m_x = 0;
     m_y = 0;
 }
@@ -76,7 +75,6 @@ void Display::setMonitorScale( double scale )
     m_scale = scale;
 
     updtImageSize();
-    //this->setFixedSize( m_width*scale, m_height*scale );
 
     show();
 }
@@ -89,9 +87,7 @@ void Display::setEmbed( bool e )
 
 void Display::setBackground( int b )
 {
-    //if( m_background == b ) return;
     m_background = b;
-    //m_changed = true;
 }
 
 void Display::fillData( int data )

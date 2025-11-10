@@ -30,8 +30,8 @@ class KeyPad : public Component, public eElement
         QString keyLabels() { return m_keyLabels; }
         void setKeyLabels( QString keyLabels );
         
-        virtual void stamp() override;
-        virtual void remove() override;
+        void stamp() override;
+        void remove() override;
 
         bool hasDiodes() { return m_hasDiodes; }
         void setHasDiodes( bool d );
@@ -39,10 +39,10 @@ class KeyPad : public Component, public eElement
         bool direction(){ return m_direction; }
         void setDirection( bool dir );
        
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     protected:
-        virtual void setflip() override;
+        void setflip() override;
         void setupButtons( int newRows, int newCols );
 
         int m_rows;

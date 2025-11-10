@@ -60,8 +60,6 @@ class QemuDevice : public Chip
 
         void setPackageFile( QString package );
 
-        //void clearData32() { m_arena->data32 = 0; }
-
         volatile qemuArena_t* getArena() { return m_arena; }
 
         void runToTime( uint64_t time );

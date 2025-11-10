@@ -27,5 +27,4 @@ class BoardSubc : public SubCircuit
     protected:
         QList<ShieldSubc*> m_shields; // A list of shields attached to this
         BoardSubc* m_parentBoard;     // A board this is attached to (this is a shield)
-
 };

@@ -169,16 +169,15 @@ QString CodeEditor::compName()
 
 void CodeEditor::setCompName( QString name )
 {
-    if( !name .isEmpty() )
+    if( name .isEmpty() ) return;
+
+    if( m_compiler )
     {
-        if( m_compiler != nullptr )
-        {
-            if( m_compiler->compName() == name  ) return ;
-            delete m_compiler;
-        }
-        m_compiler = EditorWindow::self()->createDebugger( name , this );
-        EditorWindow::self()->updateDoc();
+        if( m_compiler->compName() == name  ) return ;
+        delete m_compiler;
     }
+    m_compiler = EditorWindow::self()->createDebugger( name , this );
+    EditorWindow::self()->updateDoc();
 }
 
 QString CodeEditor::circuit()

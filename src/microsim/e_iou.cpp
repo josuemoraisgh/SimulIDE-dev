@@ -16,8 +16,7 @@ eIou::eIou( Mcu* comp, QString id )
     m_cpu     = nullptr;
     m_clkPin  = nullptr;
 }
-eIou::~eIou()
-{}
+eIou::~eIou(){}
 
 IoPort* eIou::getIoPort( QString name )
 {
