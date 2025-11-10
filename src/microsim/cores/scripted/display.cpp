@@ -21,6 +21,7 @@ Display::Display( uint w, uint h, QString name, QWidget* parent )
     m_background= 0;
     m_changed = false;
     m_embed   = true;
+    m_bgr     = false;
 
     updtImageSize();
 
@@ -93,11 +94,16 @@ void Display::setBackground( int b )
     //m_changed = true;
 }
 
+void Display::fillData( int data )
+{
+    for( uint x=0; x<m_width; x++ )
+        for( uint y=0; y<m_height; y++ )
+            m_data[x][y] = data;
+}
+
 void Display::clear()
 {
-    for( uint x=0; x<m_width; ++x )
-        for( uint y=0; y<m_height; ++y )
-            setPixel( x, y, m_background );
+    fillData( m_background );
 }
 
 void Display::drawLine( int x0, int y0, int x1, int y1, int color )
@@ -132,6 +138,15 @@ void Display::drawLine( int x0, int y0, int x1, int y1, int color )
 void Display::setPixel( uint x, uint y, int color )
 {
     if( x >= m_width || y >= m_height ) return;
+
+    if( m_bgr )
+    {
+        int b = color &0x0000FF;
+        int r = color>>16 & 0x0000FF;
+
+        color &= 0x00FF00;
+        color |= b<<16 | r;
+    }
     m_data[x][y] = color;
 }
 
