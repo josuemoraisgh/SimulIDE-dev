@@ -12,7 +12,6 @@
 #include "qemutwi.h"
 #include "stm32spi.h"
 #include "qemuusart.h"
-#include "qemutimer.h"
 
 #define tr(str) simulideTr("Stm32",str)
 

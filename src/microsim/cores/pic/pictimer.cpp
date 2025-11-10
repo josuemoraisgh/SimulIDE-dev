@@ -201,7 +201,7 @@ void PicTimer16bit::sheduleEvents()
         uint32_t ovfPeriod = m_ovfPeriod;
         if( m_countVal > m_ovfMatch ) ovfPeriod += m_maxCount; // OVF before counter: next OVF missed
 
-        double time2ovf = double(ovfPeriod-m_countVal)*m_psPerTick; // cycles in ps
+        uint64_t time2ovf = (ovfPeriod-m_countVal)*m_psPerTick; // cycles in ps
         if( m_timeOffset ) time2ovf -= m_psPerTick-m_timeOffset;
 
         uint64_t ovfTime = circTime + time2ovf;// Absolute simulation time (ps) when OVF will occur

@@ -113,5 +113,4 @@ class QemuDevice : public Chip
         std::vector<QemuTwi*> m_i2cs;
         std::vector<QemuSpi*> m_spis;
         std::vector<QemuUsart*> m_usarts;
-        //std::vector<QemuTimer*> m_timers;
 };
