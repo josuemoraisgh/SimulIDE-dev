@@ -37,6 +37,8 @@ class ComponentList : public QTreeWidget
         void setShortcut( QString s, QString c ) { m_shortCuts[s] = c; }
         QString getComponent( QString shortcut ) { return m_shortCuts.value( shortcut ); }
 
+        QStringList getxmlItems(){ return m_xmlItems; }
+
         void writeSettings();
 
     public slots:
@@ -78,6 +80,8 @@ class ComponentList : public QTreeWidget
         QMap<QString, QString> m_dataFileList;
         QMap<QString, QString> m_dirFileList;
         QMap<QString, QString> m_shortCuts;
+
+        QStringList m_xmlItems;
 
         QDir m_compSetDir;
 

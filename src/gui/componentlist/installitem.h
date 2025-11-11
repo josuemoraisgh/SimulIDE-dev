@@ -10,6 +10,7 @@
 #include "ui_installitem.h"
 
 class Installer;
+class InstallInfo;
 
 class InstallItem : public QWidget, private Ui::installItem
 {
@@ -31,13 +32,15 @@ class InstallItem : public QWidget, private Ui::installItem
         void updated();
 
     private:
-        void buttonClicked();
+        void installClicked();
+        void infoClicked();
         void setButtonState( buttonState_t state );
 
         QString m_name;
         QString m_description;
         QString m_file;
         QString m_depends;
+        QString m_author;
         int64_t m_version;
 
         QString m_itemStr;
@@ -45,4 +48,6 @@ class InstallItem : public QWidget, private Ui::installItem
         buttonState_t m_buttonState;
 
         Installer* m_Installer;
+
+        InstallInfo* m_infoWidget;
 };

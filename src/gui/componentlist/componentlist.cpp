@@ -194,6 +194,8 @@ void ComponentList::LoadCompSetAt( QDir compSetDir )
 
 void ComponentList::loadXml( QString xmlFile )
 {
+    m_xmlItems.clear();
+
     QFile file( xmlFile );
     if( !file.open( QFile::ReadOnly | QFile::Text ) ){
           qDebug() << "ComponentList::loadXml Cannot read file"<< endl << xmlFile << endl << file.errorString();
@@ -281,6 +283,7 @@ void ComponentList::loadXml( QString xmlFile )
                     name += "???"+reader.attributes().value("info").toString();
 
                 addItem( name, catItem, icon, type );
+                m_xmlItems.append( name );
             }
             reader.skipCurrentElement();
         }
