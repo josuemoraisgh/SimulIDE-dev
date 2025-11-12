@@ -63,10 +63,14 @@ class ScriptCpu : public ScriptBase, public Mcu8bits
         McuPort* getMcuPort( const string portName );
         McuPin*  getMcuPin( const string pinName );
 
+        void setPackageSize( int width, int height );                 // Called from script: Set Package size
+        void setMargins( int top, int bottom, int right, int left );
+
         string getPropStr( int index, const string p );               // Called from script: Get property p from linked component at index
         void setPropStr( int index, const string p, const string v ); // Called from script: Set property p with value v in linked component at index
         void setLinkedValue( int index, double v, int i=0  );         // Called from script
         void setLinkedString( int index, const string str, int i=0 ); // Called from script
+
         void setLinkedVal( double v, int i=0 );                       // Called from C++
         void setLinkedStr( QString s, int i );                        // Called from C++
 

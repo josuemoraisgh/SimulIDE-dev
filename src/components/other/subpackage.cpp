@@ -178,8 +178,8 @@ void SubPackage::hoverMoveEvent( QGraphicsSceneHoverEvent* event )
     {
         m_fakePin = true;
         
-        int xPos = snapToGrid( (int)event->pos().x() );
-        int yPos = snapToGrid( (int)event->pos().y() );
+        int xPos = snapToGrid4( (int)event->pos().x() );
+        int yPos = snapToGrid4( (int)event->pos().y() );
         
         if( xPos == 0 && yPos >= 8 && yPos <= m_height*8-8 ) // Left
         {

@@ -214,33 +214,33 @@ int roundDown( int x, int roundness )
     else        return (x / roundness);
 }
 
-int snapToGrid( int x )     { return roundDown( x+2, 4 )*4; }
-int snapToCompGrid( int x ) { return roundDown( x+4, 8 )*8; }
+int snapToGrid4( int x )     { return roundDown( x+2, 4 )*4; }
+int snapToGrid8( int x ) { return roundDown( x+4, 8 )*8; }
 
 QPointF toCompGrid( QPointF point )
 {
     int valor;
-    valor = snapToCompGrid( (int)point.x() );
+    valor = snapToGrid8( (int)point.x() );
     point.rx() = (float)valor;
-    valor = snapToCompGrid( (int)point.y() );
+    valor = snapToGrid8( (int)point.y() );
     point.ry() = (float)valor;
     return point;
 }
 QPointF toGrid( QPointF point )
 {
     int valor;
-    valor = snapToGrid( (int)point.x() );
+    valor = snapToGrid4( (int)point.x() );
     point.rx() = (float)valor;
-    valor = snapToGrid( (int)point.y() );
+    valor = snapToGrid4( (int)point.y() );
     point.ry() = (float)valor;
     return point;
 }
 QPoint toGrid( QPoint point )
 {
     int valor;
-    valor = snapToGrid( (int)point.x() );
+    valor = snapToGrid4( (int)point.x() );
     point.rx() = valor;
-    valor = snapToGrid( (int)point.y() );
+    valor = snapToGrid4( (int)point.y() );
     point.ry() = valor;
     return point;
 }

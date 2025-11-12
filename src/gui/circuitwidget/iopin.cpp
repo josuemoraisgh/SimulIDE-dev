@@ -400,6 +400,7 @@ QStringList IoPin::registerScript( asIScriptEngine* engine )
                                    , asMETHODPR( IoPin, setVoltage, (double), void)
                                    , asCALL_THISCALL );
 
+    memberList << "setOutHighV(double v)";
     engine->RegisterObjectMethod("IoPin", "void setOutHighV(double v)"
                                    , asMETHODPR( IoPin, setOutHighV, (double), void)
                                    , asCALL_THISCALL );
@@ -413,6 +414,16 @@ QStringList IoPin::registerScript( asIScriptEngine* engine )
     engine->RegisterObjectMethod("IoPin", "void changeCallBack(eElement@ p, bool s)"
                                    , asMETHODPR( IoPin, changeCallBack, (eElement*, bool), void)
                                    , asCALL_THISCALL );
+
+    memberList << "setX( double x )";
+    engine->RegisterObjectMethod("IoPin", "void setX( double X )"
+                                 , asMETHODPR( IoPin, setX, (double), void)
+                                 , asCALL_THISCALL );
+
+    memberList << "setY( double y )";
+    engine->RegisterObjectMethod("IoPin", "void setY( double y )"
+                                 , asMETHODPR( IoPin, setY, (double), void)
+                                 , asCALL_THISCALL );
 
     return memberList;
 }

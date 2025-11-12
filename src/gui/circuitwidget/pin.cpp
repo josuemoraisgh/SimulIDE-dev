@@ -16,6 +16,7 @@
 #include "connectorline.h"
 #include "circuit.h"
 #include "simulator.h"
+#include "utils.h"
 
 Pin::Pin( int angle, const QPoint pos, QString id, int index, Component* parent, int length )
    : QGraphicsItem( parent )
@@ -308,15 +309,15 @@ void Pin::setPinAngle( int angle )
     setRotation( 180-angle );
 }
 
-void Pin::setX( qreal x )
+void Pin::setX( double x )
 {
-    QGraphicsItem::setX( x );
+    QGraphicsItem::setX( snapToGrid4(x) );
     isMoved();
 }
 
-void Pin::setY( qreal y )
+void Pin::setY( double y )
 {
-    QGraphicsItem::setY( y );
+    QGraphicsItem::setY( snapToGrid4(y) );
     isMoved();
 }
 

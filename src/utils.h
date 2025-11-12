@@ -78,8 +78,8 @@ QByteArray   fileToByteArray( QString fileName, QString caller );
 //---------------------------------------------------
 
 int roundDown( int x, int roundness );
-int snapToGrid( int x );
-int snapToCompGrid( int x );
+int snapToGrid4( int x );
+int snapToGrid8( int x );
 QPointF toGrid( QPointF point );
 QPoint  toGrid( QPoint point );
 QPointF toCompGrid( QPointF point );
