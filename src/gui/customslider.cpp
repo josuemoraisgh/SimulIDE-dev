@@ -31,7 +31,6 @@ void CustomSlider::paintEvent( QPaintEvent* )
     double pos = this->value()-min;
     pos = pos*step+6;
 
-
     QPen pen = painter.pen();
     pen.setColor( QColor( 60, 60, 60 ) );
     pen.setWidthF( 0.8 );

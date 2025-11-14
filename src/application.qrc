@@ -239,7 +239,9 @@
         <file alias="sr04_ico.png">../src/icons/components/sr04_ico.png</file>
         <file alias="ky-023.png">../src/icons/components/ky-023.png</file>
         <file alias="ky-040.png">../src/icons/components/ky-040.png</file>
-        <file alias="dht22.png">../src/icons/components/dht22.png</file>
+        <file alias="dht11.svg">../src/icons/components/dht11.svg</file>
+        <file alias="dht22.svg">../src/icons/components/dht22.svg</file>
+        <file alias="dht22_ico.png">../src/icons/components/dht22_ico.png</file>
         <file alias="dsxxx.png">../src/icons/components/dsxxx.png</file>
         <file alias="dsxxx_ico.png">../src/icons/components/dsxxx_ico.png</file>
         <file alias="esp01.png">../src/icons/components/esp01.png</file>
@@ -247,8 +249,10 @@
         <file alias="serialport.png">../src/icons/components/serialport.png</file>
         <file alias="serialterm.png">../src/icons/components/serialterm.png</file>
         <file alias="touch.png">../src/icons/components/touch.png</file>
+        <file alias="sdcard.png">../src/icons/components/sdcard.png</file>
         
-        <file alias="up.png">../src/icons/components/up.png</file>
+        <file alias="bup.svg">../src/icons/components/bup.svg</file>
+        <file alias="bdown.svg">../src/icons/components/bdown.svg</file>
         <file alias="su.png">../src/icons/components/su.png</file>
         <file alias="giu.png">../src/icons/components/giu.png</file>
         <file alias="down.png">../src/icons/components/down.png</file>

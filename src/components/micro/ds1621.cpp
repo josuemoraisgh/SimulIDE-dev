@@ -84,7 +84,7 @@ DS1621::DS1621( QString type, QString id )
 
     QGraphicsProxyWidget* proxy = Circuit::self()->addWidget( u_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint( 16,-25 ) );
+    proxy->setPos( QPoint( 16,-26 ) );
 
     QToolButton* d_button = new QToolButton();
     d_button->setMaximumSize( 8, 8 );
@@ -95,7 +95,7 @@ DS1621::DS1621( QString type, QString id )
 
     proxy = Circuit::self()->addWidget( d_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint(-24,-25) );
+    proxy->setPos( QPoint(-24,-26) );
 
     QObject::connect( u_button, &QToolButton::pressed, [=](){ upbuttonclicked(); } );
     QObject::connect( d_button, &QToolButton::pressed, [=](){ downbuttonclicked(); } );
@@ -303,7 +303,7 @@ void DS1621::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
     p->drawRoundedRect( QRect(-16,-16, m_width*8, m_height*8 ), 1, 1 );
 
     p->setFont( m_font );
-    p->drawText( QRectF(-16, -25, 32, 8), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
+    p->drawText( QRectF(-16, -26, 32, 8 ), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
 
     p->setPen( QColor( 170, 170, 150 ) );
     p->drawArc(-4,-20, 8, 8, 0, -2880 /* -16*180 */ );
