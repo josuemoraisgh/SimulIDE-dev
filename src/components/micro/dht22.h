@@ -9,7 +9,7 @@
 #include "component.h"
 
 class LibraryItem;
-class QPushButton;
+class QToolButton;
 class QGraphicsProxyWidget;
 class IoPin;
 
@@ -38,9 +38,10 @@ class Dht22 : public Component , public eElement
         virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     public slots:
-        void onbuttonclicked();
-        void upbuttonclicked();
-        void downbuttonclicked();
+        void tempUpClicked();
+        void tempDoClicked();
+        void humidUpClicked();
+        void humidDoClicked();
 
     private:
         void calcData();
@@ -48,7 +49,6 @@ class Dht22 : public Component , public eElement
 
         bool m_DHT22;
         bool m_lastIn;
-        bool m_set;
 
         uint64_t m_lastTime;
         uint64_t m_start;
@@ -65,8 +65,8 @@ class Dht22 : public Component , public eElement
 
         QFont m_font;
 
-        QPushButton* m_button;
-        QGraphicsProxyWidget* m_proxy;
+        //QToolButton* m_button;
+        //QGraphicsProxyWidget* m_proxy;
 
         IoPin* m_inpin;
 };
