@@ -7,6 +7,7 @@
 
 #include "twimodule.h"
 #include "iocomponent.h"
+#include "pin.h"
 
 class LibraryItem;
 
@@ -15,29 +16,27 @@ class DS1621 : public IoComponent, public TwiModule
     public:
         DS1621( QString type, QString id );
         ~DS1621();
-        
-        static Component* construct( QString type, QString id );
-        static LibraryItem* libraryItem();
 
         double tempInc() { return m_tempInc; }
-        void setTempInc( double inc ) { m_tempInc = trim( inc ); }
+        void setTempInc( double inc );
 
         double temp() { return m_temp; }
-        void setTemp( double temp ) { m_temp = temp; }
+        void setTemp( double temp );
 
-        virtual void stamp() override;
-        virtual void runEvent() override;
-        virtual void voltChanged() override;
+        void stamp() override;
+        void runEvent() override;
+        void voltChanged() override;
 
-        virtual void readByte() override;
-        virtual void writeByte() override;
-        //virtual void startWrite() override;
+        void readByte() override;
+        void writeByte() override;
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
-    public slots:
         void upbuttonclicked();
         void downbuttonclicked();
+
+ static Component* construct( QString type, QString id );
+ static LibraryItem* libraryItem();
 
     private:
         double trim( double data ) { return (double)((int)(data*10))/10; }
@@ -65,4 +64,7 @@ class DS1621 : public IoComponent, public TwiModule
         int8_t m_TlReg[2];
 
         QFont m_font;
+
+        Pin m_vdd;
+        Pin m_gnd;
 };

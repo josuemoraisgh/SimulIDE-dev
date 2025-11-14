@@ -4,13 +4,16 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include <QPainter>
-#include <QPushButton>
+#include <QToolButton>
+
+#include <QDial>
 #include <QGraphicsProxyWidget>
 
 #include <math.h>
 
 #include "ds1621.h"
 #include "itemlibrary.h"
+#include "dialed.h"
 #include "circuit.h"
 #include "iopin.h"
 #include "simulator.h"
@@ -36,21 +39,25 @@ LibraryItem *DS1621::libraryItem()
 DS1621::DS1621( QString type, QString id )
       : IoComponent( type, id )
       , TwiModule( id )
+      , m_vdd(   0, QPoint( 24, -8 ), id+"-PinVdd", 0, this )
+      , m_gnd( 180, QPoint(-24, 16 ), id+"-PinGnd", 0, this )
 {
     m_graphical = true;
 
-    m_width  = 7;
-    m_height = 4;
+    m_width  = 4;
+    m_height = 5;
 
     init({           // Inputs:
       "IL01SDA", // type: Input, side: Left, pos: 01, label: "SDA"
       "IL02SCL",
-      "IR01A0",
-      "IR02A1",
-      "IR03A2",
+      "IR02A0",
+      "IR03A1",
+      "IR04A2",
       // Outputs:
-      "OL03Tout"
+      "OL03Tou"
      });
+
+    m_area = QRect(-16,-20-4, m_width*8, m_height*8+8 );
 
     m_inpPin[0]->setPinMode( openCo );
     TwiModule::setSdaPin( m_inpPin[0] );
@@ -58,33 +65,40 @@ DS1621::DS1621( QString type, QString id )
     m_inpPin[1]->setPinMode( openCo );
     TwiModule::setSclPin( m_inpPin[1] );
 
-    for( IoPin* pin : m_inpPin )  pin->setLabelColor( QColor( 250, 250, 200 ) );
+    for( IoPin* pin : m_inpPin ) pin->setLabelColor( QColor( 250, 250, 200 ) );
     for( IoPin* pin : m_outPin ) pin->setLabelColor( QColor( 250, 250, 200 ) );
 
-    QPushButton* u_button = new QPushButton();
-    u_button->setMaximumSize( 9, 9 );
-    u_button->setGeometry(-5,-5, 9, 9);
+    m_vdd.setLabelColor( QColor( 250, 250, 200 ) );
+    m_gnd.setLabelColor( QColor( 250, 250, 200 ) );
+    m_vdd.setLabelText("Vdd");
+    m_gnd.setLabelText("Gnd");
+    m_vdd.setUnused( true );
+    m_gnd.setUnused( true );
+
+    QToolButton* u_button = new QToolButton();
+    u_button->setMaximumSize( 8, 8 );
+    u_button->setStyleSheet("border: 0px; background: transparent;");
     u_button->setCheckable( false );
-    u_button->setIcon(QIcon(":/su.png"));
+    u_button->setIcon(QIcon(":/bup.svg"));
     u_button->setCursor( Qt::PointingHandCursor );
 
     QGraphicsProxyWidget* proxy = Circuit::self()->addWidget( u_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint( -7, 4 ) );
+    proxy->setPos( QPoint( 16,-25 ) );
 
-    QPushButton* d_button = new QPushButton();
-    d_button->setMaximumSize( 9, 9 );
-    d_button->setGeometry(-5,-5, 9, 9);
+    QToolButton* d_button = new QToolButton();
+    d_button->setMaximumSize( 8, 8 );
+    d_button->setStyleSheet("border: 0px; background: transparent;");
     d_button->setCheckable( false );
-    d_button->setIcon(QIcon(":/giu.png"));
+    d_button->setIcon(QIcon(":/bdown.svg"));
     d_button->setCursor( Qt::PointingHandCursor );
 
     proxy = Circuit::self()->addWidget( d_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint( 9, 4 ) );
+    proxy->setPos( QPoint(-24,-25) );
 
-    QObject::connect( u_button, &QPushButton::pressed, [=](){ upbuttonclicked(); } );
-    QObject::connect( d_button, &QPushButton::pressed, [=](){ downbuttonclicked(); } );
+    QObject::connect( u_button, &QToolButton::pressed, [=](){ upbuttonclicked(); } );
+    QObject::connect( d_button, &QToolButton::pressed, [=](){ downbuttonclicked(); } );
 
     m_font.setFamily("Ubuntu Mono");
 #ifdef _WIN32
@@ -92,13 +106,13 @@ DS1621::DS1621( QString type, QString id )
 #else
     m_font.setStretch( 93 );
 #endif
-    m_font.setPixelSize( 10 );
+    m_font.setPixelSize( 9 );
     m_font.setBold( true );
     m_font.setLetterSpacing( QFont::PercentageSpacing, 100 );
     setLabelPos(-24,-28 );
 
-    m_temp = 22.5;
-    m_tempInc = 0.5;
+    setTemp( 22.5 );
+    setTempInc( 0.5 );
     m_changed = true;
 
     //IoComponent::initState();
@@ -258,35 +272,41 @@ void DS1621::doConvert()
 
 void DS1621::upbuttonclicked()
 {
-    m_temp += m_tempInc;
-    if( m_temp > 125 )  m_temp = 125;
-    m_changed = true;
-    update();
+    setTemp( m_temp += m_tempInc );
 }
 
 void DS1621::downbuttonclicked()
 {
-    m_temp -= m_tempInc;
+    setTemp( m_temp -= m_tempInc );
+}
+
+void  DS1621::setTemp( double temp )
+{
+    m_temp = temp;
+    if( m_temp > 125 ) m_temp = 125;
     if( m_temp < -55 ) m_temp = -55;
     m_changed = true;
+    update();
+}
+
+void DS1621::setTempInc( double inc )
+{
+    m_tempInc = trim( inc );
     update();
 }
 
 void DS1621::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    QPen pen( Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
-    p->setPen( pen );
-    p->setBrush(QColor( 50, 50, 70 ));
-    p->drawRoundedRect( m_area, 2, 2 );
 
-    p->setBrush( QColor(200, 220, 180) );
-    p->drawRoundedRect( QRect(-11,-14, 33, 15 ),2,2 );
+    p->setBrush( QColor( 20, 30, 60 ) );
+    p->drawRoundedRect( QRect(-16,-16, m_width*8, m_height*8 ), 1, 1 );
 
     p->setFont( m_font );
-    p->setPen( QColor(0, 0, 0) );
-    //p->drawText(-9, -3, "°C" );
-    p->drawText(-9, -3, QString::number( m_temp )+"°C" );
+    p->drawText( QRectF(-16, -25, 32, 8), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
+
+    p->setPen( QColor( 170, 170, 150 ) );
+    p->drawArc(-4,-20, 8, 8, 0, -2880 /* -16*180 */ );
 
     Component::paintSelected( p );
 }
