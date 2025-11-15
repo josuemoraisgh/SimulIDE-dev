@@ -133,6 +133,9 @@ bool Esp32::createArgs()
     m_arguments << "-global";
     m_arguments << "driver=timer.esp32.timg,property=wdt_disable,value=true";
 
+    m_arguments << "-icount";
+    m_arguments <<"shift=14,align=off,sleep=off";
+
     /*m_arguments << "-gdb");
     sprintf( m_argv[m_argc++], "tcp::%i", 1234 );*/
 
@@ -143,21 +146,6 @@ bool Esp32::createArgs()
     //m_arguments << "-icount";
     //m_arguments << "shift=10,align=off,sleep=on";
     //m_arguments <<  "shift=auto,align=off,sleep=off";
-
-    /*qDebug() << " ";
-    QString msg;
-    for( int i=2; i<m_arguments.size(); i++)
-    {
-        QString arg = m_arguments.at(i);
-
-        msg.append( arg );
-        if( i&1 ) msg.append(" ");
-        else{
-            qDebug() << msg;
-            msg.clear();
-        }
-    }
-    qDebug() << " ";*/
 
     return true;
 }

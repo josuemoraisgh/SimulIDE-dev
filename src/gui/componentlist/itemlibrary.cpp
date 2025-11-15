@@ -93,6 +93,7 @@
 #include "resistor.h"
 #include "resistordip.h"
 #include "rtd.h"
+#include "sdcard.h"
 #include "serialport.h"
 #include "serialterm.h"
 #include "servo.h"
@@ -258,6 +259,7 @@ void ItemLibrary::loadItems()
     addItem( DS1621::libraryItem() );
     addItem( Ds18b20::libraryItem() );
     addItem( new LibraryItem( QObject::tr("Peripherals"), "Micro", "perif.png","Peripherals", nullptr ) );
+    addItem( SdCard::libraryItem() );
     addItem( SerialPort::libraryItem() );
     addItem( SerialTerm::libraryItem() );
     addItem( TouchPad::libraryItem() );

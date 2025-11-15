@@ -121,18 +121,20 @@ void SpiModule::resetSR()
 void SpiModule::step()
 {
     if( m_mode == SPI_MASTER ) keepClocking();
+    //else
+    //    qDebug() << m_elmId;
 
     if( m_clkState == m_sampleEdge )         //Read one bit
     {
         m_bitCount++;
 
-        if( m_lsbFirst ) m_srReg >>= 1; // Rotate bit mask
-        else             m_srReg <<= 1;
-
         if( m_dataInPin->getInpState() ) m_srReg |= m_inBit;
     }else{
         if( m_bitCount == 8 ) endTransaction();
         if( m_dataOutPin ) m_dataOutPin->scheduleState( (m_srReg & m_outBit)>0, 0 );// Write one bit (Only if dataOut Pin exist)
+
+        if( m_lsbFirst ) m_srReg >>= 1;
+        else             m_srReg <<= 1;
     }
 }
 
