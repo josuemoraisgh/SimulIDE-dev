@@ -4,7 +4,6 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include <QPainter>
-#include <QToolButton>
 
 #include <QDial>
 #include <QGraphicsProxyWidget>
@@ -17,6 +16,7 @@
 #include "circuit.h"
 #include "iopin.h"
 #include "simulator.h"
+#include "updobutton.h"
 
 #include "doubleprop.h"
 
@@ -75,30 +75,18 @@ DS1621::DS1621( QString type, QString id )
     m_vdd.setUnused( true );
     m_gnd.setUnused( true );
 
-    QToolButton* u_button = new QToolButton();
-    u_button->setMaximumSize( 8, 8 );
-    u_button->setStyleSheet("border: 0px; background: transparent;");
-    u_button->setCheckable( false );
-    u_button->setIcon(QIcon(":/bup.svg"));
-    u_button->setCursor( Qt::PointingHandCursor );
-
+    UpDoButton* u_button = new UpDoButton( true );
     QGraphicsProxyWidget* proxy = Circuit::self()->addWidget( u_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint( 16,-26 ) );
+    proxy->setPos( QPoint(-20,-27 ) );
 
-    QToolButton* d_button = new QToolButton();
-    d_button->setMaximumSize( 8, 8 );
-    d_button->setStyleSheet("border: 0px; background: transparent;");
-    d_button->setCheckable( false );
-    d_button->setIcon(QIcon(":/bdown.svg"));
-    d_button->setCursor( Qt::PointingHandCursor );
-
+    UpDoButton* d_button = new UpDoButton( false );
     proxy = Circuit::self()->addWidget( d_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint(-24,-26) );
+    proxy->setPos( QPoint(-20,-22 ) );
 
-    QObject::connect( u_button, &QToolButton::pressed, [=](){ upbuttonclicked(); } );
-    QObject::connect( d_button, &QToolButton::pressed, [=](){ downbuttonclicked(); } );
+    QObject::connect( u_button, &UpDoButton::pressed, [=](){ upbuttonclicked(); } );
+    QObject::connect( d_button, &UpDoButton::pressed, [=](){ downbuttonclicked(); } );
 
     m_font.setFamily("Ubuntu Mono");
 #ifdef _WIN32
@@ -272,12 +260,12 @@ void DS1621::doConvert()
 
 void DS1621::upbuttonclicked()
 {
-    setTemp( m_temp += m_tempInc );
+    setTemp( m_temp + m_tempInc );
 }
 
 void DS1621::downbuttonclicked()
 {
-    setTemp( m_temp -= m_tempInc );
+    setTemp( m_temp - m_tempInc );
 }
 
 void  DS1621::setTemp( double temp )
@@ -302,8 +290,12 @@ void DS1621::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
     p->setBrush( QColor( 20, 30, 60 ) );
     p->drawRoundedRect( QRect(-16,-16, m_width*8, m_height*8 ), 1, 1 );
 
+    p->setOpacity( .6 );
+    p->fillRect( QRectF(-14,-26, 32, 8 ), QColor( Qt::white ) );
+    p->setOpacity( 1 );
+
     p->setFont( m_font );
-    p->drawText( QRectF(-16, -26, 32, 8 ), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
+    p->drawText( QRectF(-14,-26, 32, 8 ), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
 
     p->setPen( QColor( 170, 170, 150 ) );
     p->drawArc(-4,-20, 8, 8, 0, -2880 /* -16*180 */ );

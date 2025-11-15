@@ -25,8 +25,14 @@ class Dht22 : public Component , public eElement
         void setModel( QString model);
         QString model();
 
+        double temperature() { return m_temp; }
+        void setTemperature( double t );
+
         double tempInc() { return m_tempInc; }
         void setTempInc( double inc ) { m_tempInc = trim( inc ); }
+
+        double humidity() { return m_humi; }
+        void setHumidity( double h );
 
         double humidInc() { return m_humiInc; }
         void setHumidInc( double inc ) { m_humiInc = trim( inc ); }
