@@ -43,7 +43,7 @@ IoPin::IoPin( int angle, const QPoint pos, QString id, int index, Component* par
 
     m_pinMode = undef_mode;
     setPinMode( mode );
-    animate( Circuit::self()->animate() );
+    animate( Circuit::self()->animateLogic() );
 }
 IoPin::~IoPin(){}
 
@@ -317,9 +317,10 @@ double IoPin::getCurrent()
 
     switch( m_pinMode )
     {
-        case input:  m_current = volt*m_gndAdmit; break;
+        case input:  m_current = volt*m_admit; break;
         case output:
         case openCo: m_current = (m_outVolt-volt)*m_admit; break;
+        default: break;
     }
     return m_current;
 }

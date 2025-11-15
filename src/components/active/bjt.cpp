@@ -63,7 +63,7 @@ BJT::~BJT(){}
 
 void BJT::updateStep()
 {
-    if( Circuit::self()->animate() || m_changed ) update();
+    if( Circuit::self()->animateCurr() || m_changed ) update();
 
     if( m_changed ) eBJT::voltChanged(); // m_changed cleared at eBJT::voltChanged
 }
@@ -72,8 +72,8 @@ void BJT::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
     
-    if( Circuit::self()->animate()
-     && fabs(m_baseCurr) > 1e-4 ) p->setBrush( Qt::yellow );
+    if( Circuit::self()->animateCurr()
+     && fabs(m_baseCurr) > 1e-9 ) p->setBrush( Qt::yellow );
     else                          p->setBrush( Qt::white );
 
     p->drawEllipse( m_area );
