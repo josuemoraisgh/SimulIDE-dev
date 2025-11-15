@@ -18,6 +18,7 @@
 #include "circmatrix.h"
 #include "e-element.h"
 #include "socket.h"
+#include "node.h"
 
 #include "qemudevice.h"
 
@@ -156,7 +157,26 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     }
     if( Circuit::self()->animateCurr() )  // TODO:  optimize
     {
+        QStringList pinNames = Circuit::self()->m_pinMap.keys();
+        //pinNames.sort();
+        for( QString pinName : pinNames )
+        {
+            Pin* pin = Circuit::self()->m_pinMap.value( pinName );
+            if( !pin ) continue;
+            pin->resetCurrent();
+        }
         for( eNode* node : m_eNodeList) node->updateCurrents();
+
+        QList<Node*> nodeCompList = Circuit::self()->m_nodeList;
+        int counter = 0;
+        while( !nodeCompList.isEmpty() )
+        {
+            for( Node* node : nodeCompList )
+                if( node->hasCurrents() )
+                    nodeCompList.removeOne( node );
+            counter++;
+            if( counter > 100 ) break;
+        }
         Circuit::self()->update();                              // Diagonal wires don't update
     }
 

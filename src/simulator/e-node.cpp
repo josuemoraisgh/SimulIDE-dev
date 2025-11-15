@@ -363,28 +363,26 @@ void eNode::updateConnectors()
 
 void eNode::updateCurrents()
 {
-    for( ePin* epin : m_ePinList ) epin->m_hasCurrent = false;
+    //for( ePin* epin : m_ePinList )
+    //{
+    //    epin->m_hasCurrent = false;
+    //    epin->m_current = 0;
+    //}
     Connection* conn = m_firstAdmit;
     while( conn )
     {
-        double admit = conn->value;
-        double volt1 = conn->node->getVolt();
-        double current = (volt1-m_volt)*admit;
-        if( fabs(current) < 1e-6 ) current = 0;
-        conn->epin->m_current = current;
-        conn->epin->m_hasCurrent = true;
 
+        //if( fabs(current) < 1e-7 ) current = 0;
+        ePin* circuitPin = conn->epin->m_circuitPin;
+        if( circuitPin ){
+            double admit = conn->value;
+            double volt1 = conn->node->getVolt();
+            double current = (volt1-m_volt)*admit;
+            circuitPin->m_current += current + conn->epin->m_sourceCurrent;
+            circuitPin->m_hasCurrent = true;
+        }
+        //else qDebug() << "eNode::updateCurrents Error: missing circuitPin" << conn->epin->getId();
         conn = conn->next;
-    }
-    QList<Node*> nodeCompList = m_nodeCompList;
-    int counter = 0;
-    while( !nodeCompList.isEmpty() )
-    {
-        for( Node* node : nodeCompList )
-            if( node->hasCurrents() )
-                nodeCompList.removeOne( node );
-        counter++;
-        if( counter > 100 ) break;
     }
 }
 

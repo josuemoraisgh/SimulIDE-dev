@@ -17,11 +17,7 @@
 
 eBJT::eBJT( QString id )
     : eElement( id )
-    , m_BEjunction( id+"BEjunct")
-    , m_BCjunction( id+"BCjunct")
 {
-    m_ePin.resize(3);
-
     m_PNP = false;
     m_baseCurr = 0;
 
@@ -32,17 +28,23 @@ eBJT::eBJT( QString id )
     m_vt = 0.025865;
     m_satCur = 1e-13;
     m_vCrit = m_vt*qLn( m_vt/(qSqrt(2)*m_satCur) );
-
-    m_BEjunction.setNumEpins( 2 );
-    m_BE = m_BEjunction.getEpin( 0 );
-    m_EB = m_BEjunction.getEpin( 1 );
-
-    m_BCjunction.setNumEpins( 2 );
-    m_BC = m_BCjunction.getEpin( 0 );
-    m_CB = m_BCjunction.getEpin( 1 );
-
 }
 eBJT::~eBJT(){}
+
+void eBJT::setup()
+{
+    m_CE = COLL;
+    m_CB = m_ePin[3];
+    m_CB->setCircuitPin( COLL );
+
+    m_EB = EMIT;
+    m_EC = m_ePin[4];
+    m_EC->setCircuitPin( EMIT );
+
+    m_BC = BASE;
+    m_BE = m_ePin[5];
+    m_BE->setCircuitPin( BASE );
+}
 
 void eBJT::initialize()
 {
@@ -55,12 +57,9 @@ void eBJT::initialize()
 
 void eBJT::stamp()
 {
-    m_EC = EMIT;
-    m_CE = COLL;
-
-    eNode* collNod = COLL->getEnode();// Collector
-    eNode* emitNod = EMIT->getEnode();// Emitter
-    eNode* baseNod = BASE->getEnode();// Base
+    eNode* collNod = COLL->getEnode();  // Collector
+    eNode* emitNod = EMIT->getEnode();  // Emitter
+    eNode* baseNod = BASE->getEnode();  // Base
 
     if( collNod ) collNod->addToNoLinList( this );
     if( emitNod ) emitNod->addToNoLinList( this );
@@ -76,7 +75,9 @@ void eBJT::stamp()
     m_CB->setEnode( collNod );
     m_CB->setEnodeComp( baseNod );
 
+    m_CE->setEnode( collNod );
     m_CE->setEnodeComp( emitNod );
+    m_EC->setEnode( emitNod );
     m_EC->setEnodeComp( collNod );
 
     BASE->createCurrent();

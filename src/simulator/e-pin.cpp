@@ -12,9 +12,11 @@ ePin::ePin( QString id, int index )
     m_index = index;
     m_enode = nullptr;
     m_enodeComp = nullptr;
+    m_circuitPin = nullptr;
     m_inverted = false;
 
     m_current = 0;
+    m_sourceCurrent = 0;
 }
 ePin::~ePin()
 {
