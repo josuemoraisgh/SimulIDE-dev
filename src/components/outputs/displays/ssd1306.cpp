@@ -35,9 +35,6 @@ LibraryItem* Ssd1306::libraryItem()
 Ssd1306::Ssd1306( QString type, QString id )
        : Component( type, id )
        , TwiModule( id )
-       //, m_pinRst( 270, QPoint(-32, 48), id+"-PinRst" , 0, this )
-       //, m_pinDC ( 270, QPoint(-24, 48), id+"-PinDC"  , 0, this )
-       //, m_pinCS ( 270, QPoint(-16, 48), id+"-PinCS"  , 0, this )
 {
     m_graphical = true;
     m_width = 128;
@@ -409,10 +406,15 @@ void Ssd1306::setWidth( int w )
 
 void Ssd1306::setHeight( int h )
 {
+    if( h > m_height ) h += 8;
     if     ( h > 64 ) h = 64;
     else if( h < 16 ) h = 16;
+
+    h = (h/8)*8;
+    if( m_height == h ) return;
+
     m_rows = h/8;
-    m_height = m_rows*8;
+    m_height = h;
     updateSize();
 }
 

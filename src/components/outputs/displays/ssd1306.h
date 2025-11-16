@@ -91,7 +91,6 @@ class Ssd1306 : public Component, public TwiModule
         bool m_scanInv;
         bool m_rotate;
 
-        //bool m_reset;
         bool m_command;
         bool m_data;
         bool m_continue;
@@ -99,11 +98,7 @@ class Ssd1306 : public Component, public TwiModule
         bool m_scrollR;
         bool m_scrollV;
 
-        //Inputs
         IoPin* m_pinSda;
-        //Pin m_pinRst;
-        //Pin m_pinDC;
-        //Pin m_pinCS;
 
         QColor m_foreground;
 };
