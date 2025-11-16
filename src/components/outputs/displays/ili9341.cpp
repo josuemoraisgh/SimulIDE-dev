@@ -32,6 +32,7 @@ Ili9341::Ili9341( QString type, QString id )
        , m_pinMosi( 270, QPoint(-32, 184), id+"-PinMosi", 0, this, input )
        , m_pinSck(  270, QPoint(-24, 184), id+"-PinSck" , 0, this, input )
        //, m_pinMiso( 270, QPoint(-16, 184), id+"-PinMiso" , 0, this )
+       , m_img( 240*2, 320*2, QImage::Format_RGB32 )
 {
     m_graphical = true;
     
@@ -143,7 +144,7 @@ void Ili9341::voltChanged()
 
 void Ili9341::writeRam()
 {
-    m_data = (m_data<<8)+m_rxReg;
+    m_data = (m_data<<8) | m_rxReg;
     m_inByte++;
     if( m_inByte >= m_dataBytes )       // 16/18 bits ready
     {
@@ -170,7 +171,7 @@ void Ili9341::writeRam()
 
 void Ili9341::setPixelMode()
 {
-    int mode = (m_rxReg>>4) & 1;
+    int mode = m_rxReg & 1<<4;
     m_dataBytes = mode ? 2 : 3;
 }
 
@@ -185,9 +186,8 @@ void Ili9341::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
 
     if( !m_dispOn ) p->fillRect(-120,-162, 240, 320, Qt::black ); // Display Off
     else{
-        QImage img( 240*2, 320*2, QImage::Format_RGB32 );
         QPainter painter;
-        painter.begin( &img );
+        painter.begin( &m_img );
         painter.setRenderHint( QPainter::Antialiasing, true );
 
         for( int row=0; row<320; ++row )
@@ -204,16 +204,14 @@ void Ili9341::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
                     //else if( yRAM < 0   ) yRAM += 320;
                 }
             }
-            if( m_vertical && yRAM > 239 ) continue;
             for( int col=0; col<240; ++col )
             {
-                uint pixel = getPixel( row, col );
+                uint32_t pixel = getPixel( col, row );
                 painter.fillRect( col*2, y, 2, 2, QColor(pixel).rgb() );
             }
         }
-
         painter.end();
-        p->drawImage(QRectF(-120,-162, 240, 320), img );
+        p->drawImage(QRectF(-120,-162, 240, 320), m_img );
     }
 
     Component::paintSelected( p );

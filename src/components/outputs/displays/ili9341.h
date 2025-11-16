@@ -43,4 +43,6 @@ class Ili9341 : public Component, public eClockedDevice, public TftController
         IoPin m_pinMosi;
         IoPin m_pinSck;
         //Pin m_pinMiso;
+
+        QImage m_img;
 };
