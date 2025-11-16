@@ -162,6 +162,7 @@
         <file alias="aip31068.png">../src/icons/components/aip31068.png</file>
         <file alias="ssd1306.png">../src/icons/components/ssd1306.png</file>
         <file alias="ili9341.png">../src/icons/components/ili9341.png</file>
+        <file alias="pcf8833.png">../src/icons/components/pcf8833.png</file>
         <file alias="mosfet.png">../src/icons/components/mosfet.png</file>
         <file alias="jfet.png">../src/icons/components/jfet.png</file>
         <file alias="clock.png">../src/icons/components/clock.png</file>

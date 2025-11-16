@@ -7,10 +7,12 @@
 #include <QPainter>
 
 #include "tftcontroller.h"
+#include "simulator.h"
 
 TftController::TftController( QString type, QString id )
              : Component( type, id )
 {
+    m_graphical = true;
     m_isILI = false;
 }
 
@@ -50,8 +52,17 @@ void TftController::displayReset()
     m_readBytes = 0;
 
     //m_reset = true;
+
+    Simulator::self()->addToUpdateList( this );
 }
 TftController::~TftController(){}
+
+
+void TftController::updateStep()
+{
+    update();
+}
+
 
 void TftController::commandReceived()
 {
@@ -307,6 +318,8 @@ void TftController::setDisplaySize( int x, int y )
 
     m_width  = x;
     m_height = y;
+
+    setRamSize( x, y );
 }
 
 void TftController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )

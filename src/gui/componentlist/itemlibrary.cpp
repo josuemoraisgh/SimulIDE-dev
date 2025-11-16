@@ -84,6 +84,7 @@
 #include "op_amp.h"
 #include "oscope.h"
 #include "pcd8544.h"
+#include "pcf8833.h"
 #include "probe.h"
 #include "potentiometer.h"
 #include "push.h"
@@ -93,6 +94,7 @@
 #include "resistor.h"
 #include "resistordip.h"
 #include "rtd.h"
+#include "scr.h"
 #include "sdcard.h"
 #include "serialport.h"
 #include "serialterm.h"
@@ -102,7 +104,6 @@
 #include "shiftreg.h"
 #include "socket.h"
 #include "sr04.h"
-#include "scr.h"
 #include "ssd1306.h"
 #include "stepper.h"
 #include "strain.h"
@@ -175,11 +176,13 @@ void ItemLibrary::loadItems()
     addItem( ResistorDip::libraryItem() );
     addItem( Potentiometer::libraryItem() );
     addItem( VarResistor::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Resistive Sensors"), "Passive", "resistorsensors.png","Resistive Sensors", nullptr ) );
     addItem( Ldr::libraryItem() );
     addItem( Thermistor::libraryItem() );
     addItem( RTD::libraryItem() );
     addItem( Strain::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Reactive"), "Passive", "reactive.png","Reactive", nullptr ) );
     addItem( Capacitor::libraryItem() );
     addItem( elCapacitor::libraryItem() );
@@ -193,10 +196,12 @@ void ItemLibrary::loadItems()
     addItem( SCR::libraryItem() );
     addItem( Diac::libraryItem() );
     addItem( Triac::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Transistors"), "Active", "transistors.png","Transistors", nullptr ) );
     addItem( BJT::libraryItem() );
     addItem( Mosfet::libraryItem() );
     addItem( Jfet::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Other Active"), "Active", "2to2.png","Other Active", nullptr ) );
     addItem( OpAmp::libraryItem() );
     addItem( Comparator::libraryItem() );
@@ -212,17 +217,21 @@ void ItemLibrary::loadItems()
     addItem( LedMatrix::libraryItem() );
     addItem( Max72xx_matrix::libraryItem() );
     addItem( WS2812::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Displays"), "Outputs", "displays.png","Displays", nullptr ) );
-    addItem( Hd44780::libraryItem() );
     addItem( Aip31068_i2c::libraryItem() );
-    addItem( Pcd8544::libraryItem() );
-    addItem( Ks0108::libraryItem() );
-    addItem( Ssd1306::libraryItem() );
+    addItem( Hd44780::libraryItem() );
     addItem( Ili9341::libraryItem() );
+    addItem( Ks0108::libraryItem() );
+    addItem( Pcd8544::libraryItem() );
+    addItem( PCF8833::libraryItem() );
+    addItem( Ssd1306::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Motors"), "Outputs", "motors.png","Motors", nullptr ) );
     addItem( DcMotor::libraryItem() );
     addItem( Stepper::libraryItem() );
     addItem( Servo::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Other Outputs"), "Outputs", "1to1.png","Other Outputs", nullptr ) );
     addItem( AudioOut::libraryItem() );
     addItem( Lamp::libraryItem() );
@@ -258,6 +267,7 @@ void ItemLibrary::loadItems()
     addItem( Dht22::libraryItem() );
     addItem( DS1621::libraryItem() );
     addItem( Ds18b20::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Peripherals"), "Micro", "perif.png","Peripherals", nullptr ) );
     addItem( SdCard::libraryItem() );
     addItem( SerialPort::libraryItem() );
@@ -274,6 +284,7 @@ void ItemLibrary::loadItems()
     addItem( AndGate::libraryItem() );
     addItem( OrGate::libraryItem() );
     addItem( XorGate::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Arithmetic"), "Logic", "2to2.png","Arithmetic", nullptr ) );
     addItem( Counter::libraryItem() );
     addItem( BinCounter::libraryItem() );
@@ -281,6 +292,7 @@ void ItemLibrary::loadItems()
     addItem( MagnitudeComp::libraryItem() );
     addItem( ShiftReg::libraryItem() );
     addItem( Function::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Memory"), "Logic", "subc.png","Memory", nullptr ) );
     addItem( FlipFlopD::libraryItem() );
     addItem( FlipFlopT::libraryItem() );
@@ -290,6 +302,7 @@ void ItemLibrary::loadItems()
     addItem( Memory::libraryItem() );
     addItem( DynamicMemory::libraryItem() );
     addItem( I2CRam::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Converters"), "Logic", "1to2.png","Converters", nullptr ) );
     addItem( Mux::libraryItem() );
     addItem( Demux::libraryItem() );
@@ -297,6 +310,7 @@ void ItemLibrary::loadItems()
     addItem( DecToBcd::libraryItem() );
     addItem( BcdTo7S::libraryItem() );
     addItem( I2CToParallel::libraryItem() );
+
     addItem( new LibraryItem( QObject::tr("Other Logic"), "Logic", "2to3.png","Other Logic", nullptr ) );
     addItem( ADC::libraryItem() );
     addItem( DAC::libraryItem() );

@@ -18,7 +18,8 @@ class TftController : public Component
         TftController( QString type, QString id );
         ~TftController();
 
-        void setRamSize( int x, int y );
+        void updateStep() override;
+
         void setDisplaySize( int x, int y );
 
         void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
@@ -32,6 +33,7 @@ class TftController : public Component
         void dataReceived();
         void clearDDRAM();
 
+        void setRamSize( int x, int y );
         void setStartX( uint16_t sx );
         void setStartY( uint16_t sy );
         void setEndX( uint16_t ex );
@@ -81,6 +83,7 @@ class TftController : public Component
 
         uint32_t m_readBytes;
         uint32_t m_data;
+        uint32_t m_colorData;
 
         uint8_t m_addrBytes;
         std::vector<std::vector<uint32_t>> m_DDRAM;
