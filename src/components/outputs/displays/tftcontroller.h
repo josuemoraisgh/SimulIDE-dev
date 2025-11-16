@@ -10,13 +10,18 @@
 
 #include <QImage>
 
-class TftController
+#include "component.h"
+
+class TftController : public Component
 {
     public:
-        TftController();
+        TftController( QString type, QString id );
+        ~TftController();
 
         void setRamSize( int x, int y );
         void setDisplaySize( int x, int y );
+
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     protected:
         virtual void displayReset();
@@ -27,39 +32,40 @@ class TftController
         void dataReceived();
         void clearDDRAM();
 
-        void setStartX();
-        void setStartY();
-        void setEndX();
-        void setEndY();
+        void setStartX( uint16_t sx );
+        void setStartY( uint16_t sy );
+        void setEndX( uint16_t ex );
+        void setEndY( uint16_t ey );
 
         uint32_t getPixel( int row , int col );
 
+        uint8_t m_isILI; // ILI9341 weirdness
 
-        uint8_t m_rxReg;     // Received value
+        uint16_t m_width;
+        uint16_t m_height;
 
+        uint8_t m_rxReg;      // Received value
         uint8_t m_lastCommand;
 
         uint8_t m_dataBytes;  // Determined by Pixel mode
-
+        uint8_t m_dataIndex;
 
         uint8_t m_dispOn;
         //bool m_dispFull;
         uint8_t m_dispInv;
-
 
         //bool m_reset;
         uint8_t m_scroll;
         uint8_t m_scrollR;
         uint8_t m_scrollV;
 
+        uint16_t m_TFA;      // Top Fixed Area
+        uint16_t m_VSA;      // Vertical Scrolling Area
+        uint16_t m_BFA;      // Bottom Fixed Area
+        uint16_t m_VSP;      // Vertical Scrolling Pointer
 
-        uint16_t m_TFA; // Top Fixed Area
-        uint16_t m_VSA; // Vertical Scrolling Area
-        uint16_t m_BFA; // Bottom Fixed Area
-        uint16_t m_VSP; // Vertical Scrolling Pointer
-
-        uint32_t m_addrX;              // X RAM address
-        uint32_t m_addrY;              // Y RAM address
+        uint32_t m_addrX;    // X RAM address
+        uint32_t m_addrY;    // Y RAM address
         uint16_t m_startX;
         uint16_t m_endX;
         uint16_t m_startY;

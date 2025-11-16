@@ -7,7 +7,6 @@
 
 #include "ili9341.h"
 #include "itemlibrary.h"
-#include "connector.h"
 #include "simulator.h"
 
 Component* Ili9341::construct( QString type, QString id )
@@ -24,17 +23,19 @@ LibraryItem* Ili9341::libraryItem()
 }
 
 Ili9341::Ili9341( QString type, QString id )
-       : Component( type, id )
+       : TftController( type, id )
        , eClockedDevice( id )
        , m_pinCS (  270, QPoint(-56, 184), id+"-PinCS"  , 0, this, input )
        , m_pinRst(  270, QPoint(-48, 184), id+"-PinRst" , 0, this, input )
        , m_pinDC (  270, QPoint(-40, 184), id+"-PinDC"  , 0, this, input )
        , m_pinMosi( 270, QPoint(-32, 184), id+"-PinMosi", 0, this, input )
        , m_pinSck(  270, QPoint(-24, 184), id+"-PinSck" , 0, this, input )
-       //, m_pinMiso( 270, QPoint(-16, 184), id+"-PinMiso" , 0, this )
-       , m_img( 240*2, 320*2, QImage::Format_RGB32 )
 {
     m_graphical = true;
+    m_isILI = true;
+
+    setRamSize( 240, 320 );
+    setDisplaySize( 240, 320 );
     
     m_area = QRectF( -126, -168, 252, 344 );
 
@@ -61,7 +62,6 @@ Ili9341::Ili9341( QString type, QString id )
     m_pin[2] = &m_pinDC;
     m_pin[3] = &m_pinMosi;
     m_pin[4] = &m_pinSck;
-    //m_pin[5] = &m_pinMiso;
 
     m_clkPin = &m_pinSck;
 
@@ -70,12 +70,8 @@ Ili9341::Ili9341( QString type, QString id )
     setLabelPos(-32,-180, 0);
     setShowId( true );
 
-    setRamSize( 240, 320 );
-    setDisplaySize( 240, 320 );
-    
     Ili9341::initialize();
 }
-
 Ili9341::~Ili9341(){}
 
 void Ili9341::stamp()
@@ -102,10 +98,6 @@ void Ili9341::displayReset()
     TftController::displayReset();
 
     m_inBit  = 0;
-    m_inByte = 0;
-    m_data   = 0;
-
-    //m_startLin = 0;
     m_dataBytes = 2; //16bit mode
 }
 
@@ -145,10 +137,10 @@ void Ili9341::voltChanged()
 void Ili9341::writeRam()
 {
     m_data = (m_data<<8) | m_rxReg;
-    m_inByte++;
-    if( m_inByte >= m_dataBytes )       // 16/18 bits ready
+    m_dataIndex++;
+    if( m_dataIndex >= m_dataBytes )       // 16/18 bits ready
     {
-        m_inByte = 0;
+        m_dataIndex = 0;
 
         uint r,g,b;
         if( m_dataBytes == 2 ) // 16 bits format: RRRRRGGGGGGBBBBB
@@ -173,46 +165,4 @@ void Ili9341::setPixelMode()
 {
     int mode = m_rxReg & 1<<4;
     m_dataBytes = mode ? 2 : 3;
-}
-
-void Ili9341::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
-{
-    p->setRenderHint( QPainter::Antialiasing, true );
-    QPen pen( Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
-    p->setPen( pen );
-    
-    p->setBrush( QColor(50, 70, 100) );
-    p->drawRoundedRect( m_area,2,2 );
-
-    if( !m_dispOn ) p->fillRect(-120,-162, 240, 320, Qt::black ); // Display Off
-    else{
-        QPainter painter;
-        painter.begin( &m_img );
-        painter.setRenderHint( QPainter::Antialiasing, true );
-
-        for( int row=0; row<320; ++row )
-        {
-            int y = row*2;
-            int yRAM = row;
-            if( m_VSP > 0 )
-            {
-                if( row >= m_TFA && row < 320-m_BFA )
-                {
-                    int srcollEnd = m_TFA+m_VSA-1;
-                    yRAM = m_VSP+row-m_TFA;
-                    if     ( yRAM > srcollEnd ) yRAM -= m_VSA;
-                    //else if( yRAM < 0   ) yRAM += 320;
-                }
-            }
-            for( int col=0; col<240; ++col )
-            {
-                uint32_t pixel = getPixel( col, row );
-                painter.fillRect( col*2, y, 2, 2, QColor(pixel).rgb() );
-            }
-        }
-        painter.end();
-        p->drawImage(QRectF(-120,-162, 240, 320), m_img );
-    }
-
-    Component::paintSelected( p );
 }

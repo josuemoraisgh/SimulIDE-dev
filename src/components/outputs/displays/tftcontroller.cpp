@@ -3,11 +3,15 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+//#include <QDebug>
+#include <QPainter>
+
 #include "tftcontroller.h"
 
-TftController::TftController()
+TftController::TftController( QString type, QString id )
+             : Component( type, id )
 {
-
+    m_isILI = false;
 }
 
 void TftController::displayReset()
@@ -39,15 +43,21 @@ void TftController::displayReset()
     m_VSP = 0;      // Vertical Scrolling Pointer
     m_VSA = m_maxY; // Vertical Scrolling Area
 
+    m_dataIndex = 0;
+    m_data   = 0;
+
     m_lastCommand = 0;
     m_readBytes = 0;
 
     //m_reset = true;
 }
+TftController::~TftController(){}
 
 void TftController::commandReceived()
 {
+    //qDebug() << "TftController::commandReceived" << QString::number( m_rxReg, 16 ).toUpper() << m_rxReg;
     m_lastCommand = m_rxReg;
+    m_dataIndex = 0;
     m_readBytes = 0;
 
     switch( m_rxReg )
@@ -135,71 +145,75 @@ void TftController::commandReceived()
     //case 0xEF: m_readBytes = 3; break; //, 0x03, 0x80, 0x02, // Misterious Commands in Adafruit_ILI9341.cpp initcmd[]
     case 0xF2: m_readBytes = 1; break;   /// Enable 3G: 0x00, 0x00,
     case 0xF6: m_readBytes = 3; break;   // Interface Control
-    case 0xF7: m_readBytes = 1; break; /// Pump ratio control 0x20,
+    case 0xF7: m_readBytes = 1; break;   /// Pump ratio control 0x20,
     }
     //qDebug() << "Ili9341::proccessCommand: " << command;
 }
 
 void TftController::dataReceived()
 {
+    //qDebug() << "TftController::dataReceived" << m_rxReg;
+    uint16_t buffer = m_rxReg;
+
     if( m_readBytes > 0 )
     {
         switch( m_lastCommand )
         {
         case 0x2A:   // Column Address Set
         {
-            if     ( m_readBytes == 4 ) m_startX = uint16_t(m_rxReg)<<8;
-            else if( m_readBytes == 3 )
+            if( m_addrBytes == 1 )
             {
-                m_startX |= m_rxReg;
-                if( m_startX > m_maxX ) m_startX = m_maxX;
-                m_addrX = m_startX;
-            }
-            else if( m_readBytes == 2 ) m_endX = uint16_t(m_rxReg)<<8;
-            else if( m_readBytes == 1 ){
-                m_endX |= m_rxReg;
-                if     ( m_endX > m_maxX   ) m_endX = m_maxX;
-                else if( m_endX < m_startX ) m_endX = m_startX;
+                if     ( m_readBytes == 2 ) setStartX( buffer );
+                else if( m_readBytes == 1 ) setEndX( buffer );
+            }else{
+                if     ( m_readBytes == 4 ) m_data = buffer<<8;
+                else if( m_readBytes == 3 ) setStartX( m_data | buffer );
+                else if( m_readBytes == 2 ) m_data = buffer<<8;
+                else if( m_readBytes == 1 ) setEndX( m_data | buffer );
             }
         }break;
         case 0x2B:   // Page Address Set
         {
-            if     ( m_readBytes == 4 ) m_startY = uint16_t(m_rxReg)<<8;
-            else if( m_readBytes == 3 )
+            if( m_addrBytes == 1 )
             {
-                m_startY |= m_rxReg;
-                if( m_startY > m_maxY ) m_startY = m_maxY;
-                m_addrY = m_startY;
-            }
-            else if( m_readBytes == 2 ) m_endY = uint16_t(m_rxReg)<<8;
-            else if( m_readBytes == 1 ){
-                m_endY |= m_rxReg;
-                if     ( m_endY > m_maxY   ) m_endY = m_maxY;
-                else if( m_endY < m_startY ) m_endY = m_startY;
+                if     ( m_readBytes == 2 ) setStartY( buffer );
+                else if( m_readBytes == 1 ) setEndY( buffer );
+            }else{
+                if     ( m_readBytes == 4 ) m_data = buffer<<8;
+                else if( m_readBytes == 3 ) setStartY( m_data | buffer );
+                else if( m_readBytes == 2 ) m_data = buffer<<8;
+                else if( m_readBytes == 1 ) setEndY( m_data | buffer );
             }
         }break;
         case 0x2C: writeRam(); break;  // RAMWR: Memory Write. Overriden by displays
         case 0x33:                     // Vertical Scrolling Definition
         {
-            if     ( m_readBytes == 6 ) m_TFA  = (uint16_t)m_rxReg << 8; // TFA [15:8]
-            else if( m_readBytes == 5 ) m_TFA |= m_rxReg;                // TFA [7:0]
-            else if( m_readBytes == 4 ) m_VSA  = (uint16_t)m_rxReg << 8; // VSA [15:8]
-            else if( m_readBytes == 3 ) m_VSA |= m_rxReg;                // VSA [7:0]
-            else if( m_readBytes == 2 ) m_BFA  = (uint16_t)m_rxReg << 8; // BFA [15:8]
-            else if( m_readBytes == 1 ) m_BFA |= m_rxReg;                // BFA [7:0]
+            if     ( m_readBytes == 6 ) m_TFA  = buffer << 8; // TFA [15:8]
+            else if( m_readBytes == 5 ) m_TFA |= buffer;      // TFA [7:0]
+            else if( m_readBytes == 4 ) m_VSA  = buffer << 8; // VSA [15:8]
+            else if( m_readBytes == 3 ) m_VSA |= buffer;      // VSA [7:0]
+            else if( m_readBytes == 2 ) m_BFA  = buffer << 8; // BFA [15:8]
+            else if( m_readBytes == 1 ) m_BFA |= buffer;      // BFA [7:0]
         }break;
         case 0x37:   // Vertical Scrolling Start Address, Ignored if Partial Mode
         {
-            if( m_readBytes == 2 ) m_VSP = (uint16_t)m_rxReg << 8; // VSP [15:8]
-            else                   m_VSP |= m_rxReg;               // VSP [7:0]
+            if( m_readBytes == 2 ) m_VSP = buffer << 8; // VSP [15:8]
+            else                   m_VSP |= buffer;    // VSP [7:0]
         }break;
         case 0x3A: setPixelMode(); break; // COLMOD: Pixel Formay Set
         case 0x36:{                       // Memory Access Control
-            m_BGR        = (m_rxReg & 1<<3)==0;
-            m_mirrorLine = m_rxReg & 1<<4;
-            m_swapXY     = m_rxReg & 1<<5;
-            m_mirrorX    = (m_rxReg & 1<<6)==0;
-            m_mirrorY    = m_rxReg & 1<<7;
+            m_mirrorLine = buffer & 1<<4;
+            m_swapXY     = buffer & 1<<5;
+            m_mirrorY    = buffer & 1<<7;
+
+            if(  m_isILI )  // ILI9341 weirdness
+            {
+                m_BGR     = (buffer & 1<<3) == 0;
+                m_mirrorX = (buffer & 1<<6) == 0;
+            }else{
+                m_BGR     = buffer & 1<<3;
+                m_mirrorX = buffer & 1<<6;
+            }
         }break;
         }
         m_readBytes--;
@@ -224,6 +238,34 @@ void TftController::writeRam() // Memory Write. Overriden by displays
         m_addrY++;
         if( m_addrY > m_endY ) m_addrY = m_startY;
     }
+}
+
+void TftController::setStartX( uint16_t sx )
+{
+    m_startX = sx;
+    if( m_startX > m_maxX ) m_startX = m_maxX;
+    m_addrX = m_startX;
+}
+
+void TftController::setEndX( uint16_t ex )
+{
+    m_endX = ex;
+    if     ( m_endX > m_maxX   ) m_endX = m_maxX;
+    else if( m_endX < m_startX ) m_endX = m_startX;
+}
+
+void TftController::setStartY( uint16_t sy )
+{
+    m_startY = sy;
+    if( m_startY > m_maxY ) m_startY = m_maxY;
+    m_addrY = m_startY;
+}
+
+void TftController::setEndY( uint16_t ey )
+{
+    m_endY = ey;
+    if     ( m_endY > m_maxY   ) m_endY = m_maxY;
+    else if( m_endY < m_startY ) m_endY = m_startY;
 }
 
 uint32_t TftController::getPixel( int col, int row )
@@ -253,14 +295,60 @@ void TftController::setRamSize( int x, int y )
     if( x > 256 || y > 256 ) m_addrBytes = 2;
     else                     m_addrBytes = 1;
 
-    m_DDRAM.resize( x, std::vector<uint32_t>(y, 0) );
-
     m_maxX = x-1;
     m_maxY = y-1;
+
+    m_DDRAM.resize( x, std::vector<uint32_t>(y, 0) );
 }
 
 void TftController::setDisplaySize( int x, int y )
 {
     m_image = QImage( x*2, y*2, QImage::Format_RGB32 );
+
+    m_width  = x;
+    m_height = y;
 }
 
+void TftController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
+{
+    p->setRenderHint( QPainter::Antialiasing, true );
+    QPen pen( Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
+    p->setPen( pen );
+
+    p->setBrush( QColor(50, 70, 100) );
+    p->drawRoundedRect( m_area,2,2 );
+
+    QRectF imgRect = QRectF(-m_width/2,-m_height/2, m_width, m_height );
+
+    if( !m_dispOn ) p->fillRect( imgRect, Qt::black ); // Display Off
+    else{
+        QPainter painter;
+        painter.begin( &m_image );
+        painter.setRenderHint( QPainter::Antialiasing, true );
+
+        for( int row=0; row<m_height; ++row )
+        {
+            int y = row*2;
+            int yRAM = row;
+            if( m_VSP > 0 )
+            {
+                if( row >= m_TFA && row < m_width-m_BFA )
+                {
+                    int srcollEnd = m_TFA+m_VSA-1;
+                    yRAM = m_VSP+row-m_TFA;
+                    if     ( yRAM > srcollEnd ) yRAM -= m_VSA;
+                    //else if( yRAM < 0   ) yRAM += 320;
+                }
+            }
+            for( int col=0; col<m_width; ++col )
+            {
+                uint32_t pixel = getPixel( col, row );
+                painter.fillRect( col*2, y, 2, 2, QColor(pixel).rgb() );
+            }
+        }
+        painter.end();
+        p->drawImage( imgRect, m_image );
+    }
+
+    Component::paintSelected( p );
+}
