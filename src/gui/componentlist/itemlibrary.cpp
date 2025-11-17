@@ -51,6 +51,7 @@
 #include "gate_and.h"
 #include "gate_or.h"
 #include "gate_xor.h"
+#include "gc9a01a.h"
 #include "ground.h"
 #include "header.h"
 #include "hd44780.h"
@@ -222,6 +223,7 @@ void ItemLibrary::loadItems()
 
     addItem( new LibraryItem( QObject::tr("Displays"), "Outputs", "displays.png","Displays", nullptr ) );
     addItem( Aip31068_i2c::libraryItem() );
+    addItem( GC9A01A::libraryItem() );
     addItem( Hd44780::libraryItem() );
     addItem( Ili9341::libraryItem() );
     addItem( Ks0108::libraryItem() );

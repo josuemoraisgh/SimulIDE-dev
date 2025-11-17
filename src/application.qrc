@@ -165,6 +165,7 @@
         <file alias="pcf8833.png">../src/icons/components/pcf8833.png</file>
         <file alias="st7735.png">../src/icons/components/st7735.png</file>
         <file alias="st7789.png">../src/icons/components/st7789.png</file>
+        <file alias="gc9a01a.png">../src/icons/components/gc9a01a.png</file>
         <file alias="mosfet.png">../src/icons/components/mosfet.png</file>
         <file alias="jfet.png">../src/icons/components/jfet.png</file>
         <file alias="clock.png">../src/icons/components/clock.png</file>
