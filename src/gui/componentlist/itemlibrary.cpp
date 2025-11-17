@@ -106,6 +106,7 @@
 #include "sr04.h"
 #include "ssd1306.h"
 #include "st7735.h"
+#include "st7789.h"
 #include "stepper.h"
 #include "strain.h"
 #include "subcircuit.h"
@@ -228,6 +229,7 @@ void ItemLibrary::loadItems()
     addItem( PCF8833::libraryItem() );
     addItem( Ssd1306::libraryItem() );
     addItem( St7735::libraryItem() );
+    addItem( St7789::libraryItem() );
 
     addItem( new LibraryItem( QObject::tr("Motors"), "Outputs", "motors.png","Motors", nullptr ) );
     addItem( DcMotor::libraryItem() );
