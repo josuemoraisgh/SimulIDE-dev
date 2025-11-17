@@ -8,6 +8,7 @@
 #include "varresistor.h"
 #include "itemlibrary.h"
 #include "simulator.h"
+#include "resistor.h"
 
 #include "doubleprop.h"
 #include "propdialog.h"
@@ -65,7 +66,9 @@ void VarResistor::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget
     if( m_hidden ) return;
     Component::paint( p, o, w );
 
-    p->drawRect( QRectF(-11,-4.5, 22, 9 ) );
+    if( m_ansiSymbol ) Resistor::drawAnsi( p, 0, 0 );
+    else               p->drawRect( QRectF(-11,-4.5, 22, 9 ) );
+
     p->drawLine(-6, 6, 8,-8 );
     p->drawLine( 8,-6, 8,-8 );
     p->drawLine( 8,-8, 6,-8 );

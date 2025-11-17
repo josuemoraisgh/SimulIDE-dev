@@ -42,6 +42,9 @@ class Circuit : public QGraphicsScene
         bool animateCurr() { return m_animateCurr; }
         void setAnimateCurr( bool an );
 
+        bool ansiSymbols() { return m_ansiSymbols; }
+        void setAnsiSymbols( bool an );
+
         int sceneWidth() { return m_sceneWidth; }
         void setSceneWidth( int w );
 
@@ -191,6 +194,7 @@ class Circuit : public QGraphicsScene
         bool m_compRemoved;
         bool m_animateLogic;
         bool m_animateCurr;
+        bool m_ansiSymbols;
         bool m_changed;
         bool m_busy;
         bool m_undo;

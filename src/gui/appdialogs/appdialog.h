@@ -37,6 +37,7 @@ class AppDialog : public QDialog, private Ui::AppDialog
         void on_showScroll_toggled( bool show );
         void on_animate_logic_toggled( bool ani );
         void on_animate_curr_toggled( bool ani );
+        void on_ansiSymbols_toggled( bool ans );
         void on_canvasWidth_editingFinished();
         void on_canvasHeight_editingFinished();
         void on_fps_valueChanged( int fps );

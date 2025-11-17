@@ -15,7 +15,7 @@ class PackagePin : public Pin
         ~PackagePin();
 
         virtual void setLabelText( QString label, bool over=true ) override;
-        virtual void setLength( int length ) override;
+        virtual void setLength( double length ) override;
 
         virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 

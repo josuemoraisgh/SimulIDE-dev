@@ -72,7 +72,7 @@ void PackagePin::setLabelText( QString label, bool over )
     setFlag( QGraphicsItem::ItemStacksBehindParent, false );
 }
 
-void PackagePin::setLength( int length )
+void PackagePin::setLength( double length )
 {
     Pin::setLength( length );
     m_area = QRectF(-1.5,-2, m_length+2, 4 );

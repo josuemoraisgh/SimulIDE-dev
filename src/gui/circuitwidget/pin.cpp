@@ -328,13 +328,13 @@ void Pin::moveBy( int dx, int dy )
     QGraphicsItem::moveBy( dx, dy );
 }
 
-void Pin::setLength( int length )
+void Pin::setLength( double length )
 {
     if( length < 1 ) length = 1;
     m_length = length;
     int aLength = 11;
     if( length == 1 ) aLength = 6;
-    m_area = QRect(-3, -3, aLength, 6);
+    m_area = QRectF(-3, -3, aLength, 6);
     setLabelPos();
 }
 

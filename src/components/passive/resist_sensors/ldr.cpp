@@ -8,6 +8,7 @@
 
 #include "ldr.h"
 #include "itemlibrary.h"
+#include "resistor.h"
 
 #include "doubleprop.h"
 #include "intprop.h"
@@ -89,7 +90,8 @@ void Ldr::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 
     Component::paint( p, o, w );
 
-    p->drawRect( QRectF(-11,-4.5, 22, 9 ));
+    if( m_ansiSymbol ) Resistor::drawAnsi( p, 0, 0 );
+    else               p->drawRect( QRectF(-11,-4.5, 22, 9 ));
     
     p->drawLine(-5,-11,-1,-7 );
     p->drawLine(-1, -7,-1,-9 );

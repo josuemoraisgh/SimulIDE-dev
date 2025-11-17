@@ -33,8 +33,8 @@ Resistor::Resistor( QString type, QString id )
     m_ePin[0] = m_pin[0];
     m_ePin[1] = m_pin[1];
 
-    m_pin[0]->setLength( 5 );
-    m_pin[1]->setLength( 5 );
+    m_pin[0]->setLength( 4.4 );
+    m_pin[1]->setLength( 4.4 );
 
     addPropGroup( { tr("Main"), {
         new DoubProp<Resistor>("Resistance", tr("Resistance"), "Ω"
@@ -46,10 +46,26 @@ Resistor::Resistor( QString type, QString id )
 }
 Resistor::~Resistor(){}
 
+void Resistor::drawAnsi( QPainter* p, int x, int y, double sX, double sY )
+{
+    QPen pen = p->pen();
+    pen.setWidth(2);
+    p->setPen( pen );
+    p->drawLine( QPointF( sX*(-12+x),sY*( 0)+y ), QPointF( sX*(-10+x),sY*(-4)+y ) );
+    p->drawLine( QPointF( sX*(-10+x),sY*(-4)+y ), QPointF( sX*( -6+x),sY*( 4)+y ) );
+    p->drawLine( QPointF( sX*( -6+x),sY*( 4)+y ), QPointF( sX*( -2+x),sY*(-4)+y ) );
+    p->drawLine( QPointF( sX*( -2+x),sY*(-4)+y ), QPointF( sX*(  2+x),sY*( 4)+y ) );
+    p->drawLine( QPointF( sX*(  2+x),sY*( 4)+y ), QPointF( sX*(  6+x),sY*(-4)+y ) );
+    p->drawLine( QPointF( sX*(  6+x),sY*(-4)+y ), QPointF( sX*( 10+x),sY*( 4)+y ) );
+    p->drawLine( QPointF( sX*( 10+x),sY*( 4)+y ), QPointF( sX*( 12+x),sY*( 0)+y ) );
+}
+
 void Resistor::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    p->drawRect( m_area );
+
+    if( m_ansiSymbol ) Resistor::drawAnsi( p, 0, 0 );
+    else               p->drawRect( m_area );
 
     Component::paintSelected( p );
 }

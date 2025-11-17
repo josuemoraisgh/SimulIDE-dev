@@ -504,6 +504,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="ansiSymbols">
+           <property name="text">
+            <string>ANSI Symbols</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <layout class="QHBoxLayout" name="horizontalLayout_16">
            <item>
             <widget class="QLabel" name="label_21">

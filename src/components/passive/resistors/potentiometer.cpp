@@ -8,6 +8,7 @@
 #include <QGraphicsProxyWidget>
 
 #include "potentiometer.h"
+#include "resistor.h"
 #include "dialwidget.h"
 #include "propdialog.h"
 #include "simulator.h"
@@ -156,7 +157,8 @@ void Potentiometer::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidg
 
     Component::paint( p, o, w );
 
-    p->drawRect( QRectF(-11,-4.5, 22, 9 ));
+    if( m_ansiSymbol ) Resistor::drawAnsi( p, 0, 0 );
+    else               p->drawRect( QRectF(-11,-4.5, 22, 9 ));
     QPen pen = p->pen();
     pen.setWidth(3);
     p->setPen(pen);

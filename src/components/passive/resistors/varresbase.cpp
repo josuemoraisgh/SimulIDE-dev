@@ -24,8 +24,8 @@ VarResBase::VarResBase( QString type, QString id )
     m_ePin[0] = m_pin[0] = new Pin( 180, QPoint(-16, 0 ), id+"-lPin", 0, this);
     m_ePin[1] = m_pin[1] = new Pin( 0,   QPoint( 16, 0 ), id+"-rPin", 1, this);
 
-    m_pin[0]->setLength( 5 );
-    m_pin[1]->setLength( 5 );
+    m_pin[0]->setLength( 4.4 );
+    m_pin[1]->setLength( 4.4 );
 
     m_idLabel->setPos(-12,-24);
     setLabelPos(-16,-24, 0);
