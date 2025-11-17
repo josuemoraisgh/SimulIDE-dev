@@ -209,7 +209,7 @@ void TftController::dataReceived()
         case 0x37:   // Vertical Scrolling Start Address, Ignored if Partial Mode
         {
             if( m_readBytes == 2 ) m_VSP = buffer << 8; // VSP [15:8]
-            else                   m_VSP |= buffer;    // VSP [7:0]
+            else                   m_VSP |= buffer;     // VSP [7:0]
         }break;
         case 0x3A: setPixelMode(); break; // COLMOD: Pixel Formay Set
         case 0x36:{                       // Memory Access Control
@@ -217,7 +217,7 @@ void TftController::dataReceived()
             m_swapXY     = buffer & 1<<5;
             m_mirrorY    = buffer & 1<<7;
 
-            if(  m_isILI )  // ILI9341 weirdness
+            if(  m_isILI )  // ILI9341 seems to work this way
             {
                 m_BGR     = (buffer & 1<<3) == 0;
                 m_mirrorX = (buffer & 1<<6) == 0;
@@ -281,15 +281,12 @@ void TftController::setEndY( uint16_t ey )
 
 uint32_t TftController::getPixel( int col, int row )
 {
-    uint pixel = m_DDRAM[col][row];
-    if( m_BGR )
-    {
-        uint r,g,b;
-
-        r = (pixel & 0b111111110000000000000000);
-        g = (pixel & 0b000000001111111100000000);
-        b = (pixel & 0b000000000000000011111111);
-        pixel = (b<<16) + g + (r>>16);
+    uint32_t pixel = m_DDRAM[col][row];
+    if( m_BGR ){
+        uint32_t r = (pixel & 0xFF0000);
+        uint32_t g = (pixel & 0x00FF00);
+        uint32_t b = (pixel & 0x0000FF);
+        pixel = (b<<16) | g | (r>>16);
     }
     return pixel;
 }
@@ -322,6 +319,35 @@ void TftController::setDisplaySize( int x, int y )
     setRamSize( x, y );
 }
 
+void TftController::printImage()
+{
+    QPainter painter;
+    painter.begin( &m_image );
+    painter.setRenderHint( QPainter::Antialiasing, true );
+
+    for( int row=0; row<m_height; ++row )
+    {
+        int y = row*2;
+        int yRAM = row;
+        if( m_VSP > 0 )
+        {
+            if( row >= m_TFA && row < m_width-m_BFA )
+            {
+                int srcollEnd = m_TFA+m_VSA-1;
+                yRAM = m_VSP+row-m_TFA;
+                if     ( yRAM > srcollEnd ) yRAM -= m_VSA;
+                //else if( yRAM < 0   ) yRAM += 320;
+            }
+        }
+        for( int col=0; col<m_width; ++col )
+        {
+            uint32_t pixel = getPixel( col, row );
+            painter.fillRect( col*2, y, 2, 2, QColor(pixel).rgb() );
+        }
+    }
+    painter.end();
+}
+
 void TftController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
 {
     p->setRenderHint( QPainter::Antialiasing, true );
@@ -335,33 +361,9 @@ void TftController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
 
     if( !m_dispOn ) p->fillRect( imgRect, Qt::black ); // Display Off
     else{
-        QPainter painter;
-        painter.begin( &m_image );
-        painter.setRenderHint( QPainter::Antialiasing, true );
+        printImage();
 
-        for( int row=0; row<m_height; ++row )
-        {
-            int y = row*2;
-            int yRAM = row;
-            if( m_VSP > 0 )
-            {
-                if( row >= m_TFA && row < m_width-m_BFA )
-                {
-                    int srcollEnd = m_TFA+m_VSA-1;
-                    yRAM = m_VSP+row-m_TFA;
-                    if     ( yRAM > srcollEnd ) yRAM -= m_VSA;
-                    //else if( yRAM < 0   ) yRAM += 320;
-                }
-            }
-            for( int col=0; col<m_width; ++col )
-            {
-                uint32_t pixel = getPixel( col, row );
-                painter.fillRect( col*2, y, 2, 2, QColor(pixel).rgb() );
-            }
-        }
-        painter.end();
         p->drawImage( imgRect, m_image );
     }
-
     Component::paintSelected( p );
 }

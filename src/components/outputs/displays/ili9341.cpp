@@ -9,6 +9,8 @@
 #include "itemlibrary.h"
 #include "simulator.h"
 
+#define tr(str) simulideTr("Ili9341",str)
+
 Component* Ili9341::construct( QString type, QString id )
 { return new Ili9341( type, id ); }
 
@@ -31,10 +33,8 @@ Ili9341::Ili9341( QString type, QString id )
        , m_pinMosi( 270, QPoint(-32, 184), id+"-PinMosi", 0, this, input )
        , m_pinSck(  270, QPoint(-24, 184), id+"-PinSck" , 0, this, input )
 {
-    m_graphical = true;
     m_isILI = true;
 
-    setRamSize( 240, 320 );
     setDisplaySize( 240, 320 );
     
     m_area = QRectF( -126, -168, 252, 344 );

@@ -24,7 +24,7 @@ LibraryItem* PCF8833::libraryItem()
 
 PCF8833::PCF8833( QString type, QString id )
        : TftController( type, id )
-       , Tft3Pins( id, this )
+       , Spi3Pins( id, this )
 {
     m_graphical = true;
 
@@ -59,7 +59,7 @@ void PCF8833::stamp()
 void PCF8833::displayReset()
 {
     TftController::displayReset();
-    Tft3Pins::reset();
+    Spi3Pins::reset();
     //m_dataBytes = 2; //16bit mode
 }
 

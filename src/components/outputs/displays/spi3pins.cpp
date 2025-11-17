@@ -3,9 +3,9 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-#include "tft3pins.h"
+#include "spi3pins.h"
 
-Tft3Pins::Tft3Pins( QString id, Component* comp )
+Spi3Pins::Spi3Pins( QString id, Component* comp )
         : eClockedDevice( id )
         , m_pinRS( 270, QPoint(-48, 66+22), id+"-PinRS", 0, comp, input )
         , m_pinCS( 270, QPoint(-40, 66+22), id+"-PinCS", 0, comp, input )
@@ -28,9 +28,9 @@ Tft3Pins::Tft3Pins( QString id, Component* comp )
 
     m_clkPin = &m_pinCK;
 }
-Tft3Pins::~Tft3Pins(){}
+Spi3Pins::~Spi3Pins(){}
 
-void Tft3Pins::stamp()
+void Spi3Pins::stamp()
 {
     reset();
     //clearDDRAM();
@@ -40,13 +40,13 @@ void Tft3Pins::stamp()
     m_pinCS.changeCallBack( this );
 }
 
-void Tft3Pins::reset()
+void Spi3Pins::reset()
 {
     m_inBit  = 0;
     m_buffer   = 0;
 }
 
-void Tft3Pins::voltChanged()
+void Spi3Pins::voltChanged()
 {
     bool ret = false;
     if( !m_pinRS.getInpState() ) // Reset Pin is Low

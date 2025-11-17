@@ -6,12 +6,12 @@
 #pragma once
 
 #include "tftcontroller.h"
-#include "tft3pins.h"
+#include "spi3pins.h"
 #include "iopin.h"
 
 class LibraryItem;
 
-class PCF8833 : public TftController, public Tft3Pins
+class PCF8833 : public TftController, public Spi3Pins
 {
     public:
         PCF8833( QString type, QString id );

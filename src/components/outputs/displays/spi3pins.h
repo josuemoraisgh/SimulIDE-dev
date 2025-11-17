@@ -8,11 +8,11 @@
 #include "e-clocked_device.h"
 #include "iopin.h"
 
-class Tft3Pins : public eClockedDevice
+class Spi3Pins : public eClockedDevice
 {
     public:
-        Tft3Pins( QString id, Component* comp );
-        ~Tft3Pins();
+        Spi3Pins( QString id, Component* comp );
+        ~Spi3Pins();
 
         void stamp() override;
         void voltChanged() override;

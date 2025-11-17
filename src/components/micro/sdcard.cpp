@@ -51,7 +51,7 @@ SdCard::SdCard( QString type, QString id )
     m_pinCK.setLabelText("CK");
     m_pinDO.setLabelText("DO");
 
-     m_pinDO.setOutHighV( 3.3 );
+    m_pinDO.setOutHighV( 3.3 );
 
     m_pin.resize( 4 );
     m_pin= { &m_pinCS, &m_pinDI, &m_pinCK, &m_pinDO };
@@ -97,8 +97,8 @@ void SdCard::stamp()
     m_useSS = false;
     resetCard();
 
-    if( m_diskImage ) this->setMode( SPI_SLAVE );
-    else              this->setMode( SPI_OFF );
+    if( m_diskImage ) SpiModule::setMode( SPI_SLAVE );
+    else              SpiModule::setMode( SPI_OFF );
 }
 
 void SdCard::voltChanged()

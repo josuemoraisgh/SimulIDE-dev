@@ -33,6 +33,8 @@ class TftController : public Component
         void dataReceived();
         void clearDDRAM();
 
+        void printImage();
+
         void setRamSize( int x, int y );
         void setStartX( uint16_t sx );
         void setStartY( uint16_t sy );
