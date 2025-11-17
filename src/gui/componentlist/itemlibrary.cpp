@@ -105,6 +105,7 @@
 #include "socket.h"
 #include "sr04.h"
 #include "ssd1306.h"
+#include "st7735.h"
 #include "stepper.h"
 #include "strain.h"
 #include "subcircuit.h"
@@ -226,6 +227,7 @@ void ItemLibrary::loadItems()
     addItem( Pcd8544::libraryItem() );
     addItem( PCF8833::libraryItem() );
     addItem( Ssd1306::libraryItem() );
+    addItem( St7735::libraryItem() );
 
     addItem( new LibraryItem( QObject::tr("Motors"), "Outputs", "motors.png","Motors", nullptr ) );
     addItem( DcMotor::libraryItem() );
@@ -248,19 +250,6 @@ void ItemLibrary::loadItems()
     addItem( new LibraryItem("Espressif", "Micro", "ic2.png", "Espressif", nullptr) );
     addItem( new LibraryItem("Shields", "Micro", "ic2.png", "Shields"  , nullptr) );
 
-    //LibraryItem* esp32 = Esp32::libraryItem();
-    //if( esp32 )
-    //{
-    //    addItem( new LibraryItem("Espressif", "Micro", ":/ic2.png", "Espressif", nullptr) );
-    //    addItem( esp32 );
-    //}
-
-    //LibraryItem* stm32 = Stm32::libraryItem();
-    //if( stm32 )
-    //{
-    //    addItem( new LibraryItem("STM32", "Micro", ":/ic2.png", "STM32", nullptr) );
-    //    addItem( stm32 );
-    //}
     addItem( new LibraryItem( QObject::tr("Sensors"), "Micro", "1to2.png","Sensors", nullptr ) );
     addItem( Mcu::libraryItem() );
     addItem( SR04::libraryItem() );
