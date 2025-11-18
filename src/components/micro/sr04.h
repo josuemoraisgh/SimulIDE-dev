@@ -10,31 +10,43 @@
 
 class LibraryItem;
 class IoPin;
+class CustomSlider;
 
 class SR04 : public Component, public eElement
 {
     public:
         SR04( QString type, QString id );
         ~SR04();
-
-        static Component* construct( QString type, QString id );
-        static LibraryItem* libraryItem();
         
-        virtual void stamp() override;
-        virtual void initialize() override;
-        virtual void voltChanged() override;
-        virtual void runEvent() override;
+        void stamp() override;
+        void initialize() override;
+        void updateStep() override;
+        void voltChanged() override;
+        void runEvent() override;
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        bool slider() { return m_useDial; }
+        void setSlider( bool s );
+
+        void dialChanged( int );
+
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+
+ static Component* construct( QString type, QString id );
+ static LibraryItem* libraryItem();
 
     private:
+        bool m_useDial;
+
         uint64_t m_lastStep;
         bool     m_lastTrig;
 
         int m_echouS;
+        double m_distance;
         
         Pin* m_inpin;
         Pin* m_trigpin;
         
         IoPin* m_echo;
+
+        CustomSlider* m_slider;
 };
