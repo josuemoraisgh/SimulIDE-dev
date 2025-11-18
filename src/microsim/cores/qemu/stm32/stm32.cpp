@@ -320,7 +320,7 @@ void Stm32::setPortState( uint8_t port, uint16_t state )
 
 void Stm32::setPinState( uint8_t port, uint8_t pin, bool state )
 {
-    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
+    std::vector<Stm32Pin*> ioPort = m_ports[port]; //getPort( port );
 
     //qDebug() << "Stm32::setPinState" << port << pin << state;
 

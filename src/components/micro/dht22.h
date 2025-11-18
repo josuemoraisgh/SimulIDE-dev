@@ -71,8 +71,5 @@ class Dht22 : public Component , public eElement
 
         QFont m_font;
 
-        //QToolButton* m_button;
-        //QGraphicsProxyWidget* m_proxy;
-
         IoPin* m_inpin;
 };

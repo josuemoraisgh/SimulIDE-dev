@@ -672,8 +672,6 @@ void Component::paintSelected( QPainter* p )
     }
     if( isSelected() )
     {
-        //pen.setColor( Qt::darkGray);
-        //color = Qt::darkGray;
         p->setOpacity( 0.5 );
         p->fillRect( boundingRect(), Qt::darkGray  );
     }

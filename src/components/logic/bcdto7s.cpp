@@ -59,8 +59,6 @@ BcdTo7S::BcdTo7S( QString type, QString id )
     m_resetPin->setInverted( true ); //setResetInv( true );    // Invert Reset Pin
     m_otherPin.emplace_back( m_resetPin );
 
-
-
     Simulator::self()->addToUpdateList( this );
 
     addPropGroup( { tr("Main"), {
@@ -69,9 +67,6 @@ BcdTo7S::BcdTo7S( QString type, QString id )
 
         new BoolProp<BcdTo7S>("UseRS", tr("Reset Pin"),""
                              , this, &BcdTo7S::pinReset, &BcdTo7S::setPinReset, propNoCopy ),
-
-        //new BoolProp<BcdTo7S>("Reset_Inverted", tr("Reset Inverted"),""
-        //                      , this, &BcdTo7S::resetInv, &BcdTo7S::setResetInv ),
     },0} );
 
     appendPropGroup( tr("Main"), IoComponent::familyProps() );
@@ -112,9 +107,6 @@ void BcdTo7S::stamp()
     BcdBase::stamp();
 
     m_resetPin->changeCallBack( this, m_useReset );
-
-    //uint8_t value = m_segments[0];
-    //for( int i=0; i<7; ++i ) m_outPin[i]->setOutState( value & (1<<i) );
 }
 
 void BcdTo7S::updateStep()
@@ -145,24 +137,3 @@ void BcdTo7S::setPinReset( bool r )
 
     updtProperties();
 }
-
-/*void BcdTo7S::setResetInv( bool inv )
-{
-    m_resetInv = inv;
-    m_resetPin->setInverted( inv );
-}*/
-
-/*void BcdTo7S::updtProperties()
-{
-    if( !m_propDialog ) return;
-
-    //m_propDialog->showProp("Reset_Inverted", m_useReset );
-
-    m_propDialog->adjustWidgets();
-}*/
-
-/*void BcdTo7S::slotProperties()
-{
-    Component::slotProperties();
-    updtProperties();
-}*/

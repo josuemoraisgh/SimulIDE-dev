@@ -100,12 +100,12 @@ void TftController::commandReceived()
     case 0x30: m_readBytes = 2*m_addrBytes; break;  // Partial Area
     case 0x33: m_readBytes = 3*m_addrBytes; break;  // Vertical Scrolling Definition
     //case 0x34: // Tearing Effect Line Off
-    case 0x35: m_readBytes = 1; break;   // Tearing Effect Line On
-    case 0x36: m_readBytes = 1; break;   // Memory Access Control
-    case 0x37: m_readBytes = 2; break;   // Vertical Scrolling Start Address
+    case 0x35: m_readBytes = 1;             break;   // Tearing Effect Line On
+    case 0x36: m_readBytes = 1;             break;   // Memory Access Control
+    case 0x37: m_readBytes = 2;             break;   // Vertical Scrolling Start Address
     //case 0x38: // Idle Mode Off
     //case 0x39: // Idle Mode On
-    case 0x3A: m_readBytes = 1; break;   // COLMOD: Pixel Formay Set
+    case 0x3A: m_readBytes = 1;             break;   // COLMOD: Pixel Formay Set
     //case 0x3C: // Write Memory Continue
     //case 0x3E: // Read Memory Continue
     case 0x44: m_readBytes = 2; break;   // Set Tear Scanline

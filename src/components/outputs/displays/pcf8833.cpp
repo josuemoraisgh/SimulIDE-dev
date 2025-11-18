@@ -74,9 +74,9 @@ void PCF8833::setPixelMode()
 {
     switch( m_rxReg & 0b111 )
     {
-    case 2: m_dataBytes = 1; break;
-    case 3: m_dataBytes = 2; break;
-    case 5: m_dataBytes = 3; break;
+    case 2: m_dataBytes = 1; break; // 3/3/3
+    case 3: m_dataBytes = 2; break; // 5/6/5
+    case 5: m_dataBytes = 3; break; // 4/4/4
     }
 }
 
@@ -88,7 +88,7 @@ void PCF8833::writeRam()
     uint32_t buffer = m_rxReg;
     switch( m_dataBytes )
     {
-        case 1:  // RRRGGGBB
+        case 1:  // RRRGGGBB 3/3/3
         {
             m_data = buffer & 0b11<<(0+6);
             buffer >>= 2;
@@ -97,7 +97,7 @@ void PCF8833::writeRam()
             m_data |= (buffer & 0b111)<<(16+5);
             TftController::writeRam();
         }break;
-        case 2:  // RRRRRGGG GGGBBBBB
+        case 2:  // RRRRRGGG GGGBBBBB 5/6/5
         {
             switch( m_dataIndex ) {
             case 1:{
@@ -113,7 +113,7 @@ void PCF8833::writeRam()
             }break;
             }
         }break;
-        case 3:  // RRRRGGGG BBBB-RRRR GGGGBBBB
+        case 3:  // RRRRGGGG BBBB-RRRR GGGGBBBB 4/4/4
         {
             switch( m_dataIndex ) {
                 case 1:{
