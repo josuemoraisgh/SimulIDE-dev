@@ -160,6 +160,7 @@
         <file alias="ks0108.png">../src/icons/components/ks0108.png</file>
         <file alias="hd44780.png">../src/icons/components/hd44780.png</file>
         <file alias="aip31068.png">../src/icons/components/aip31068.png</file>
+        <file alias="sh1107.png">../src/icons/components/sh1107.png</file>
         <file alias="ssd1306.png">../src/icons/components/ssd1306.png</file>
         <file alias="ili9341.png">../src/icons/components/ili9341.png</file>
         <file alias="pcf8833.png">../src/icons/components/pcf8833.png</file>

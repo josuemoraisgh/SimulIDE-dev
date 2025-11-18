@@ -7,7 +7,7 @@
 
 #include "oledcontroller.h"
 #include "simulator.h"
-#include "circuitview.h"
+#include "circuitwidget.h"
 #include "circuit.h"
 #include "iopin.h"
 
@@ -15,9 +15,6 @@
 #include "stringprop.h"
 #include "boolprop.h"
 #include "intprop.h"
-
-#define tr(str) simulideTr("OledController",str)
-
 
 OledController::OledController( QString type, QString id )
        : Component( type, id )
@@ -36,7 +33,6 @@ OledController::OledController( QString type, QString id )
 
     Simulator::self()->addToUpdateList( this );
 
-    setLabelPos(-32,-60, 0);
     setShowId( true );
 
     reset();
@@ -139,6 +135,7 @@ void OledController::reset()
     m_dispFull = false;
     m_dispInv  = false;
     m_scanInv  = false;
+    m_remap    = false;
 
     m_addrMode = PAGE_ADDR_MODE;
 }
@@ -168,11 +165,12 @@ void OledController::writeData()
 {
     m_DDRAM[m_addrX][m_addrY] = m_rxReg;
 
-    if( m_addrMode == VERT_ADDR_MODE )
+    if( m_addrMode & VERT_ADDR_MODE )
     {
         m_addrY++;
         if( m_addrY > m_endY ){
             m_addrY = m_startY;
+            if( m_addrMode != VERT_ADDR_MODE ) return;
             m_addrX++;
             if( m_addrX > m_endX ) m_addrX = m_startX;
         }
@@ -207,8 +205,8 @@ void OledController::setColorStr( QString color )
 
 void OledController::setWidth( int w )
 {
-    if     ( w > 128 ) w = 128;
-    else if( w < 32  ) w = 32;
+    if     ( w > m_maxWidth ) w = m_maxWidth;
+    else if( w < 32         ) w = 32;
     if( m_width == w ) return;
     m_width = w;
 }
@@ -216,8 +214,8 @@ void OledController::setWidth( int w )
 void OledController::setHeight( int h )
 {
     if( h > m_height ) h += 8;
-    if     ( h > 64 ) h = 64;
-    else if( h < 16 ) h = 16;
+    if     ( h > m_maxHeight ) h = m_maxHeight;
+    else if( h < 16          ) h = 16;
 
     h = (h/8)*8;
     if( m_height == h ) return;
@@ -230,6 +228,10 @@ void OledController::setHeight( int h )
 
 void OledController::setSize( int w, int h )
 {
+    if( Simulator::self()->isRunning() ) CircuitWidget::self()->powerCircOff();
+
+    m_maxWidth = w;
+    m_maxHeight = h;
     setWidth( w );
     setHeight( h );
     updateSize();
@@ -263,7 +265,7 @@ void OledController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidge
         painter.begin( &img );
         painter.fillRect( 0, 0, m_width*3, m_height*3, Qt::black );
 
-        bool scanInv = m_rotate ? !m_scanInv : m_scanInv;
+        bool scanInv = m_remap ? !m_scanInv : m_scanInv;
 
         if( m_dispOn  ){
             for( int col=0; col<m_width; col++ ){

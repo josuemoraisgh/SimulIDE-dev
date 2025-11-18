@@ -13,6 +13,7 @@
 #define HORI_ADDR_MODE 0
 #define VERT_ADDR_MODE 1
 #define PAGE_ADDR_MODE 2
+#define COLU_ADDR_MODE 3
 
 class IoPin;
 
@@ -30,9 +31,6 @@ class OledController : public Component, public TwiModule
 
         int height() { return m_height; }
         void setHeight( int h );
-
-        bool imgRotated() { return m_rotate; }
-        void setImgRotated( bool r ) { m_rotate = r; }
 
         virtual void initialize() override;
         virtual void stamp() override;
@@ -65,6 +63,8 @@ class OledController : public Component, public TwiModule
 
         uint8_t m_width;
         uint8_t m_height;
+        uint8_t m_maxWidth;
+        uint8_t m_maxHeight;
         uint8_t m_rows;
 
         uint8_t m_addrX;     // X RAM address
@@ -95,7 +95,7 @@ class OledController : public Component, public TwiModule
         uint8_t m_dispFull;
         uint8_t m_dispInv;
         uint8_t m_scanInv;
-        uint8_t m_rotate;
+        uint8_t m_remap;
 
         uint8_t m_mr;      // Multiplex Ratio
         //int m_cdr;       // Clock Divide Ratio

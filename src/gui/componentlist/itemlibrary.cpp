@@ -102,6 +102,7 @@
 #include "servo.h"
 #include "sevensegment.h"
 #include "sevensegment_bcd.h"
+#include "sh1107.h"
 #include "shiftreg.h"
 #include "socket.h"
 #include "sr04.h"
@@ -229,6 +230,7 @@ void ItemLibrary::loadItems()
     addItem( Ks0108::libraryItem() );
     addItem( Pcd8544::libraryItem() );
     addItem( PCF8833::libraryItem() );
+    addItem( Sh1107::libraryItem() );
     addItem( Ssd1306::libraryItem() );
     addItem( St7735::libraryItem() );
     addItem( St7789::libraryItem() );
