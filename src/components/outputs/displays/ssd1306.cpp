@@ -7,14 +7,9 @@
 
 #include "ssd1306.h"
 #include "itemlibrary.h"
-#include "simulator.h"
-#include "circuitview.h"
-#include "circuit.h"
-#include "iopin.h"
 
 #include "doubleprop.h"
 #include "stringprop.h"
-#include "boolprop.h"
 #include "intprop.h"
 
 #define tr(str) simulideTr("Ssd1306",str)
@@ -38,9 +33,9 @@ Ssd1306::Ssd1306( QString type, QString id )
     m_address = m_cCode = 0b00111100; // 0x3A - 60
 
     setColorStr("White");
-    m_rotate = true;
 
     setSize( 128,64 );
+    setLabelPos(-32,-60, 0);
 
     addPropGroup( { tr("Main"), {
         new StrProp <Ssd1306>("Color",tr("Color"), "White,Blue,Yellow;"+tr("White")+","+tr("Blue")+","+tr("Yellow")
@@ -51,9 +46,6 @@ Ssd1306::Ssd1306( QString type, QString id )
 
         new IntProp <Ssd1306>("Height", tr("Height"), "_px"
                              ,this,&Ssd1306::height, &Ssd1306::setHeight, propNoCopy,"uint" ),
-
-        new BoolProp<Ssd1306>("Rotate", tr("Rotate"), ""
-                             , this, &Ssd1306::imgRotated, &Ssd1306::setImgRotated ),
     }, 0} );
 
     addPropGroup( { tr("I2C"), {
@@ -80,6 +72,8 @@ void Ssd1306::proccessCommand()
             m_addrX = (m_addrX & 0xF0) | (m_rxReg & 0x0F);
         else                                              // Higher Colum Start Address for Page Addresing mode
             m_addrX = (m_addrX & 0x0F) | ((m_rxReg & 0x0F) << 4);
+
+        if( m_addrX >= m_maxWidth) m_addrX -= m_maxWidth;
     }
     else if( m_rxReg>=0x40 && m_rxReg<=0x7F )            // Display Start Line
     {
@@ -105,8 +99,8 @@ void Ssd1306::proccessCommand()
             break;
         case 0x81: m_readBytes = 1;    break; // Contrast Control
         case 0x8D: m_readBytes = 1;    break; // Charge Pump
-        case 0xA0: break; // Segment Re-map
-        case 0xA1: break; // Segment Re-map
+        case 0xA0: m_remap = false;    break; // Segment Re-map OFF
+        case 0xA1: m_remap = true;     break; // Segment Re-map ON
         case 0xA3: m_readBytes = 2;    break; // Vertical Scroll Area
         case 0xA4: m_dispFull = false; break; // Entire Display Off
         case 0xA5: m_dispFull = true;  break; // Entire Display ON
@@ -180,7 +174,7 @@ void Ssd1306::parameter()
         }break;
         case  0xA8: // Multiplex Ratio
         {
-            uint8_t muxRatio = m_rxReg & 0x3F;  // 0b00111111
+            uint8_t muxRatio = m_rxReg & m_lineMask;  // 0b00111111
             if( muxRatio > 14 ) m_mr = muxRatio;
         }break;
         case 0xD3: m_dispOffset = m_rxReg & m_lineMask; break; // Display Offset Set vertical shift by COM from 0d~63d
