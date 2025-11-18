@@ -17,74 +17,80 @@ St77xx::~St77xx(){}
 
 void St77xx::setPixelMode()
 {
+    m_pixelMode = m_rxReg;
+
     switch( m_rxReg & 0b111 )
     {
-    case 2: m_dataBytes = 1; break;
-    case 3: m_dataBytes = 2; break;
-    case 5: m_dataBytes = 3; break;
+    case 3: m_dataBytes = 3; break; // 4/4/4
+    case 5: m_dataBytes = 2; break; // 5/6/5
+    case 6: m_dataBytes = 3; break; // 6/6/6
     }
 }
 
 void St77xx::writeRam()
 {
-    /// TODO
+    m_dataIndex++;
+    if( m_dataIndex > m_dataBytes ) return;
 
-    //m_dataIndex++;
-    //if( m_dataIndex > m_dataBytes ) return;
-
-    //uint32_t buffer = m_rxReg;
-    //switch( m_dataBytes )
-    //{
-    //    case 1:  // RRRGGGBB
-    //    {
-    //        m_data = buffer & 0b11<<(0+6);
-    //        buffer >>= 2;
-    //        m_data |= (buffer & 0b111)<<(8+5);
-    //        buffer >>= 3;
-    //        m_data |= (buffer & 0b111)<<(16+5);
-    //        TftController::writeRam();
-    //    }break;
-    //    case 2:  // RRRRRGGG GGGBBBBB
-    //    {
-    //        switch( m_dataIndex ) {
-    //        case 1:{
-    //            m_data = (buffer & 0b111)<<(8+3+2);  // GGG---
-    //            buffer >>= 3;
-    //            m_data |= (buffer & 0b11111)<<(16+3);// RRRRR
-    //        }break;
-    //        case 2:{
-    //            m_data |= (buffer & 0b11111)<<(0+3); // BBBBB
-    //            buffer >>= 5;
-    //            m_data = (buffer & 0b111)<<(8+2);    // ---GGG
-    //            TftController::writeRam();
-    //        }break;
-    //        }
-    //    }break;
-    //    case 3:  // RRRRGGGG BBBB-RRRR GGGGBBBB
-    //    {
-    //        switch( m_dataIndex ) {
-    //            case 1:{
-    //                m_colorData = (buffer & 0b1111)<<(8+4);   // GGGG
-    //                buffer >>= 4;
-    //                m_colorData |= (buffer & 0b1111)<<(16+4); // RRRR
-    //            }break;
-    //            case 2:{
-    //                m_data = m_colorData;
-    //                m_colorData = (buffer & 0b1111)<<(16+4);  // RRRR Next Pixel
-    //                buffer >>= 4;
-    //                m_data |= (buffer & 0b1111)<<(0+4);   // BBBB This Pixel
-    //                TftController::writeRam();            // First Pixel
-    //            }break;
-    //            case 3:{
-    //                m_data = m_colorData;
-    //                m_data |= (buffer & 0b1111)<<(0+4);   // BBBB
-    //                buffer >>= 4;
-    //                m_data |= (buffer & 0b1111)<<(8+4);   // GGGG
-    //                TftController::writeRam();            // Second Pixel
-    //            }break;
-    //        }
-    //    }break;
-    //}
+    uint32_t buffer = m_rxReg;
+    switch( m_pixelMode )
+    {
+        case 3:  // RRRRGGGG BBBB-RRRR GGGGBBBB 4/4/4
+        {
+            switch( m_dataIndex ) {
+                case 1:{
+                    m_colorData = (buffer & 0b1111)<<(8+4);   // GGGG
+                    buffer >>= 4;
+                    m_colorData |= (buffer & 0b1111)<<(16+4); // RRRR
+                }break;
+                case 2:{
+                    m_data = m_colorData;
+                    m_colorData = (buffer & 0b1111)<<(16+4);  // RRRR Next Pixel
+                    buffer >>= 4;
+                    m_data |= (buffer & 0b1111)<<(0+4);   // BBBB This Pixel
+                    TftController::writeRam();            // First Pixel
+                }break;
+                case 3:{
+                    m_data = m_colorData;
+                    m_data |= (buffer & 0b1111)<<(0+4);   // BBBB
+                    buffer >>= 4;
+                    m_data |= (buffer & 0b1111)<<(8+4);   // GGGG
+                    TftController::writeRam();            // Second Pixel
+                }break;
+            }
+        }break;
+        case 5:  // RRRRRGGG GGGBBBBB 5/6/5
+        {
+            switch( m_dataIndex ) {
+                case 1:{
+                    m_data = (buffer & 0b111)<<(8+3+2);  // GGG---
+                    buffer >>= 3;
+                    m_data |= (buffer & 0b11111)<<(16+3);// RRRRR
+                }break;
+                case 2:{
+                    m_data |= (buffer & 0b11111)<<(0+3); // BBBBB
+                    buffer >>= 5;
+                    m_data = (buffer & 0b111)<<(8+2);    // ---GGG
+                    TftController::writeRam();
+                }break;
+            }
+        }break;
+        case 6:  //  RRRRRR--GGGGGG--BBBBBB-- 6/6/6
+        {
+            switch( m_dataIndex ) {
+                case 1:{
+                    m_data = (buffer & 0b11111100) << 16;   // RRRRRR--
+                }break;
+                case 2:{
+                    m_data = (buffer & 0b11111100) <<  8;   // GGGGGG--
+                }break;
+                case 3:{
+                    m_data = (buffer & 0b11111100) <<  0;   // BBBBBB--
+                    TftController::writeRam();
+                }break;
+            }
+        }break;
+    }
 }
 
 void St77xx::setWidth( int w )

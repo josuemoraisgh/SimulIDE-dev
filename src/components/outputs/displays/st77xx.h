@@ -31,4 +31,6 @@ class St77xx : public TftController
         uint16_t m_rows;         // 8 pixel rows (Circuit grid)
         uint16_t m_maxWidth;
         uint16_t m_maxHeight;
+
+        uint8_t m_pixelMode;
 };
