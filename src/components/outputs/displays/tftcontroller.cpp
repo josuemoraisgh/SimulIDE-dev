@@ -8,6 +8,7 @@
 
 #include "tftcontroller.h"
 #include "simulator.h"
+#include "circuitwidget.h"
 
 TftController::TftController( QString type, QString id )
              : Component( type, id )
@@ -311,6 +312,8 @@ void TftController::setRamSize( int x, int y )
 
 void TftController::setDisplaySize( int x, int y )
 {
+    if( Simulator::self()->isRunning() ) CircuitWidget::self()->powerCircOff();
+
     m_image = QImage( x*2, y*2, QImage::Format_RGB32 );
 
     m_width  = x;
