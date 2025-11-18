@@ -10,6 +10,7 @@
 #include <QVariant>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QDebug>
 
 #include "joystickwidget.h"
 
@@ -80,7 +81,14 @@ void JoystickWidget::paintEvent( QPaintEvent* )
     QRectF bounds = QRectF(-size/2,-size/2, size, size ).translated( center() );
     painter.setBrush( Qt::darkGray );
     painter.drawEllipse( bounds );
-    painter.setBrush( Qt::black );
+
+    int x0 = centerEllipse().x();
+    int y0 = centerEllipse().y();
+
+    QLinearGradient linearGrad( QPointF(x0+10, y0 ), QPointF( x0-5, y0 ) );
+    linearGrad.setColorAt( 0, QColor( 20, 20, 20 ) );
+    linearGrad.setColorAt( 1, QColor( 150, 150, 150 ) );
+    painter.setBrush( linearGrad );
     painter.drawEllipse( centerEllipse() );
 }
 

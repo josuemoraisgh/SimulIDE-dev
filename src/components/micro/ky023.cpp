@@ -75,6 +75,7 @@ KY023::KY023( QString type, QString id )
 
     m_sw = new IoPin( 270, QPoint(4,36), id+"-sw", 0, this, output );
     m_sw->setOutHighV( VIN );
+    m_sw->setOutputImp( 2000 );
     m_sw->setLabelText( "SW" );
     m_pin[2] = m_sw;
 
@@ -111,6 +112,7 @@ void KY023::updateStep()
     if( m_changed )
     {
         m_changed = false;
+        m_sw->setOutputImp( m_closed ? 1e-3 : 2000 );
         m_sw->setOutState( !m_closed );
     }
 
