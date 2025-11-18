@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "twimodule.h"
 #include "component.h"
 
@@ -48,57 +50,58 @@ class Ssd1306 : public Component, public TwiModule
     protected:
         void writeData();
         void proccessCommand();
-        void incrementPointer();
+        void parameter();
         void reset();
         void clearDDRAM();
         void updateSize();
 
         QString m_dColor;
-
-        uint8_t m_aDispRam[128][16]; //128x128 DDRAM
-
-        int m_cdr;       // Clock Divide Ratio
-        int m_mr;        // Multiplex Ratio
-        int m_fosc;      // Oscillator Frequency
-        int m_frm;       // Frame Frequency
-
-        int m_width;
-        int m_height;
-        int m_rows;
-
-        int m_addrX;     // X RAM address
-        int m_addrY;     // Y RAM address
-        int m_startX;
-        int m_endX;
-        int m_startY;
-        int m_endY;
-
-        int m_startLin;
-        int m_addrMode;
-        int m_lastCommand;
-
-        int m_scrollStartPage;
-        int m_scrollEndPage;
-        int m_scrollInterval;
-        int m_scrollVertOffset;
-        int m_scrollCount;
-
-        int m_readBytes;
-
-        bool m_dispOn;
-        bool m_dispFull;
-        bool m_dispInv;
-        bool m_scanInv;
-        bool m_rotate;
-
-        bool m_command;
-        bool m_data;
-        bool m_continue;
-        bool m_scroll;
-        bool m_scrollR;
-        bool m_scrollV;
+        QColor m_foreground;
 
         IoPin* m_pinSda;
 
-        QColor m_foreground;
+        uint8_t m_start;
+        uint8_t m_data;
+        uint8_t m_lastCommand;
+        uint8_t m_readBytes;
+        uint8_t m_readIndex;
+
+        uint8_t m_width;
+        uint8_t m_height;
+        uint8_t m_rows;
+
+        uint8_t m_addrX;     // X RAM address
+        uint8_t m_addrY;     // Y RAM address
+        uint8_t m_startX;
+        uint8_t m_endX;
+        uint8_t m_startY;
+        uint8_t m_endY;
+
+        uint8_t m_dispOffset;
+        uint8_t m_ramOffset;
+        uint8_t m_addrMode;
+
+        uint8_t m_scroll;
+        uint8_t m_scrollDir;
+        uint8_t m_scrollV;
+        uint8_t m_scrollStartY;
+        uint8_t m_scrollEndY;
+        uint8_t m_scrollTop;
+        uint8_t m_scrollRows;
+        uint8_t m_vScrollOffset;
+        uint16_t m_scrollStep;
+        uint16_t m_scrollCount;
+
+        uint8_t m_dispOn;
+        uint8_t m_dispFull;
+        uint8_t m_dispInv;
+        uint8_t m_scanInv;
+        uint8_t m_rotate;
+
+        uint8_t m_mr;      // Multiplex Ratio
+        //int m_cdr;       // Clock Divide Ratio
+        //int m_fosc;      // Oscillator Frequency
+        //int m_frm;       // Frame Frequency
+
+        std::vector<std::vector<uint8_t>> m_DDRAM; //128x128 DDRAM
 };
