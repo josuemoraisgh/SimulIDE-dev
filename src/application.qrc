@@ -240,7 +240,7 @@
         <file alias="board.png">../src/icons/components/board.png</file>
         <file alias="shield.png">../src/icons/components/shield.png</file>
         
-        <file alias="sr04.png">../src/icons/components/sr04.png</file>
+        <file alias="sr04.svg">../src/icons/components/sr04.svg</file>
         <file alias="sr04_ico.png">../src/icons/components/sr04_ico.png</file>
         <file alias="ky-023.png">../src/icons/components/ky-023.png</file>
         <file alias="ky-040.png">../src/icons/components/ky-040.png</file>

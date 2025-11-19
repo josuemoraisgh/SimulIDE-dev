@@ -39,7 +39,7 @@ SR04::SR04( QString type, QString id )
     m_graphical = true;
 
     m_area = QRect(-10*8,-4*8, 21*8, 9*8 );
-    setBackground("sr04.png");
+    setBackground("sr04.svg");
     setLabelPos(-16,-48, 0);
 
     m_pin.resize(5);
@@ -162,19 +162,17 @@ void SR04::setSlider( bool s )
 void SR04::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    
+    p->setRenderHint( QPainter::Antialiasing );
+
     p->drawRoundedRect( m_area, 2, 2 );
 
-    int ox = m_area.x();
-    int oy = m_area.y();
-
-    p->drawPixmap( ox, oy, *m_backPixmap );
+    p->drawPixmap( m_area, *m_backPixmap, m_backPixmap->rect() );
 
     p->setPen( Qt::white );
     QFont font = p->font();
     font.setPixelSize( 9 );
     p->setFont( font );
-    p->drawText( QRectF(-16,-32, 40, 12 ), Qt::AlignCenter, QString::number( m_distance, 'f', 3 )+" m" );
+    p->drawText( QRectF(-14,-32, 40, 12 ), Qt::AlignCenter, QString::number( m_distance, 'f', 3 )+" m" );
 
     Component::paintSelected( p );
 }
