@@ -11,16 +11,16 @@
 #include "stm32pin.h"
 #include "qemutwi.h"
 #include "stm32spi.h"
-#include "qemuusart.h"
+#include "stm32usart.h"
 
 #define tr(str) simulideTr("Stm32",str)
 
 enum armActions{
-    ARM_GPIO_OUT = 1,
-    ARM_GPIO_CRx,
-    ARM_GPIO_IN,
-    ARM_ALT_OUT,
-    ARM_REMAP
+    STM32_GPIO_OUT = 1,
+    STM32_GPIO_CRx,
+    STM32_GPIO_IN,
+    STM32_ALT_OUT,
+    STM32_REMAP
 };
 
 
@@ -76,7 +76,7 @@ Stm32::Stm32( QString type, QString id, QString device )
     for( int i=0; i<m_spiN; ++i ) m_spis[i] = new Stm32Spi( this, "I2C"+QString::number(i), i );
 
     m_usarts.resize( m_usartN );
-    for( int i=0; i<m_usartN; ++i ) m_usarts[i] = new QemuUsart( this, "Usart"+QString::number(i), i );
+    for( int i=0; i<m_usartN; ++i ) m_usarts[i] = new Stm32Usart( this, "Usart"+QString::number(i), i );
 
     //m_timers.resize( m_timerN );
     //for( int i=0; i<m_timerN; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
@@ -177,7 +177,7 @@ void Stm32::doAction()
 {
     switch( m_arena->simuAction )
     {
-        case ARM_GPIO_OUT:       // Set Output
+        case STM32_GPIO_OUT:       // Set Output
         {
             uint8_t  port  = m_arena->data8;
             uint16_t state = m_arena->data16;
@@ -190,7 +190,7 @@ void Stm32::doAction()
 
             setPortState( port, state );
         } break;
-        case ARM_GPIO_CRx:       // Configure Pins
+        case STM32_GPIO_CRx:       // Configure Pins
         {
             uint8_t  port   = m_arena->data8;
             uint8_t  shift  = m_arena->mask8;
@@ -198,12 +198,12 @@ void Stm32::doAction()
 
             if( port < m_portN ) cofigPort( port, config, shift );
         } break;
-        case ARM_GPIO_IN:       // Read Inputs
+        case STM32_GPIO_IN:       // Read Inputs
         {
             uint8_t port = m_arena->data8;
             if( port < m_portN ) m_arena->data16 = readInputs( port );
         } break;
-        case ARM_ALT_OUT:      // Set Alternate Output
+        case STM32_ALT_OUT:      // Set Alternate Output
         {
             uint8_t port  = m_arena->data8;
             uint8_t pin   = m_arena->mask8;
@@ -211,7 +211,7 @@ void Stm32::doAction()
 
             if( port < m_portN ) setPinState( port, pin, state );
         } break;
-        case ARM_REMAP:       // AFIO Remap
+        case STM32_REMAP:       // AFIO Remap
         {
             uint32_t mapr = m_arena->data32;
 
@@ -278,8 +278,7 @@ void Stm32::doAction()
         case SIM_USART:      // USART
         {
             uint16_t id = m_arena->data16;
-
-            //qDebug() << "Stm32::doAction SIM_USART Uart:"<< id << "action:"<< event<< "byte:" << data;
+            //qDebug() << "Stm32::doAction SIM_USART:"<< id ;
             if( id < m_usartN ) m_usarts[id]->doAction();
         } break;
         //case SIM_TIMER:
