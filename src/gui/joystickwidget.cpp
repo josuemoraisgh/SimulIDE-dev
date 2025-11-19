@@ -31,7 +31,7 @@ void JoystickWidget::setupWidget()
     
     m_grabCenter = false;
     
-    setAttribute(Qt::WA_NoSystemBackground);
+    setAttribute( Qt::WA_NoSystemBackground) ;
     
     m_movingOffset = center();
     updateOutputValues();
@@ -44,6 +44,19 @@ void JoystickWidget::updateOutputValues()
 
     m_changed = true;
     update();
+}
+QRectF JoystickWidget::centerEllipse()
+{
+    int radius = (width()-16)*STICK_PERCENTAGE_SIZE/2;
+    QRectF rect = QRectF(-radius, -radius, 2*radius, 2*radius );
+
+    if( m_grabCenter ) return rect.translated( m_movingOffset );
+    return rect.translated(center());
+}
+
+QPointF JoystickWidget::center()
+{
+    return QPointF( width()/2, height()/2 );
 }
 
 void JoystickWidget::mousePressEvent( QMouseEvent* event )
@@ -58,7 +71,7 @@ void JoystickWidget::mouseMoveEvent( QMouseEvent* event )
     if( !m_grabCenter ) return;
 
     QLineF limitLine = QLineF(center(), event->pos() );
-    int maxDistance = width() / 2;
+    int maxDistance = (width()-24)/2;
     if( limitLine.length() > maxDistance ) limitLine.setLength( maxDistance );
 
     m_movingOffset = limitLine.p2();
@@ -75,33 +88,24 @@ void JoystickWidget::mouseReleaseEvent( QMouseEvent* event )
 void JoystickWidget::paintEvent( QPaintEvent* )
 {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint( QPainter::Antialiasing );
     
-    int size = width();
+    int size = width()-16;
+    int x0 = width()/2;
+    int y0 = height()/2;
     QRectF bounds = QRectF(-size/2,-size/2, size, size ).translated( center() );
-    painter.setBrush( Qt::darkGray );
+    QRadialGradient lg0( QPointF( x0-3, y0-3 ), 20, QPointF( x0-30, y0-30 ) );
+    lg0.setColorAt( 0, QColor( 80, 80, 80 ) );
+    lg0.setColorAt( 1, QColor( 0, 0, 0 ) );
+    painter.setBrush( lg0 );
     painter.drawEllipse( bounds );
 
-    int x0 = centerEllipse().x();
-    int y0 = centerEllipse().y();
+    x0 = centerEllipse().x();
+    y0 = centerEllipse().y();
 
-    QLinearGradient linearGrad( QPointF(x0+10, y0 ), QPointF( x0-5, y0 ) );
-    linearGrad.setColorAt( 0, QColor( 20, 20, 20 ) );
-    linearGrad.setColorAt( 1, QColor( 150, 150, 150 ) );
-    painter.setBrush( linearGrad );
+    QRadialGradient lg( QPointF(x0+10, y0 ), 17, QPointF( x0-5, y0 ) );
+    lg.setColorAt( 0, QColor( 180, 180, 180 ) );
+    lg.setColorAt( 1, QColor( 50, 50, 50 ) );
+    painter.setBrush( lg );
     painter.drawEllipse( centerEllipse() );
-}
-
-QRectF JoystickWidget::centerEllipse()
-{
-    int radius = width() * STICK_PERCENTAGE_SIZE / 2;
-    QRectF rect = QRectF(-radius, -radius, 2*radius, 2*radius );
-
-    if( m_grabCenter ) return rect.translated( m_movingOffset );
-    return rect.translated(center());
-}
-
-QPointF JoystickWidget::center()
-{
-    return QPointF( width()/2, height()/2 );
 }
