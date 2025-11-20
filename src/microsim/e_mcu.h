@@ -53,9 +53,9 @@ class eMcu : public DataSpace, public eIou
 
         void setup();
 
-        virtual void stamp() override;
-        virtual void voltChanged() override;
-        virtual void runEvent() override;
+        void stamp() override;
+        void voltChanged() override;
+        void runEvent() override;
 
         inline mcuState_t state() { return m_state; }
         inline int sleepMode() { return m_sleepModule->mode(); }
@@ -71,8 +71,8 @@ class eMcu : public DataSpace, public eIou
         uint32_t wordSize() { return m_wordSize; }
         uint8_t  pgmPage() { return m_pgmPage; }
 
-        virtual QVector<int>* eeprom() { return &m_eeprom; }
-        virtual void setEeprom( QVector<int>* eep );
+        QVector<int>* eeprom() { return &m_eeprom; }
+        void setEeprom( QVector<int>* eep );
         uint32_t romSize()  { return m_romSize; }
         uint8_t  getRomValue( int address ) { return m_eeprom[address]; }
         void     setRomValue( int address, uint8_t value ) { m_eeprom[address] = value; }
@@ -90,7 +90,7 @@ class eMcu : public DataSpace, public eIou
         double freq() { return m_freq; }
         void setFreq( double freq );
         void forceFreq( double freq );
-        double psInst() { return m_psInst; }  // picoseconds per instruction cycle
+        uint64_t psInst() { return m_psInst; }  // picoseconds per instruction cycle
         void setInstCycle( double p ){ m_cPerInst = m_cPerTick = p; }
 
         McuTimer* getTimer( QString name );
@@ -155,8 +155,8 @@ class eMcu : public DataSpace, public eIou
         double m_freq;         // Clock Frequency in MegaHerzs
         double m_cPerInst;     // Clock ticks per Instruction Cycle
         double m_cPerTick;     // Clock ticks  per cpu Cycle
-        double m_psInst;     // picoseconds per Instruction Cycle
-        double m_psTick;     // picoseconds per Clock Cycle
+        uint64_t m_psInst;     // picoseconds per Instruction Cycle
+        uint64_t m_psTick;     // picoseconds per Clock Cycle
 
         bool m_clkState;
 

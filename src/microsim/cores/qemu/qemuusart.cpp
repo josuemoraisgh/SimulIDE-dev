@@ -14,10 +14,6 @@
 
 #include "simulator.h"
 
-//#include "e_mcu.h"
-//#include "mcuinterrupts.h"
-//#include "datautils.h"
-
 QemuUsart::QemuUsart( QemuDevice* mcu, QString name, int number )
          : QemuModule( mcu, number )
          , UsartModule( nullptr, mcu->getId()+"-"+name )
@@ -40,15 +36,7 @@ void QemuUsart::enable( bool e )
 
 void QemuUsart::doAction()
 {
-    uint8_t  action = m_arena->data8;
-    uint32_t  data  = m_arena->data32;
-    switch( action ) {
-        case QUSART_READ:  /*readByte( data );*/ break;
-        case QUSART_WRITE: sendByte( data ); break;
-        case QUSART_BAUD:  setBaudRate( data ); qDebug() << "QemuUsart::doAction Baudrate:"<<data; break;
-
-        default: break;
-    }
+    qDebug() << "QemuUsart::doAction Uart ERROR:"<< m_number;
 }
 
 void QemuUsart::bufferEmpty()
@@ -75,10 +63,10 @@ void QemuUsart::byteReceived( uint8_t data )
     {
         ; /// TODO: add timeout
     }
-    m_arena->mask8  = QUSART_READ;
+    m_arena->mask8  = QEMU_USART_RECEIVE;
     m_arena->data8  = m_number;
     m_arena->data16 = m_receiver->getData();
-    //qDebug() << "QemuUsart::readByte" << arena->data16 << "at time" << Simulator::self()->circTime();
+    //qDebug() << "QemuUsart::byteReceived"<< m_number << m_arena->data16 << "at time" << Simulator::self()->circTime();
     m_arena->qemuAction = SIM_USART;
 }
 

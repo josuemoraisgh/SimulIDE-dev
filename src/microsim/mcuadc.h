@@ -23,7 +23,6 @@ class McuAdc : public McuPrescaled, public eElement
         virtual void runEvent() override;
 
         virtual void setChannel( uint8_t val ){;}
-
         virtual void startConversion();
 
     protected:

@@ -24,29 +24,7 @@ enum ESP32Actions{
     ESP_MATRIX_OUT,
 };
 
-
-Component* Esp32::construct( QString type, QString id )
-{
-    return new Esp32( type, id );
-}
-
-LibraryItem* Esp32::libraryItem()
-{
-    QString executable = "./data/esp32/qemu-system-xtensa";
-#ifdef _WIN32
-    executable += ".exe";
-#endif
-    if( !QFileInfo::exists( executable ) ) return nullptr;
-
-    return new LibraryItem(
-        "Esp32",
-        "Espressif",
-        "ic2.png",
-        "Esp32",
-        Esp32::construct );
-}
-
-Esp32::Esp32( QString type, QString id )
+Esp32::Esp32( QString type, QString id, QString device )
      : QemuDevice( type, id )
 {
     m_area = QRect( 0, 0, 15*8, 15*8 );
@@ -114,6 +92,7 @@ bool Esp32::createArgs()
     if( fi.size() != 4194304 )
     {
         qDebug() << "Error firmware file size:" << fi.size() << "must be 4194304";
+        qDebug() << m_firmware;
         return false;
     }
 
@@ -154,6 +133,9 @@ bool Esp32::createArgs()
     m_arguments << "-global";
     m_arguments << "driver=timer.esp32.timg,property=wdt_disable,value=true";
 
+    m_arguments << "-icount";
+    m_arguments <<"shift=14,align=off,sleep=off";
+
     /*m_arguments << "-gdb");
     sprintf( m_argv[m_argc++], "tcp::%i", 1234 );*/
 
@@ -164,21 +146,6 @@ bool Esp32::createArgs()
     //m_arguments << "-icount";
     //m_arguments << "shift=10,align=off,sleep=on";
     //m_arguments <<  "shift=auto,align=off,sleep=off";
-
-    /*qDebug() << " ";
-    QString msg;
-    for( int i=2; i<m_arguments.size(); i++)
-    {
-        QString arg = m_arguments.at(i);
-
-        msg.append( arg );
-        if( i&1 ) msg.append(" ");
-        else{
-            qDebug() << msg;
-            msg.clear();
-        }
-    }
-    qDebug() << " ";*/
 
     return true;
 }

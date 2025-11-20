@@ -18,12 +18,12 @@ class ScriptUsart : public McuUsart, public ScriptPerif
         ScriptUsart( eMcu* mcu, QString name, int number );
         ~ScriptUsart();
 
-        virtual void reset() override;
-        virtual void byteReceived( uint8_t data ) override;
-        virtual void frameSent( uint8_t data ) override;
+        void reset() override;
+        void byteReceived( uint8_t data ) override;
+        void frameSent( uint8_t data ) override;
 
-        virtual QStringList registerScript( ScriptCpu* cpu ) override;
-        virtual void startScript() override;
+        QStringList registerScript( ScriptCpu* cpu ) override;
+        void startScript() override;
 
     private:
         //QString m_uartName;

@@ -59,7 +59,7 @@ Jfet::~Jfet(){}
 
 void Jfet::updateStep()
 {
-    if( Circuit::self()->animate() ) update();
+    if( Circuit::self()->animateCurr() ) update();
 
     if( !m_changed ) return;
     m_changed = false;
@@ -72,8 +72,8 @@ void Jfet::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w);
     
-    if( Circuit::self()->animate() && m_gateV > 0 ) p->setBrush( Qt::yellow );
-    else                                            p->setBrush( Qt::white );
+    if( Circuit::self()->animateCurr() && m_gateV > 0 ) p->setBrush( Qt::yellow );
+    else                                                p->setBrush( Qt::white );
 
     p->drawEllipse( m_area );
     

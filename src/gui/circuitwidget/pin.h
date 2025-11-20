@@ -50,14 +50,14 @@ class Pin : public QGraphicsItem, public ePin, public Updatable
         void setUnused( bool unused );
 
         int length() { return m_length; }
-        virtual void setLength( int length );
+        virtual void setLength( double length );
 
         void setColor( QColor color ) { m_color[0] = color; }
         void setPinAngle( int angle );
         int pinAngle() { return m_angle; }
 
-        void setX( qreal x );
-        void setY( qreal y );
+        void setX( double x );
+        void setY( double y );
 
         void setBoundingRect( QRect area ) { m_area = area; }
         
@@ -116,14 +116,14 @@ class Pin : public QGraphicsItem, public ePin, public Updatable
         pinType_t  m_pinType;
         pinState_t m_pinState;
 
+        double m_space;
+        double m_length;
         int m_angle;
-        int m_length;
         int m_Hflip;
         int m_Vflip;
         int m_overScore;
         int m_labelheight;
         int m_labelWidth;
-        double m_space;
 
         bool m_blocked;
         bool m_isBus;

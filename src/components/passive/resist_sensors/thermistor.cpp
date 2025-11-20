@@ -8,6 +8,7 @@
 
 #include "thermistor.h"
 #include "itemlibrary.h"
+#include "resistor.h"
 
 #include "intprop.h"
 #include "propdialog.h"
@@ -79,7 +80,8 @@ void Thermistor::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget*
 
     Component::paint( p, o, w );
 
-    p->drawRect( QRectF(-11,-4.5, 22, 9 ));
+    if( m_ansiSymbol ) Resistor::drawAnsi( p, 0, 0 );
+    else               p->drawRect( QRectF(-11,-4.5, 22, 9 ));
     
     p->drawLine(-8, 6,  6,-8 );
     p->drawLine( 6,-8, 10,-8 );

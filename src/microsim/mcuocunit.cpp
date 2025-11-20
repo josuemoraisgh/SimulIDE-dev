@@ -68,9 +68,10 @@ void McuOcUnit::setPinSate( bool state, uint64_t time )
 
 void McuOcUnit::sheduleEvents( uint32_t ovf, uint32_t countVal, int rot )
 {
-    ovf      <<= rot;  // Used by Pic CCP PWM mode: 8+2 bits (rot=2)
-    countVal <<= rot;
-
+    if( rot ){
+        ovf      <<= rot;  // Used by Pic CCP PWM mode: 8+2 bits (rot=2)
+        countVal <<= rot;
+    }
     uint64_t match;
 
     if( m_timer->reverse() )
@@ -89,13 +90,15 @@ void McuOcUnit::sheduleEvents( uint32_t ovf, uint32_t countVal, int rot )
     }
     else if( match <= ovf && match >= countVal ) // be sure next comp match is still ahead
     {
-        double psPerTick  = m_timer->psPerTick();
-        double timeOffset = m_timer->timeOffset();
+        uint64_t psPerTick  = m_timer->psPerTick();
+        uint64_t timeOffset = m_timer->timeOffset();
 
-        double time2ovf = double(match-countVal)*psPerTick; // Time in ps
+        uint64_t time2ovf = (match-countVal)*psPerTick+0.5; // Time in ps
         if( timeOffset ) time2ovf -= psPerTick-timeOffset;
 
-        Simulator::self()->addEvent( uint64_t(time2ovf)>>rot, this );
+        uint64_t nextTime = time2ovf;
+        if( rot ) nextTime >>= rot;
+        Simulator::self()->addEvent( nextTime, this );
     }
 }
 

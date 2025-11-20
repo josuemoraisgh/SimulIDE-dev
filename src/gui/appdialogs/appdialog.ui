@@ -70,7 +70,7 @@
         <locale language="C" country="AnyCountry"/>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <property name="usesScrollButtons">
         <bool>false</bool>
@@ -490,9 +490,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="animate_pins">
+          <widget class="QCheckBox" name="animate_logic">
            <property name="text">
-            <string>Animate Pins</string>
+            <string>Animate Logic</string>
            </property>
           </widget>
          </item>
@@ -500,6 +500,13 @@
           <widget class="QCheckBox" name="animate_curr">
            <property name="text">
             <string>Animate Currents</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="ansiSymbols">
+           <property name="text">
+            <string>ANSI Symbols</string>
            </property>
           </widget>
          </item>

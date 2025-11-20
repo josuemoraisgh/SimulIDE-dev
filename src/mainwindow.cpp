@@ -382,6 +382,9 @@ QString MainWindow::getDataFilePath( QString file )
     if( path.isEmpty() || !QFileInfo::exists( path ) )
         path = getConfigPath("data/"+file );          // File in SimulIDE data folder
 
+    if( path.isEmpty() || !QFileInfo::exists( path ) )
+        path = ":/"+file;                             // File in SimulIDE resources
+
     if( path.isEmpty() || !QFileInfo::exists( path ) ) return "";
 
     return path;

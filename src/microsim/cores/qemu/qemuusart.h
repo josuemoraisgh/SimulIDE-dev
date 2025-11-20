@@ -12,17 +12,15 @@ class QemuUsart : public QemuModule, public UsartModule
 {
     public:
         QemuUsart( QemuDevice* mcu, QString name, int number );
-        virtual ~QemuUsart();
+        ~QemuUsart();
 
-        enum usartAction_t{
-            QUSART_READ=1,
-            QUSART_WRITE,
-            QUSART_BAUD
+        enum qemuUsartAction_t{
+            QEMU_USART_RECEIVE=1
         };
 
         void enable( bool e );
 
-        void sendByte( uint8_t data ) override{ UsartModule::sendByte( data ); }
+        //void sendByte( uint8_t data ) override{ UsartModule::sendByte( data ); }
         void bufferEmpty() override;
         void frameSent( uint8_t data ) override;
         void readByte( uint8_t data ) override;
@@ -33,7 +31,7 @@ class QemuUsart : public QemuModule, public UsartModule
 
         void setPins( QList<IoPin*> pinList );
 
-        void doAction();
+        virtual void doAction() override;
 
     protected:
         //void readBuffer();

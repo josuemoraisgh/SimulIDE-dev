@@ -88,7 +88,7 @@ void ComponentList::createList()
     for( TreeItem* it : m_categoryList ) // Remove empty categories
     {
         if( it->childCount() ) continue;
-        //qDebug() << it->name();
+        qDebug() << it->name();
         it->setHidden( true );
         //QTreeWidgetItem* pa = it->parent();
         //if( pa ) pa->removeChild( it  );
@@ -145,20 +145,15 @@ void ComponentList::LoadLibraryItems()
     for( LibraryItem* item : m_itemLibrary.items() ) addLibraryItem( item );
     m_customComp = true;
 
-    addCategory("AVR"  , "AVR"  , "Micro", ":/ic2.png");
-    addCategory("PIC"  , "PIC"  , "Micro", ":/ic2.png");
-    addCategory("I51"  , "I51"  , "Micro", ":/ic2.png");
-    addCategory("MCS65", "MCS65", "Micro", ":/ic2.png");
-    addCategory("Z80"  , "Z80"  , "Micro", ":/ic2.png");
-    /*LibraryItem* esp32 = Esp32::libraryItem();
-    if( esp32 )
-    {
-        addCategory("Espressif", "Espressif", "Micro", ":/ic2.png");
-        addLibraryItem( esp32 );
-        delete esp32;
-    }*/
-    addCategory("Arduino", "Arduino", "Micro", ":/ic2.png");
-    addCategory("Shields", "Shields", "Micro", ":/ic2.png");
+    //addCategory("AVR"  , "AVR"  , "Micro", ":/ic2.png");
+    //addCategory("PIC"  , "PIC"  , "Micro", ":/ic2.png");
+    //addCategory("I51"  , "I51"  , "Micro", ":/ic2.png");
+    //addCategory("MCS65", "MCS65", "Micro", ":/ic2.png");
+    //addCategory("Z80"  , "Z80"  , "Micro", ":/ic2.png");
+    //addCategory("STM32", "STM32", "Micro", ":/ic2.png");
+    //addCategory("Espressif", "Espressif", "Micro", ":/ic2.png");
+    //addCategory("Arduino", "Arduino", "Micro", ":/ic2.png");
+    //addCategory("Shields", "Shields", "Micro", ":/ic2.png");
 }
 
 void ComponentList::addLibraryItem( LibraryItem* item )
@@ -199,8 +194,10 @@ void ComponentList::LoadCompSetAt( QDir compSetDir )
 
 void ComponentList::loadXml( QString xmlFile )
 {
+    m_xmlItems.clear();
+
     QFile file( xmlFile );
-    if( !file.open(QFile::ReadOnly | QFile::Text) ){
+    if( !file.open( QFile::ReadOnly | QFile::Text ) ){
           qDebug() << "ComponentList::loadXml Cannot read file"<< endl << xmlFile << endl << file.errorString();
           return;
     }
@@ -246,20 +243,13 @@ void ComponentList::loadXml( QString xmlFile )
 
         QString type = reader.attributes().value("type").toString();
         QString folder = reader.attributes().value("folder").toString();
+        QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
 
         while( reader.readNextStartElement() )
         {
             if( reader.name() != "item") continue;
 
             QString name = reader.attributes().value("name").toString();
-
-            if( reader.attributes().hasAttribute("icon") )
-            {
-                icon = reader.attributes().value("icon").toString();
-                if( !icon.startsWith(":/") )
-                    icon = MainWindow::self()->getDataFilePath("images/"+icon);
-            }
-            else icon = getIcon( folder, name );
 
             if( m_components.contains( name ) ) // Component exists, move to new position
             {
@@ -272,21 +262,28 @@ void ComponentList::loadXml( QString xmlFile )
             }
             else
             {
+                if( reader.attributes().hasAttribute("icon") )
+                {
+                    icon = reader.attributes().value("icon").toString();
+                    if( !icon.startsWith(":/") )
+                        icon = MainWindow::self()->getDataFilePath("images/"+icon);
+                }
+                else icon = getIcon( folder, name );
+
                 if( type == "Subcircuit" )
                 {
-                    QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
                     QString nameFolder = compFolder+"/"+name;
 
                     if( !QFile::exists( nameFolder+".sim2" )
                      && !QFile::exists( nameFolder+".sim1" ) ) compFolder = nameFolder;
-
-                    m_dirFileList[ name ] = compFolder;
                 }
+                m_dirFileList[ name ] = compFolder;
                 m_dataFileList[ name ] = xmlFile;   // Save xml File used to create this item
                 if( reader.attributes().hasAttribute("info") )
                     name += "???"+reader.attributes().value("info").toString();
 
                 addItem( name, catItem, icon, type );
+                m_xmlItems.append( name );
             }
             reader.skipCurrentElement();
         }
@@ -320,7 +317,7 @@ void ComponentList::addItem( QString caption, TreeItem* catItem, QIcon &icon, QS
     QString info = "";
     if( nameFull.size() > 1 ) info = "   "+nameFull.last();
 
-    QString name = ( type == "Subcircuit" || type == "MCU" ) ? nameTr : type;
+    QString name = ( type == "Subcircuit" || type == "MCU" || type == "QemuDevice" ) ? nameTr : type;
 
     TreeItem* item = new TreeItem( catItem, name, nameTr, type, component, icon, m_customComp );
 

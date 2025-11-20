@@ -28,6 +28,8 @@ class Installer : public QWidget, private Ui::installer
 
         void writeSettings();
 
+        QStringList getGroupItems( QString group ) { return m_groupItemList.value( group ); }
+
     private:
         void addInstallItem( QString itemStr, int row );
         void updtReady();
@@ -44,6 +46,7 @@ class Installer : public QWidget, private Ui::installer
 
         QMap<QString, InstallItem*> m_items;
         QMap<QString, InstallItem*> m_installed;
+        QMap<QString, QStringList>  m_groupItemList;
 
         InstallItem* m_installItem;
 

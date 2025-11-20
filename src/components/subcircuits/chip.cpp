@@ -198,8 +198,10 @@ void Chip::setName( QString name )
     m_name = name;
     m_label.setPlainText( m_name );
     m_label.adjustSize();
-    m_label.setY( m_area.height()/2+m_label.textWidth()/2 );
-    m_label.setX( ( m_area.width()/2-m_label.boundingRect().height()/2 ) );
+
+    if( m_width == m_height ) m_label.setRotation( 0 );
+    else                      m_label.setRotation(-90 );
+
     setflip();
 }
 
@@ -342,7 +344,7 @@ void Chip::addNewPin( QString id, QString type, QString label, int pos, int xpos
         pin = updatePin( id, type, label, xpos, ypos, angle, length, space );
     }
     if( !pin ){
-        if( type == "unused" || type == "nc" )
+        if( type == "nc" )
         {
             if( m_pinMap.contains( id ) )
             {
@@ -462,9 +464,14 @@ void Chip::setPkgColorStr( QString color )
 void Chip::updateColor()
 {
     if( m_customColor ) m_color = m_pkgColor;
-    else if( m_isLS   ) m_color = m_lsColor;
-    else                m_color = m_icColor;
-
+    else if( m_isLS   )
+    {
+        m_color = m_lsColor;
+        m_label.setDefaultTextColor( QColor( 135, 135, 120 ) );
+    }else{
+        m_color = m_icColor;
+        m_label.setDefaultTextColor( QColor( 160, 160, 180 ) );
+    }
     update();
 }
 
@@ -472,17 +479,42 @@ void Chip::setflip()
 {
     Component::setflip();
     m_label.setTransform( QTransform::fromScale( m_Hflip, m_Vflip ) );
-    int xDelta = m_Hflip*m_label.boundingRect().height()/2;
-    int yDelta = m_Vflip*m_label.textWidth()/2;
-    m_label.setY( m_area.height()/2+yDelta );
-    m_label.setX( ( m_area.width()/2-xDelta ) );
+
+    if( m_width == m_height )
+    {
+        m_label.setY( m_area.height()/2-m_Vflip*m_label.boundingRect().height()/2 );
+        m_label.setX( m_area.width()/2-m_Hflip*m_label.textWidth()/2 );
+    } else {
+        m_label.setY( m_area.height()/2+m_Vflip*m_label.textWidth()/2 );
+        m_label.setX( m_area.width()/2-m_Hflip*m_label.boundingRect().height()/2 );
+    }
 }
 
+void Chip::setWidth( int w )
+{
+    m_width = w;
+    m_area = QRect( 0, 0, 8*m_width, 8*m_height );
+}
+
+void Chip::setHeight( int h )
+{
+    m_height = h;
+    m_area = QRect( 0, 0, 8*m_width, 8*m_height );
+}
 void Chip::findHelp()
 {
     QString helpFile = changeExt( m_dataFile, "txt" );
     if( QFileInfo::exists( helpFile ) ) m_help = fileToString( helpFile, "Chip::findHelp" );
     else                                m_help = MainWindow::self()->getHelp( m_name, false );
+}
+
+void Chip::setMargins( int top, int bottom, int right, int left )
+{
+    m_topMargin    = top;
+    m_bottomMargin = bottom;
+    m_rightMargin  = right;
+    m_leftMargin   = left;
+    update();
 }
 
 void Chip::setMargins( QString margins )
@@ -495,6 +527,7 @@ void Chip::setMargins( QString margins )
     if( margins.size() ) m_bottomMargin = mList.takeFirst().toInt();
     if( margins.size() ) m_rightMargin  = mList.takeFirst().toInt();
     if( margins.size() ) m_leftMargin   = mList.takeFirst().toInt();
+    update();
 }
 
 void Chip::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )

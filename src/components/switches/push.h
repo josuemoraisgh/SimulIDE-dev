@@ -18,5 +18,5 @@ class Push : public PushBase
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* option, QWidget* widget ) override;
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* option, QWidget* widget ) override;
 };

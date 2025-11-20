@@ -40,6 +40,7 @@ Component::Component( QString type, QString id )
     m_backPixmap = nullptr;
     //m_group = NULL;
 
+    m_ansiSymbol = Circuit::self()->ansiSymbols();
     m_showId     = false;
     m_showVal    = false;
     m_moving     = false;
@@ -671,8 +672,6 @@ void Component::paintSelected( QPainter* p )
     }
     if( isSelected() )
     {
-        //pen.setColor( Qt::darkGray);
-        //color = Qt::darkGray;
         p->setOpacity( 0.5 );
         p->fillRect( boundingRect(), Qt::darkGray  );
     }

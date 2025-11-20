@@ -5,7 +5,6 @@
 
 #include <QtMath>
 #include <QPainter>
-#include <QPushButton>
 #include <QGraphicsProxyWidget>
 
 #include "dht22.h"
@@ -13,6 +12,7 @@
 #include "simulator.h"
 #include "circuit.h"
 #include "itemlibrary.h"
+#include "updobutton.h"
 
 #include "doubleprop.h"
 #include "stringprop.h"
@@ -27,7 +27,7 @@ LibraryItem* Dht22::libraryItem()
     return new LibraryItem(
         "DHt22/11",
         "Sensors",
-        "dht22.png",
+        "dht22_ico.png",
         "Dht22",
         Dht22::construct );
 }
@@ -36,24 +36,25 @@ Dht22::Dht22( QString type, QString id )
      : Component( type, id )
      , eElement( id )
 {
-    m_area = QRect(-28,-20, 56, 40 );
+    m_area = QRect(-16,-38, 32, 62 );
 
     m_graphical = true;
+
     m_temp = 22.5;
     m_humi = 68.5;
     m_tempInc = 0.5;
     m_humiInc = 5;
-    m_set = true;
 
     m_pin.resize(4);
-    m_pin[0] = m_inpin = new IoPin( 180, QPoint(-36,-4), id+"-inPin", 0, this );
-    m_inpin->setOutHighV( 5 );
-    m_pin[1] = new Pin( 180, QPoint(-36,-12), id+"-vccPin", 0, this );
+    m_pin[0] = m_inpin = new IoPin( 270, QPoint(-4, 32 ), id+"-inPin" , 0, this, input );
+    m_pin[1] = new Pin  ( 270, QPoint(-12, 32 ), id+"-vccPin", 0, this );
+    m_pin[2] = new Pin  ( 270, QPoint( 12, 32 ), id+"-gdnPin", 0, this );
+    m_pin[3] = new Pin  ( 270, QPoint(  4, 32 ), id+"-ncPin" , 0, this );
     m_pin[1]->setUnused( true );
-    m_pin[2] = new Pin( 180, QPoint(-36, 4), id+"-gdnPin", 0, this );
     m_pin[2]->setUnused( true );
-    m_pin[3] = new Pin( 180, QPoint(-36, 12), id+"-ncPin", 0, this );
     m_pin[3]->setUnused( true );
+
+    m_inpin->setOutHighV( 5 );
 
     m_font.setFamily("Ubuntu Mono");
     m_font.setBold( true );
@@ -61,49 +62,44 @@ Dht22::Dht22( QString type, QString id )
     setLabelPos(-28,-32, 0);
     setModel( "DHT22" );
 
-    m_button = new QPushButton( );
-    m_button->setMaximumSize( 6, 23);
-    m_button->setGeometry( 0, 0, 6, 23);
-    m_button->setCheckable( true );
-    m_button->setIconSize( QSize( 6, 23) );
-    m_button->setIcon(QIcon(":/up.png"));
+    UpDoButton* tUpButton = new UpDoButton( true );
+    QGraphicsProxyWidget* proxy = Circuit::self()->addWidget( tUpButton );
+    proxy->setParentItem( this );
+    proxy->setPos( QPoint(-20,-41 ) );
 
-    QPushButton* u_button = new QPushButton();
-    u_button->setCursor( Qt::PointingHandCursor );
-    u_button->setMaximumSize( 9, 9 );
-    u_button->setGeometry(-5,-5, 9, 9);
-    u_button->setCheckable( false );
-    u_button->setIcon(QIcon(":/su.png"));
+    UpDoButton* tDoButton = new UpDoButton( false );
+    proxy = Circuit::self()->addWidget( tDoButton );
+    proxy->setParentItem( this );
+    proxy->setPos( QPoint(-20,-36 ) );
 
-    QPushButton* d_button = new QPushButton();
-    d_button->setCursor( Qt::PointingHandCursor );
-    d_button->setMaximumSize( 9, 9 );
-    d_button->setGeometry(-5,-5, 9, 9);
-    d_button->setCheckable( false );
-    d_button->setIcon(QIcon(":/giu.png"));
+    QObject::connect( tUpButton, &UpDoButton::pressed, [=](){ tempUpClicked(); } );
+    QObject::connect( tDoButton, &UpDoButton::pressed, [=](){ tempDoClicked(); } );
 
-    m_proxy = Circuit::self()->addWidget( m_button );
-    m_proxy->setParentItem( this );
-    m_proxy->setPos( QPoint(-23,-8) );
+    UpDoButton* hUpButton = new UpDoButton( true );
+    proxy = Circuit::self()->addWidget( hUpButton );
+    proxy->setParentItem( this );
+    proxy->setPos( QPoint(-20,-30 ) );
 
-    m_proxy = Circuit::self()->addWidget( u_button );
-    m_proxy->setParentItem( this );
-    m_proxy->setPos( QPoint( 17,-7) );
+    UpDoButton* hDoButton = new UpDoButton( false );
+    proxy = Circuit::self()->addWidget( hDoButton );
+    proxy->setParentItem( this );
+    proxy->setPos( QPoint(-20,-25 ) );
 
-    m_proxy = Circuit::self()->addWidget( d_button );
-    m_proxy->setParentItem( this );
-    m_proxy->setPos( QPoint( 17, 6) );
-
-    QObject::connect( m_button, &QPushButton::clicked, [=](){ onbuttonclicked(); } );
-    QObject::connect( u_button, &QPushButton::pressed, [=](){ upbuttonclicked(); } );
-    QObject::connect( d_button, &QPushButton::pressed, [=](){ downbuttonclicked(); } );
+    QObject::connect( hUpButton, &UpDoButton::pressed, [=](){ humidUpClicked(); } );
+    QObject::connect( hDoButton, &UpDoButton::pressed, [=](){ humidDoClicked(); } );
 
     addPropGroup( { tr("Main"), {
         new StrProp <Dht22>("DHT22", tr("Model"),"DHT11,DHT22"
                            , this, &Dht22::model, &Dht22::setModel, propNoCopy,"enum"  ),
 
+        new DoubProp<Dht22>("Temp", tr("Tempature") ,"°C"
+                            , this, &Dht22::temperature, &Dht22::setTemperature ),
+
         new DoubProp<Dht22>("TempInc", tr("Temp. increment") ,"°C"
                            , this, &Dht22::tempInc, &Dht22::setTempInc ),
+
+        new DoubProp<Dht22>("Humi", tr("Humidity"),"_%"
+                            , this, &Dht22::humidity, &Dht22::setHumidity ),
 
         new DoubProp<Dht22>("HumiInc", tr("Humid. increment"),"_%"
                            , this, &Dht22::humidInc, &Dht22::setHumidInc ),
@@ -118,6 +114,8 @@ void Dht22::stamp()   // Called at Simulation Start
     m_lastIn = true;
     m_inpin->setPinMode( input );
     m_inpin->changeCallBack( this, true );
+
+    if( m_changed ) calcData();
 }
 
 void Dht22::voltChanged()                              // Called when Input Pin changes
@@ -141,6 +139,7 @@ void Dht22::runEvent()
 {
     if( m_outStep == 0 )       // Send ACK
     {
+        if( m_changed ) calcData();
         m_bit = 1ULL<<39;
         if( m_bitStep == 0 )   // Start ACK
         {
@@ -178,6 +177,8 @@ void Dht22::runEvent()
 
 void Dht22::calcData()
 {
+    m_changed = false;
+
     uint64_t tempI, tempD, humiI, humiD;
     if( m_DHT22 )
     {
@@ -198,53 +199,65 @@ void Dht22::calcData()
     }
     uint8_t checksum = tempI+tempD+humiI+humiD;
     m_data = (humiI<<32)+(humiD<<24)+(tempI<<16)+(tempD<<8)+checksum;
+
     update();
 }
 
-void Dht22::onbuttonclicked()
+void Dht22::setTemperature( double t )
 {
-    m_set = m_button->isChecked();
-    if( m_set ) m_button->setIcon( QIcon(":/up.png") );
-    else        m_button->setIcon( QIcon(":/down.png") );
-}
-
-void Dht22::upbuttonclicked()
-{
-    if( m_set ) m_temp += m_tempInc;
-    else        m_humi += m_humiInc;
-
+    m_temp = t;
     if( m_DHT22) {
-       if( m_temp > 80 )  m_temp = 80;
-       if( m_humi > 100 ) m_humi = 100;
+        if( m_temp > 80 )  m_temp = 80;
     }else{                             // Using ASAIR DHT11 specifications
         if( m_temp > 60 ) m_temp = 60;
-        if( m_humi > 95 ) m_humi = 95;
     }
-    calcData();
+    m_changed = true;
+    update();
 }
 
-void Dht22::downbuttonclicked()
+void Dht22::tempUpClicked()
 {
-    if( m_set ) m_temp -= m_tempInc;
-    else        m_humi -= m_humiInc;
+    setTemperature( m_temp + m_tempInc );
+}
 
+void Dht22::tempDoClicked()
+{
+    setTemperature( m_temp - m_tempInc );
+}
+
+void Dht22::setHumidity( double h )
+{
+    m_humi = h;
     if( m_DHT22) {
-        if( m_temp < -40 ) m_temp = -40;
-        if( m_humi < 0  )  m_humi = 0;
+        if( m_humi > 100 ) m_humi = 100;
     }else{                             // Using ASAIR DHT11 specifications
-        if( m_temp < -20 ) m_temp = -20;
-        if( m_humi < 5   ) m_humi = 5;
+        if( m_humi > 95 ) m_humi = 95;
     }
-    calcData();
+    m_changed = true;
+    update();
+}
+
+void Dht22::humidUpClicked()
+{
+    setHumidity( m_humi + m_humiInc );
+}
+
+void Dht22::humidDoClicked()
+{
+    setHumidity( m_humi - m_humiInc );
 }
 
 void Dht22::setModel( QString model )
 {
     m_DHT22 = (model == "DHT22");
-    if( m_DHT22 ) m_start = 1e9;
-    else          m_start = 18e9;
-
-    calcData();
+    if( m_DHT22 ){
+        setBackground("dht22.svg");
+        m_start = 1e9;
+    }else{
+        setBackground("dht11.svg");
+        m_start = 18e9;
+    }
+    m_changed = true;
 }
 
 QString Dht22::model() { return m_DHT22 ? "DHT22" : "DHT11"; }
@@ -254,34 +267,31 @@ double Dht22::trim( double data ) { return (double)(((int)(data*10)))/10; }
 void Dht22::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    QPen pen( Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
-    p->setPen( pen );
-    p->setBrush(QColor( 50, 50, 70 ));
-    p->drawRoundedRect( m_area, 2, 2 );
 
-    p->setBrush( QColor(200, 220, 180) );
-    p->drawRoundedRect( QRect(-25,-10, 40, 26 ),2,2 );
+    p->setRenderHint( QPainter::Antialiasing, true );
+
+    p->setOpacity( .6 );
+    p->fillRect( QRectF(-14,-40, 32, 19 ), QColor( Qt::white ) );
+    p->setOpacity( 1 );
+
+    p->drawPixmap( QRect(-18,-20, 36, 46 ), *m_backPixmap, m_backPixmap->rect() );
 
     m_font.setStretch( 100 );
-    m_font.setPixelSize(6);
+    m_font.setPixelSize( 6 );
     p->setFont( m_font );
-    if( m_DHT22 ){
-        p->setPen( QColor(250, 250, 250) );
-        p->drawText(-10,-13, "DHT22" );
-    }else{
-        p->setPen( QColor(200, 200, 255) );
-        p->drawText(-10,-13, "DHT11" );
-    }
+
+    QString label = m_DHT22 ? "DHT22" : "DHT11";
+    p->drawText( QRectF(-16,-19, 32, 8 ), Qt::AlignCenter, label );
+
 #ifdef _WIN32
     m_font.setStretch( 99 );
 #else
     m_font.setStretch( 93 );
 #endif
-    m_font.setPixelSize(10);
+    m_font.setPixelSize( 9 );
     p->setFont( m_font );
-    p->setPen( QColor(0, 0, 0) );
-    p->drawText( -16, 1, QString::number( m_temp )+"°C" );
-    p->drawText( -16,12, QString::number( m_humi )+" %" );
+    p->drawText( QRectF(-14,-40, 32, 8 ), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
+    p->drawText( QRectF(-14,-29, 32, 8 ), Qt::AlignCenter, QString::number( m_humi, 'f', 1 )+" %" );
 
     Component::paintSelected( p );
 }

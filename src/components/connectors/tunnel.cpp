@@ -127,7 +127,7 @@ void Tunnel::setGroupName( QString name, bool single )
     m_name = name;
     if( !m_packed ) m_pin[0]->setLabelText( name, false );
     if( name == "" ) m_size = 20;
-    else  m_size = snapToGrid( m_pin[0]->labelSizeX()+4 );
+    else  m_size = snapToGrid4( m_pin[0]->labelSizeX()+4 );
     setRotated( m_rotated );
 
     if( m_tunnels.contains( name ) ) // There is already tunnel with this name

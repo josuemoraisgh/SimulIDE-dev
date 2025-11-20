@@ -22,7 +22,11 @@ ScriptDisplay::ScriptDisplay( int w, int h, QString name, QWidget* parent )
               << "setBackground( int RGB )"
               << "setPixel( uint x, uint y, int RGB )"
               << "setData( array<array<int>> &data )"
+              << "void fillData( int data )"
               << "setPalette( array<int> &data )"
+              << "setBGR( bool b )"
+              << "drawLine( int x0, int y0, int x1, int y1, int color )"
+              << "clear()"
                  ;
 }
 ScriptDisplay::~ScriptDisplay(){}
@@ -70,6 +74,10 @@ void ScriptDisplay::registerScriptMetods( asIScriptEngine* engine ) // Static: r
                                    , asMETHODPR( ScriptDisplay, setData, (CScriptArray*), void)
                                    , asCALL_THISCALL );
 
+    engine->RegisterObjectMethod("Display", "void fillData( int data )"
+                                 , asMETHODPR( ScriptDisplay, fillData, (int), void)
+                                 , asCALL_THISCALL );
+
     engine->RegisterObjectMethod("Display", "void setPalette( array<int> &data )"
                                    , asMETHODPR( ScriptDisplay, setPalette, (CScriptArray*), void)
                                    , asCALL_THISCALL );
@@ -77,6 +85,10 @@ void ScriptDisplay::registerScriptMetods( asIScriptEngine* engine ) // Static: r
     engine->RegisterObjectMethod("Display", "void clear()"
                                    , asMETHODPR( ScriptDisplay, clear, (), void)
                                    , asCALL_THISCALL );
+
+    engine->RegisterObjectMethod("Display", "void setBGR(bool b)"
+                                 , asMETHODPR( ScriptDisplay, setBGR, (bool), void)
+                                 , asCALL_THISCALL );
 }
 
 void ScriptDisplay::startScript()
@@ -119,6 +131,7 @@ void ScriptDisplay::setData( CScriptArray* data )
             int color = 0;
             uint index = *(uint*)column->At(y);
             if( index < m_palette.size() ) color = m_palette.at( index );
+            else                           color = index;
             setPixel( x, y, color );
         }
     }

@@ -26,11 +26,11 @@ class Relay : public MechContact
         double iRel() { return m_relCurrent; }
         void setIRel( double current ) { m_relCurrent = current; }
 
-        virtual void initialize() override;
-        virtual void stamp() override;
-        virtual void voltChanged() override;
+        void initialize() override;
+        void stamp() override;
+        void voltChanged() override;
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     protected:
         Inductor* m_inductor;

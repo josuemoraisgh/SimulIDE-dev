@@ -19,5 +19,7 @@ class Resistor : public Comp2Pin, public eResistor
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
+ static void drawAnsi( QPainter* p, int x, int y, double sX=1, double sY=1 );
+
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 };

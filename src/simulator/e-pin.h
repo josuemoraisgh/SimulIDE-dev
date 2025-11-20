@@ -33,13 +33,13 @@ class ePin
         bool inverted() { return m_inverted; }
         virtual void setInverted( bool i ) { m_inverted = i; }
 
-        inline void stampAdmitance( double data ) { if( m_enode ) m_enode->stampAdmitance( this, data ); }
+        inline void stampAdmitance( double a ) { if( m_enode ) m_enode->stampAdmitance( this, a ); }
 
         void addSingAdm( eNode* node, double admit );
         void stampSingAdm( double admit );
 
         void createCurrent();
-        inline void stampCurrent( double data ) { if( m_enode ) m_enode->stampCurrent( this, data ); }
+        inline void stampCurrent( double c ) { if( m_enode ) { m_sourceCurrent = c; m_enode->stampCurrent( this, c ); } }
         
         QString getId()  { return m_id; }
         void setId( QString id );
@@ -48,11 +48,15 @@ class ePin
 
         void setIndex( int i ) { m_index = i; }
 
+        void setCircuitPin( ePin* p ) { m_circuitPin = p; }
+
         virtual double getCurrent() { return m_current; }
         void setCurrent( double c ) { m_current = c; }
 
         virtual bool hasCurrent() { return m_hasCurrent; }
         void setHasCurrent( bool h ) { m_hasCurrent = h; }
+
+        void resetCurrent() { m_hasCurrent = false; m_current = 0; }
 
     protected:
         eNode* m_enode;     // My eNode
@@ -64,5 +68,8 @@ class ePin
         bool m_inverted;
         bool m_hasCurrent;
 
+         ePin* m_circuitPin;
+
         double m_current;
+        double m_sourceCurrent;
 };

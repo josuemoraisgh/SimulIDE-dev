@@ -43,7 +43,7 @@ IoPin::IoPin( int angle, const QPoint pos, QString id, int index, Component* par
 
     m_pinMode = undef_mode;
     setPinMode( mode );
-    animate( Circuit::self()->animate() );
+    animate( Circuit::self()->animateLogic() );
 }
 IoPin::~IoPin(){}
 
@@ -317,9 +317,10 @@ double IoPin::getCurrent()
 
     switch( m_pinMode )
     {
-        case input:  m_current = volt*m_gndAdmit; break;
+        case input:  m_current = volt*m_admit; break;
         case output:
         case openCo: m_current = (m_outVolt-volt)*m_admit; break;
+        default: break;
     }
     return m_current;
 }
@@ -400,6 +401,7 @@ QStringList IoPin::registerScript( asIScriptEngine* engine )
                                    , asMETHODPR( IoPin, setVoltage, (double), void)
                                    , asCALL_THISCALL );
 
+    memberList << "setOutHighV(double v)";
     engine->RegisterObjectMethod("IoPin", "void setOutHighV(double v)"
                                    , asMETHODPR( IoPin, setOutHighV, (double), void)
                                    , asCALL_THISCALL );
@@ -413,6 +415,16 @@ QStringList IoPin::registerScript( asIScriptEngine* engine )
     engine->RegisterObjectMethod("IoPin", "void changeCallBack(eElement@ p, bool s)"
                                    , asMETHODPR( IoPin, changeCallBack, (eElement*, bool), void)
                                    , asCALL_THISCALL );
+
+    memberList << "setX( double x )";
+    engine->RegisterObjectMethod("IoPin", "void setX( double X )"
+                                 , asMETHODPR( IoPin, setX, (double), void)
+                                 , asCALL_THISCALL );
+
+    memberList << "setY( double y )";
+    engine->RegisterObjectMethod("IoPin", "void setY( double y )"
+                                 , asMETHODPR( IoPin, setY, (double), void)
+                                 , asCALL_THISCALL );
 
     return memberList;
 }

@@ -112,6 +112,8 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
         QString invertedPins(); // { return m_invertedPins; }
         void setInvertPins( QString pins );
 
+        void setAnsiSymbol( bool an ) { m_ansiSymbol = an; }
+
         virtual std::vector<Pin*> getPins() { return m_pin; }
         virtual Pin* getPin( QString pinName ){ return nullptr; }
 
@@ -193,6 +195,7 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
         bool m_crashed;
         bool m_hidden;
         bool m_moveFree;
+        bool m_ansiSymbol;
 
         QPointF m_boardPos;
         QPointF m_circPos;

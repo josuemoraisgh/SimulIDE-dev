@@ -28,17 +28,8 @@ class BcdTo7S : public BcdBase
         bool pinReset() { return m_useReset; }
         void setPinReset( bool r );
 
-        //bool resetInv() { return m_resetInv; }
-        //void setResetInv( bool inv );
-
-    //protected:
-        //void slotProperties() override;
-        //void updtProperties();
-
     private:
-
         bool m_useReset;
-        //bool m_resetInv;
 
         IoPin* m_resetPin;
 };

@@ -82,6 +82,7 @@ KY040::KY040( QString type, QString id )
 
     m_pin[2] = m_sw = new IoPin( 270, QPoint(-12,36), id+"-sw", 0, this, output );
     m_sw->setOutHighV( VIN );
+    m_sw->setOutputImp( 2000 );
     m_sw->setLabelText( "SW" );
 
     setAngle( 90 );
@@ -143,7 +144,9 @@ void KY040::updateStep()
     }
 
     if( !m_changed ) return;
-    m_sw->setOutState( !m_button->isDown() );
+    bool closed = m_button->isDown();
+    m_sw->setOutputImp( closed ? 1e-3 : 2000 );
+    m_sw->setOutState( !closed );
     m_changed = false;
 }
 

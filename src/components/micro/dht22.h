@@ -9,7 +9,7 @@
 #include "component.h"
 
 class LibraryItem;
-class QPushButton;
+class QToolButton;
 class QGraphicsProxyWidget;
 class IoPin;
 
@@ -25,8 +25,14 @@ class Dht22 : public Component , public eElement
         void setModel( QString model);
         QString model();
 
+        double temperature() { return m_temp; }
+        void setTemperature( double t );
+
         double tempInc() { return m_tempInc; }
         void setTempInc( double inc ) { m_tempInc = trim( inc ); }
+
+        double humidity() { return m_humi; }
+        void setHumidity( double h );
 
         double humidInc() { return m_humiInc; }
         void setHumidInc( double inc ) { m_humiInc = trim( inc ); }
@@ -38,9 +44,10 @@ class Dht22 : public Component , public eElement
         virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     public slots:
-        void onbuttonclicked();
-        void upbuttonclicked();
-        void downbuttonclicked();
+        void tempUpClicked();
+        void tempDoClicked();
+        void humidUpClicked();
+        void humidDoClicked();
 
     private:
         void calcData();
@@ -48,7 +55,6 @@ class Dht22 : public Component , public eElement
 
         bool m_DHT22;
         bool m_lastIn;
-        bool m_set;
 
         uint64_t m_lastTime;
         uint64_t m_start;
@@ -64,9 +70,6 @@ class Dht22 : public Component , public eElement
         int m_bitStep;
 
         QFont m_font;
-
-        QPushButton* m_button;
-        QGraphicsProxyWidget* m_proxy;
 
         IoPin* m_inpin;
 };

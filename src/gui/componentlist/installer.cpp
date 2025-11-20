@@ -44,6 +44,8 @@ void Installer::loadInstalled()
         QDir compSetDir = m_compsDir;
         compSetDir.cd( item );
         ComponentList::self()->LoadCompSetAt( compSetDir );
+        QStringList itemList = ComponentList::self()->getxmlItems();
+        m_groupItemList.insert( item, itemList );
     }
 }
 

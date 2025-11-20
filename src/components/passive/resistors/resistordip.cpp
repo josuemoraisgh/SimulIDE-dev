@@ -10,6 +10,7 @@
 #include "simulator.h"
 #include "circuit.h"
 #include "pin.h"
+#include "resistor.h"
 #include "e-resistor.h"
 #include "label.h"
 #include "propdialog.h"
@@ -47,12 +48,12 @@ ResistorDip::ResistorDip( QString type, QString id )
     setSize( 8 );
 
     setLabelPos(-24,-40, 0);
-    setValLabelPos( 4,-26, 90 );
-    m_valLabel->setAcceptedMouseButtons( 0 );
+    //setValLabelPos( 4,-26, 90 );
+    //m_valLabel->setAcceptedMouseButtons( 0 );
 
-    QFont font = m_valLabel->font();
-    font.setPixelSize( 6 );
-    m_valLabel->setFont( font );
+    //QFont font = m_valLabel->font();
+    //font.setPixelSize( 6 );
+    //m_valLabel->setFont( font );
 
     Simulator::self()->addToUpdateList( this );
 
@@ -196,7 +197,11 @@ void ResistorDip::remove()
 void ResistorDip::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    p->drawRoundRect( QRect(-9,-28, 18, m_size*8 ), 2, 2 );
+
+    if( m_ansiSymbol ){
+        for( int i=0; i<m_size; i++ ) Resistor::drawAnsi( p, 0,-32+8+i*8, 0.7, 0.6 );
+    }
+    else p->drawRoundRect( QRect(-9,-28, 18, m_size*8 ), 2, 2 );
 
     if( m_pullUp )
     {

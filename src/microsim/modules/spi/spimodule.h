@@ -37,6 +37,8 @@ class SpiModule : public eClockedDevice
         virtual void setSckPin( IoPin* pin )  { m_clkPin = pin; }
         virtual void setSsPin( IoPin* pin )   { m_SS = pin; }
 
+        void setPins( IoPin* mosi, IoPin* miso, IoPin* clk, IoPin* ss );
+
         void setUseSS( bool u ) { m_useSS = u; }
 
     protected:

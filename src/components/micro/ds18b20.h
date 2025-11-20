@@ -9,6 +9,7 @@
 
 #include "onewire.h"
 #include "component.h"
+#include "pin.h"
 
 class LibraryItem;
 class IoPin;
@@ -68,4 +69,7 @@ class Ds18b20 : public Component , public OneWire
         int8_t  m_TH;  // TH register, alarm trigger register, can be stored in internal EEPROM
         int8_t  m_TL;  // TL register, alarm trigger register, can be stored in internal EEPROM
         uint8_t m_CFG; // Config register, can be stored in internal EEPROM
+
+        Pin m_vdd;
+        Pin m_gnd;
 };

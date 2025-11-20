@@ -358,3 +358,9 @@ void TwiModule::setSclPin( IoPin* pin )
     m_scl = pin;
     m_clkPin = pin;
 }
+
+void TwiModule::setPins( IoPin* scl, IoPin* sda )
+{
+    setSclPin( scl );
+    setSdaPin( sda );
+}

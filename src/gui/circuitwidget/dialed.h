@@ -27,7 +27,6 @@ class Dialed : public Component
 
         virtual void setLinkedValue( double v, int i=0 ) override;
 
-    public slots:
         virtual void dialChanged( int );
 
     protected:

@@ -44,9 +44,12 @@ class Chip : public Component, public eElement
         virtual void setSubcTypeStr( QString s ){ m_subcType = s; }
 
         int pkgWidth() { return m_width; }
+        void setWidth( int w );
+        void setHeight( int h );
 
         void setBackData( std::vector<std::vector<int>>* d ) { m_backData = d; }
 
+        void setMargins( int top, int bottom, int right, int left );
         void setMargins( QString margins );
         QString getMargins() { return m_margins; }
 

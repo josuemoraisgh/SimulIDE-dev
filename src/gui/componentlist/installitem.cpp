@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "installitem.h"
+#include "installinfo.h"
 #include "installer.h"
 #include "mainwindow.h"
 
@@ -15,6 +16,8 @@ InstallItem::InstallItem( Installer* parent, QString item )
            : QWidget( (QWidget*)parent )
 {
     m_Installer = parent;
+    m_infoWidget = nullptr;
+
     setupUi( this );
     setItem( item );
 }
@@ -35,7 +38,16 @@ void InstallItem::setItem( QString itemStr )
 
     font.setPixelSize( 11*scale );
     textEdit->setFont( font );
-    installButton->setFont( font );
+
+    infoButton->setIcon(QIcon(":/help.svg"));
+    infoButton->setToolTip( tr("Information") );
+    QPalette pi = infoButton->palette();
+    pi.setColor( QPalette::Button, "#DDDDDD" );
+    infoButton->setPalette( pi );
+    //infoButton->setStyleSheet( "background-color:#CCCCCC" );
+
+    updtButton->setIcon(QIcon(":/reset.svg"));
+    updtButton->setToolTip( tr("Update") );
 
     QStringList set = itemStr.split("; ");
 
@@ -44,18 +56,23 @@ void InstallItem::setItem( QString itemStr )
     QString header = "#### ";
 
     QPalette p = setNameEdit->palette();
-    p.setColor( QPalette::Text, QColor( 80, 90, 110 ) );
+
 
     if( set.size() < 4 )
     {
         installButton->hide();
+        infoButton->hide();
+        updtButton->hide();
+        gridLayout->setContentsMargins(2,2,2,2);
 
         font.setPixelSize( 13*scale );
         setNameEdit->setFont( font );
 
         p.setColor( QPalette::Base, QColor( 220, 235, 240 ) );
-
         p.setColor( QPalette::Window, QColor( 220, 235, 240 ) );
+        p.setColor( QPalette::Text, QColor( 50, 70, 100 ) );
+        setNameEdit->setPalette( p );
+
         this->setAutoFillBackground( true );
         this->setPalette( p );
 
@@ -69,24 +86,39 @@ void InstallItem::setItem( QString itemStr )
         m_version = set.at(3).toLongLong();
 
         if( set.size() > 4 ) m_depends = set.at(4);
+        if( set.size() > 5 ) m_author  = set.at(5);
 
         font.setPixelSize( 12*scale );
         setNameEdit->setFont( font );
 
+        p.setColor( QPalette::Text, QColor( 80, 90, 110 ) );
+        setNameEdit->setPalette( p );
+
         textEdit->setMarkdown( m_description );
+
+        setButtonState( bInstall );
     }
     //QString md = header+m_name+"\n"+m_description;
     //md.replace("<br>","\n");
 
-    setNameEdit->setPalette( p );
     setNameEdit->setMarkdown( header+m_name );
 
-    setButtonState( bInstall );
-
-    QObject::connect( installButton, &QPushButton::clicked, [=](){ buttonClicked(); } );
+    QObject::connect( installButton, &QPushButton::clicked, [=](){ installClicked(); } );
+    QObject::connect( infoButton   , &QPushButton::clicked, [=](){ infoClicked(); } );
 }
 
-void InstallItem::buttonClicked()
+void InstallItem::infoClicked()
+{
+    if( !m_infoWidget )
+    {
+        QStringList items = m_Installer->getGroupItems( m_name );
+        m_infoWidget = new InstallInfo( this , m_description, m_author, items );
+        m_infoWidget->setWindowTitle( m_name );
+    }
+    m_infoWidget->show();
+}
+
+void InstallItem::installClicked()
 {
     switch( m_buttonState )
     {
@@ -116,15 +148,38 @@ void InstallItem::updated()
 void InstallItem::setButtonState( buttonState_t state )
 {
     m_buttonState = state;
-    QString buttonText;
+
+    bool update = (state == bUpdate);
+    updtButton->setEnabled( update );
+
+    QPalette pb = updtButton->palette();
+    if( update ) pb.setColor( QPalette::Button, "#EEEE00" );
+    else         pb.setColor( QPalette::Button, "#EEEEEE" );
+    updtButton->setPalette( pb );
+
     QString color = "#CCCCCC";
 
-    switch( state )
+    pb = installButton->palette();
+
+    bool installed =(state != bInstall);
+    if( installed )
     {
-        case bInstall:   color = "#CCCCCC"; buttonText = tr("Install");   break;
-        case bUpdate:    color = "#EEEE00"; buttonText = tr("Update");    break;
-        case bUninstall: color = "#AAFFAA"; buttonText = tr("Uninstall"); break;
+        installButton->setToolTip( tr("Uninstall") );
+        installButton->setIcon( QIcon(":/remove.svg") );
+        pb.setColor( QPalette::Button, "#FF8070" );
+        color = "#DDFFDD";
+    }else{
+        installButton->setToolTip( tr("Install") );
+        installButton->setIcon( QIcon(":/load.svg") );
+        pb.setColor( QPalette::Button, "#30DD40" );
+        color = "#F8F8FF";
     }
-    installButton->setText( buttonText );
-    installButton->setStyleSheet( "background-color:"+color );
+    installButton->setPalette( pb );
+    //this->setStyleSheet( "background-color:"+color );
+    QPalette p = setNameEdit->palette();
+    p.setColor( QPalette::Base, color );
+    p.setColor( QPalette::Window, color );
+    this->setPalette( p );
+    setNameEdit->setPalette( p );
+    textEdit->setPalette( p );
 }

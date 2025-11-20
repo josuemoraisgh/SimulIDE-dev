@@ -10,7 +10,6 @@
 class eBJT : public eElement
 {
     public:
-
         eBJT( QString id );
         virtual ~eBJT();
 
@@ -27,6 +26,8 @@ class eBJT : public eElement
         double threshold() { return m_vCrit; }
         void   setThreshold( double vCrit );
 
+        void setup();
+
     protected:
         double limitStep( double vnew, double vold );
 
@@ -41,9 +42,6 @@ class eBJT : public eElement
         double m_fgain;
 
         bool m_PNP;
-
-        eElement m_BEjunction;
-        eElement m_BCjunction;
 
         ePin* m_BC;
         ePin* m_CB;

@@ -18,6 +18,7 @@
 #include "circmatrix.h"
 #include "e-element.h"
 #include "socket.h"
+#include "node.h"
 
 #include "qemudevice.h"
 
@@ -146,7 +147,7 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     if( m_state == SIM_RUNNING ) // Run Circuit in a parallel thread
         m_CircuitFuture = QtConcurrent::run( this, &Simulator::runCircuit );
 
-    if( Circuit::self()->animatePins() ) // Moved here to be in parallel with runCircuit thread
+    if( Circuit::self()->animateLogic() ) // Moved here to be in parallel with runCircuit thread
     {
         if( (m_timerTime-m_updtTime) >= 2e8 ){ // Animate at 5 FPS
             //Circuit::self()->updateConnectors();
@@ -156,7 +157,26 @@ void Simulator::timerEvent( QTimerEvent* e )  //update at m_timerTick_ms rate (5
     }
     if( Circuit::self()->animateCurr() )  // TODO:  optimize
     {
+        QStringList pinNames = Circuit::self()->m_pinMap.keys();
+        //pinNames.sort();
+        for( QString pinName : pinNames )
+        {
+            Pin* pin = Circuit::self()->m_pinMap.value( pinName );
+            if( !pin ) continue;
+            pin->resetCurrent();
+        }
         for( eNode* node : m_eNodeList) node->updateCurrents();
+
+        QList<Node*> nodeCompList = Circuit::self()->m_nodeList;
+        int counter = 0;
+        while( !nodeCompList.isEmpty() )
+        {
+            for( Node* node : nodeCompList )
+                if( node->hasCurrents() )
+                    nodeCompList.removeOne( node );
+            counter++;
+            if( counter > 100 ) break;
+        }
         Circuit::self()->update();                              // Diagonal wires don't update
     }
 
@@ -229,12 +249,12 @@ void Simulator::runCircuit()
 
     while( true )          // Simulator event loop
     {
-        if( m_qemuDevice )
+        if( QemuDevice::self() )
         {
             if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
             else               nextTime = endRun;
 
-            m_qemuDevice->runToTime( nextTime ); // This will add events
+            QemuDevice::self()->runToTime( nextTime ); // This will add events
         }
         if( !m_firstEvent ) break;
 
@@ -530,7 +550,8 @@ void Simulator::addEvent( uint64_t time, eElement* el )
     if( m_state < SIM_STARTING ) return;
 
     if( el->eventTime ){
-        m_warning = 200; //qDebug() << "Warning: Simulator::addEvent Repeated event"<<el->getId();
+        m_warning = 200; //
+        //qDebug() << "Warning: Simulator::addEvent Repeated event"<<el->getId()<<el->eventTime<<time + m_circTime;
         return;
     }
 

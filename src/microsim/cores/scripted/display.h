@@ -25,7 +25,10 @@ class Display : public QWidget, public Updatable, public eElement
         void setHeight( uint h );
         void setSize( uint w, uint h );
         void setBackground( int b );
+        void setBGR( bool bgr ) { m_bgr = bgr; }
+
         void setPixel( uint x, uint y, int color );
+        void fillData( int data );
         void clear();
         void drawLine( int x0, int y0, int x1, int y1, int color );
 
@@ -41,6 +44,7 @@ class Display : public QWidget, public Updatable, public eElement
 
         bool m_changed;
         bool m_embed;
+        bool m_bgr;
 
         uint m_width;
         uint m_height;

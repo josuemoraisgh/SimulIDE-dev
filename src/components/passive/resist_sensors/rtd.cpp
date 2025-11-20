@@ -13,6 +13,7 @@
 #include "rtd.h"
 #include "simulator.h"
 #include "itemlibrary.h"
+#include "resistor.h"
 
 #include "doubleprop.h"
 #include "propdialog.h"
@@ -85,7 +86,8 @@ void RTD::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
     font.setPixelSize(8);
     p->setFont( font );
 
-    p->drawRect( QRectF(-11,-4.5, 22, 9 ));
+    if( m_ansiSymbol ) Resistor::drawAnsi( p, 0, 0 );
+    else               p->drawRect( QRectF(-11,-4.5, 22, 9 ));
 
     p->drawLine(-6, 6, 8,-8 );
     p->drawText(-8,-6, "+tº");

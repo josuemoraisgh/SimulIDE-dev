@@ -18,8 +18,8 @@ class SwitchDip : public Component, public eElement
         SwitchDip( QString type, QString id );
         ~SwitchDip();
 
-        static Component* construct( QString type, QString id );
-        static LibraryItem* libraryItem();
+ static Component* construct( QString type, QString id );
+ static LibraryItem* libraryItem();
 
         int  size() { return m_size; }
         void setSize( int size );
@@ -33,21 +33,20 @@ class SwitchDip : public Component, public eElement
         int  state() { return m_state; }
         void setState( int state );
 
-        virtual void stamp() override;
-        virtual void updateStep() override;
-        virtual void remove() override;
+        void stamp() override;
+        void updateStep() override;
+        void remove() override;
 
         void createSwitches( int c );
         void deleteSwitches( int d );
 
-        virtual void setHidden( bool hid, bool hidArea=false, bool hidLabel=false ) override;
+        void setHidden( bool hid, bool hidArea=false, bool hidLabel=false ) override;
 
-        virtual void setLinkedValue( double v, int i=0 ) override;
+        void setLinkedValue( double v, int i=0 ) override;
 
-        virtual void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
-
-    public slots:
         void onbuttonclicked();
+
+        void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
     private:
         QList<QPushButton*> m_buttons;

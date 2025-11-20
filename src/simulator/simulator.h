@@ -99,7 +99,7 @@ class Simulator : public QObject
         void remFromSocketList( Socket* el );
 
         /// FIXME: make a list?
-        QemuDevice* m_qemuDevice;
+        /// QemuDevice* m_qemuDevice;
 
     private:
  static Simulator* m_pSelf;

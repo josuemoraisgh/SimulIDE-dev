@@ -36,13 +36,14 @@ class Circuit : public QGraphicsScene
         bool drawGrid() { return !m_hideGrid; }
         void setDrawGrid( bool draw );
 
-        bool animatePins() { return m_animate; }
-        void setAnimatePins( bool an );
+        bool animateLogic() { return m_animateLogic; }
+        void setAnimateLogic( bool an );
 
         bool animateCurr() { return m_animateCurr; }
         void setAnimateCurr( bool an );
 
-        bool animate() { return m_animate; } // TODO: separate animations
+        bool ansiSymbols() { return m_ansiSymbols; }
+        void setAnsiSymbols( bool an );
 
         int sceneWidth() { return m_sceneWidth; }
         void setSceneWidth( int w );
@@ -191,8 +192,9 @@ class Circuit : public QGraphicsScene
         bool m_hideGrid;
 
         bool m_compRemoved;
-        bool m_animate;
+        bool m_animateLogic;
         bool m_animateCurr;
+        bool m_ansiSymbols;
         bool m_changed;
         bool m_busy;
         bool m_undo;

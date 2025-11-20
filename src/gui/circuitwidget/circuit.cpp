@@ -50,8 +50,9 @@ Circuit::Circuit( int width, int height, CircuitView* parent )
     m_undo       = false;
     m_redo       = false;
     m_changed    = false;
-    m_animate    = false;
+    m_animateLogic = false;
     m_animateCurr = false;
+    m_ansiSymbols = false;
     m_pasting    = false;
     m_deleting   = false;
     m_loading    = false;
@@ -372,8 +373,9 @@ void Circuit::loadStrDoc( QString &doc )
                 else if( prop.name == "stepsPS" ) m_simulator->setStepsPerSec(prop.value.toULongLong() );
                 else if( prop.name == "NLsteps" ) m_simulator->setMaxNlSteps( prop.value.toUInt() );
                 else if( prop.name == "reaStep" ) AnalogClock::self()->setPeriod( prop.value.toULongLong() );
-                else if( prop.name == "animate" ) m_animate = prop.value.toInt();
+                else if( prop.name == "animate" ) m_animateLogic = prop.value.toInt();
                 else if( prop.name == "anicurr" ) m_animateCurr = prop.value.toInt();
+                else if( prop.name == "ansi"    ) m_ansiSymbols = prop.value.toInt();
                 else if( prop.name == "width"   ) m_sceneWidth  = prop.value.toInt();
                 else if( prop.name == "height"  ) m_sceneHeight = prop.value.toInt();
                 else if( prop.name == "rev"     )
@@ -422,7 +424,7 @@ void Circuit::loadStrDoc( QString &doc )
     for( ShieldSubc* shield : shieldList ) shield->connectBoard();
     for( Linker*     linker : linkList   ) linker->createLinks( &compList );
 
-    setAnimatePins( m_animate ); // Force Pin update
+    setAnimateLogic( m_animateLogic ); // Force Pin update
 
     m_subCircuit = nullptr;
     m_busy = false;
@@ -439,8 +441,9 @@ QString Circuit::circuitHeader()
     header += "stepsPS=\"" + QString::number( m_simulator->stepsPerSec() )+"\" ";
     header += "NLsteps=\"" + QString::number( m_simulator->maxNlSteps() )+"\" ";
     header += "reaStep=\"" + QString::number( AnalogClock::self()->getPeriod() )+"\" ";
-    header += "animate=\"" + QString::number( m_animate ? 1 : 0 )+"\" ";
+    header += "animate=\"" + QString::number( m_animateLogic ? 1 : 0 )+"\" ";
     header += "anicurr=\"" + QString::number( m_animateCurr ? 1 : 0 )+"\" ";
+    header += "ansi=\""    + QString::number( m_ansiSymbols ? 1 : 0 )+"\" ";
     header += "width=\""   + QString::number( m_sceneWidth )+"\" ";
     header += "height=\""  + QString::number( m_sceneHeight )+"\" ";
     header += ">\n";
@@ -1237,9 +1240,9 @@ void Circuit::setDrawGrid( bool draw )
     update();
 }
 
-void Circuit::setAnimatePins( bool an )
+void Circuit::setAnimateLogic( bool an )
 {
-    m_animate = an;
+    m_animateLogic = an;
     for( Pin* pin : m_pinMap.values() ) pin->animate( an );
     update();
 }
@@ -1252,6 +1255,12 @@ void Circuit::setAnimateCurr( bool an )
     CurrentWidget::self()->setVisible( an );
 }
 
+void Circuit::setAnsiSymbols( bool an )
+{
+    m_ansiSymbols = an;
+    for( Component* comp : m_compList ) comp->setAnsiSymbol( an );
+    update();
+}
 int Circuit::autoBck() { return MainWindow::self()->autoBck(); }
 void Circuit::setAutoBck( int secs )
 {

@@ -7,7 +7,6 @@
 
 #include <QDebug>
 #include <QPainter>
-#include <QPushButton>
 #include <QGraphicsProxyWidget>
 
 #include "ds18b20.h"
@@ -16,6 +15,7 @@
 #include "circuit.h"
 #include "itemlibrary.h"
 #include "utils.h"
+#include "updobutton.h"
 
 #include "doubleprop.h"
 #include "stringprop.h"
@@ -38,9 +38,24 @@ LibraryItem* Ds18b20::libraryItem()
 Ds18b20::Ds18b20( QString type, QString id )
        : Component( type, id )
        , OneWire( id )
+       , m_vdd( 270, QPoint( 8, 28 ), id+"-PinVdd", 0, this )
+       , m_gnd( 270, QPoint(-8, 28 ), id+"-PinGnd", 0, this )
 {
     m_graphical = true;
-    m_area = QRect(-28,-16, 56, 32 );
+    m_area = QRect(-16,-16, 32, 36 );
+
+    m_pin.resize(1);
+    m_pin[0] = m_inpin = new IoPin( 270, QPoint( 0, 28 ), id+"-inPin", 0, this, openCo );
+
+    m_inpin->setLabelColor( QColor( 250, 250, 200 ) );
+    m_inpin->setLabelText("Dat");
+
+    m_vdd.setLabelColor( QColor( 250, 250, 200 ) );
+    m_gnd.setLabelColor( QColor( 250, 250, 200 ) );
+    m_vdd.setLabelText("Vcc");
+    m_gnd.setLabelText("Gnd");
+    m_vdd.setUnused( true );
+    m_gnd.setUnused( true );
 
     srand( time(0) );
 
@@ -60,36 +75,21 @@ Ds18b20::Ds18b20( QString type, QString id )
     m_scratchpad[7] = 0x10;
     m_scratchpad[8] = 0x2F;
 
-    m_pin.resize(1);
-    m_pin[0] = m_inpin = new IoPin( 180, QPoint(-36, 8), id+"-inPin", 0, this, openCo );
-
-    QPushButton* u_button = new QPushButton();
-    u_button->setMaximumSize( 9, 9 );
-    u_button->setGeometry(-5,-5, 9, 9 );
-    u_button->setCheckable( false );
-    u_button->setIcon(QIcon(":/su.png"));
-    u_button->setCursor( Qt::PointingHandCursor );
-
+    UpDoButton* u_button = new UpDoButton( true );
     QGraphicsProxyWidget* proxy = Circuit::self()->addWidget( u_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint( -7, 4 ) );
+    proxy->setPos( QPoint(-20,-19 ) );
 
-    QPushButton* d_button = new QPushButton();
-    d_button->setMaximumSize( 9, 9 );
-    d_button->setGeometry(-5,-5, 9, 9 );
-    d_button->setCheckable( false );
-    d_button->setIcon( QIcon(":/giu.png") );
-    d_button->setCursor( Qt::PointingHandCursor );
-
+    UpDoButton* d_button = new UpDoButton( false );
     proxy = Circuit::self()->addWidget( d_button );
     proxy->setParentItem( this );
-    proxy->setPos( QPoint( 9, 4 ) );
+    proxy->setPos( QPoint(-20,-14 ) );
 
-    QObject::connect( u_button, &QPushButton::pressed, [=](){ upbuttonclicked(); } );
-    QObject::connect( d_button, &QPushButton::pressed, [=](){ downbuttonclicked(); } );
+    QObject::connect( u_button, &UpDoButton::pressed, [=](){ upbuttonclicked(); } );
+    QObject::connect( d_button, &UpDoButton::pressed, [=](){ downbuttonclicked(); } );
 
     m_font.setFamily("Ubuntu Mono");
-    m_font.setPixelSize( 10 );
+    m_font.setPixelSize( 9 );
     m_font.setBold( true );
     m_font.setLetterSpacing( QFont::PercentageSpacing, 100 );
     setLabelPos(-24,-28 );
@@ -149,7 +149,7 @@ void Ds18b20::funCommand( uint8_t cmd )
 void Ds18b20::convertTemp() // Code 44h, temperature already in the Scratchpad, nothing to do
 {
     uint16_t temp = round( fabs( m_temp )*16 ); // Make it positive and shift to make integer value
-    if( m_temp < 0 ) temp = ~temp + 1;         // Temp under 0? Make 2nd complement
+    if( m_temp < 0 ) temp = ~temp + 1;          // Temp under 0? Make 2nd complement
 
     m_scratchpad[0] = temp;
     m_scratchpad[1] = temp >> 8;
@@ -222,21 +222,21 @@ void Ds18b20::readPowerSupply() // Code B4h : using parasite power? pull down ti
 void Ds18b20::setTemp( double t ) // This should convert temp wrote in UI
 {
     m_temp = t;
+    if( m_temp > 125 ) m_temp = 125;
+    if( m_temp < -55 ) m_temp = -55;
     update();
 }
 
 void Ds18b20::upbuttonclicked()
 {
     m_temp += m_tempInc;
-    if( m_temp > 125 ) m_temp = 125;
     if( Simulator::self()->isRunning() ) Simulator::self()->addToUpdateList( this );
     else updateStep();
 }
 
 void Ds18b20::downbuttonclicked()
 {
-    m_temp = m_temp - m_tempInc;
-    if( m_temp < -55 ) m_temp = -55;
+    m_temp -= m_tempInc;
     if( Simulator::self()->isRunning() ) Simulator::self()->addToUpdateList( this );
     else updateStep();
 }
@@ -244,17 +244,16 @@ void Ds18b20::downbuttonclicked()
 void Ds18b20::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    QPen pen( Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
-    p->setPen( pen );
-    p->setBrush(QColor( 50, 50, 70 ));
-    p->drawRoundedRect( m_area, 2, 2 );
 
-    p->setBrush( QColor(200, 220, 180) );
-    p->drawRoundedRect( QRect(-26,-14, 52, 15 ),2,2 );
+    p->setBrush( QColor( 20, 30, 60 ) );
+    p->drawRoundedRect( QRect(-12,-7, 24, 27 ), 1, 1 );
+
+    p->setOpacity( .6 );
+    p->fillRect( QRectF(-14,-18, 32, 8 ), QColor( Qt::white ) );
+    p->setOpacity( 1 );
 
     p->setFont( m_font );
-    p->setPen( QColor(0, 0, 0) );
-    p->drawText(-23, -3, QString::number( m_temp )+"°C" );
+    p->drawText( QRectF(-14,-18, 32, 8 ), Qt::AlignCenter, QString::number( m_temp, 'f', 1 )+"°C" );
 
     Component::paintSelected( p );
 }

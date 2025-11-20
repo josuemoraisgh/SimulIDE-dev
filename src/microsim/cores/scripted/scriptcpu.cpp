@@ -188,6 +188,16 @@ ScriptCpu::ScriptCpu( eMcu* mcu )
                                    , asMETHODPR( ScriptCpu, setLinkedString, (int,const string,int), void)
                                    , asCALL_THISCALL );
 
+    memberList << "setPackageSize( int width, int height )";
+    m_aEngine->RegisterObjectMethod("ScriptCpu", "void setPackageSize( int width, int height )"
+                                    , asMETHODPR( ScriptCpu, setPackageSize, (int,int), void)
+                                    , asCALL_THISCALL );
+
+    memberList << "setMargins( int top, int bottom, int right, int left )";
+    m_aEngine->RegisterObjectMethod("ScriptCpu", "void setMargins( int top, int bottom, int right, int left )"
+                                    , asMETHODPR( ScriptCpu, setMargins, (int,int,int,int), void)
+                                    , asCALL_THISCALL );
+
     m_typeWords.insert("ScriptCpu", memberList );
 }
 ScriptCpu::~ScriptCpu()
@@ -574,6 +584,17 @@ McuPin* ScriptCpu::getMcuPin( const string pinName )
     McuPin* pin = m_mcu->getMcuPin( name );
     if( !pin ) qDebug() << "Error: ScriptCpu::getMcuPin Pin"<< name << "Doesn't exist";
     return pin;
+}
+
+void ScriptCpu::setPackageSize( int width, int height )
+{
+    this->m_mcuComp->setWidth( width );
+    this->m_mcuComp->setHeight( height );
+}
+
+void ScriptCpu::setMargins( int top, int bottom, int right, int left )
+{
+    this->m_mcuComp->setMargins( top, bottom, right, left );
 }
 
 //---- Linked --------------------------------------------

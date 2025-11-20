@@ -400,7 +400,7 @@ void ConnectorLine::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     QColor color;
     if( isSelected() ) color = Qt::darkGray ;
     else if( m_isBus ) color = Qt::darkGreen;
-    else if( Circuit::self()->animate() )
+    else if( Circuit::self()->animateLogic() )
     {
         if( m_pConnector->getVoltage() > 2.5 ) color = QColor( 200, 50, 50  );
         else                                   color = QColor( 50,  50, 200 );

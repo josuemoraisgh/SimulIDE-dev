@@ -26,6 +26,7 @@ typedef struct qemuArena{
 
 enum simuAction{
     SIM_I2C=10,
+    SIM_SPI,
     SIM_USART,
     SIM_TIMER,
     SIM_GPIO_IN,
@@ -36,6 +37,8 @@ class IoPin;
 class QemuUsart;
 class QemuTimer;
 class QemuTwi;
+class QemuSpi;
+class LibraryItem;
 
 class QemuDevice : public Chip
 {
@@ -57,8 +60,6 @@ class QemuDevice : public Chip
 
         void setPackageFile( QString package );
 
-        //void clearData32() { m_arena->data32 = 0; }
-
         volatile qemuArena_t* getArena() { return m_arena; }
 
         void runToTime( uint64_t time );
@@ -67,7 +68,13 @@ class QemuDevice : public Chip
         void slotReload();
         void slotOpenTerm( int num );
 
+ static QemuDevice* self() { return m_pSelf; }
+ static Component* construct( QString type, QString id );
+ static LibraryItem* libraryItem();
+
     protected:
+ static QemuDevice* m_pSelf;
+
         virtual bool createArgs(){ return false;}
 
         virtual void doAction(){;}
@@ -77,6 +84,7 @@ class QemuDevice : public Chip
         QString m_lastFirmDir;  // Last firmware folder used
         QString m_firmware;
         QString m_executable;
+        QString m_packageFile;
 
         QString m_extraArgs;
 
@@ -94,7 +102,13 @@ class QemuDevice : public Chip
         QProcess m_qemuProcess;
         QStringList m_arguments;
 
+        uint8_t m_portN;
+        uint8_t m_usartN;
+        //uint8_t m_timerN;
+        uint8_t m_i2cN;
+        uint8_t m_spiN;
+
         std::vector<QemuTwi*> m_i2cs;
+        std::vector<QemuSpi*> m_spis;
         std::vector<QemuUsart*> m_usarts;
-        std::vector<QemuTimer*> m_timers;
 };

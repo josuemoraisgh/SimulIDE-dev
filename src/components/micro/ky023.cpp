@@ -17,10 +17,9 @@
 #include "custombutton.h"
 #include "itemlibrary.h"
 
-#define WIDTH 40
-#define HEIGHT 56
-#define GAP 0
-#define JOYSTICK_SIZE 36
+#define WIDTH  40 // 5*8
+#define HEIGHT 56 // 7*8
+#define JOYSTICK_SIZE 50
 #define VIN 5
 
 #define tr(str) simulideTr("KY023",str)
@@ -44,14 +43,14 @@ KY023::KY023( QString type, QString id )
 {
     m_graphical = true;
 
-    m_area = QRect( -WIDTH/2, -HEIGHT/2 + GAP, WIDTH, HEIGHT );
+    m_area = QRect( -WIDTH/2, -HEIGHT/2, WIDTH, HEIGHT );
 
     m_joystickW.setupWidget();
     m_joystickW.setFixedSize( JOYSTICK_SIZE, JOYSTICK_SIZE );
     
     m_proxy = Circuit::self()->addWidget( &m_joystickW );
     m_proxy->setParentItem( this );
-    m_proxy->setPos( QPoint(-WIDTH/2 + (WIDTH - JOYSTICK_SIZE) / 2, -HEIGHT/2+2 + 2*GAP) );
+    m_proxy->setPos( QPoint(-JOYSTICK_SIZE/2,-JOYSTICK_SIZE/2-8 ) );
     
     m_button = new CustomButton();
     m_button->setMaximumSize( 10,10 );
@@ -75,10 +74,11 @@ KY023::KY023( QString type, QString id )
 
     m_sw = new IoPin( 270, QPoint(4,36), id+"-sw", 0, this, output );
     m_sw->setOutHighV( VIN );
+    m_sw->setOutputImp( 2000 );
     m_sw->setLabelText( "SW" );
     m_pin[2] = m_sw;
 
-    setAngle( 90 );
+    //setAngle( 90 );
     setLabelPos(-34, 20,-90 );
     
     Simulator::self()->addToUpdateList( this );
@@ -111,6 +111,7 @@ void KY023::updateStep()
     if( m_changed )
     {
         m_changed = false;
+        m_sw->setOutputImp( m_closed ? 1e-3 : 2000 );
         m_sw->setOutState( !m_closed );
     }
 

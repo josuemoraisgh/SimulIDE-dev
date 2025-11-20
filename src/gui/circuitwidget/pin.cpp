@@ -16,6 +16,7 @@
 #include "connectorline.h"
 #include "circuit.h"
 #include "simulator.h"
+#include "utils.h"
 
 Pin::Pin( int angle, const QPoint pos, QString id, int index, Component* parent, int length )
    : QGraphicsItem( parent )
@@ -42,6 +43,7 @@ Pin::Pin( int angle, const QPoint pos, QString id, int index, Component* parent,
     m_Hflip = 1;
     m_Vflip = 1;
     m_overScore = -1;
+    m_circuitPin = this;
 
     m_color[undef_state] = Qt::black;
     m_color[driven_low ] = QColor( 100, 100, 250 );
@@ -308,15 +310,15 @@ void Pin::setPinAngle( int angle )
     setRotation( 180-angle );
 }
 
-void Pin::setX( qreal x )
+void Pin::setX( double x )
 {
-    QGraphicsItem::setX( x );
+    QGraphicsItem::setX( snapToGrid4(x) );
     isMoved();
 }
 
-void Pin::setY( qreal y )
+void Pin::setY( double y )
 {
-    QGraphicsItem::setY( y );
+    QGraphicsItem::setY( snapToGrid4(y) );
     isMoved();
 }
 
@@ -326,13 +328,13 @@ void Pin::moveBy( int dx, int dy )
     QGraphicsItem::moveBy( dx, dy );
 }
 
-void Pin::setLength( int length )
+void Pin::setLength( double length )
 {
     if( length < 1 ) length = 1;
     m_length = length;
     int aLength = 11;
     if( length == 1 ) aLength = 6;
-    m_area = QRect(-3, -3, aLength, 6);
+    m_area = QRectF(-3, -3, aLength, 6);
     setLabelPos();
 }
 
