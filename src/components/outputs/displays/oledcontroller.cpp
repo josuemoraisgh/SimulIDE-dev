@@ -209,6 +209,7 @@ void OledController::setWidth( int w )
     else if( w < 32         ) w = 32;
     if( m_width == w ) return;
     m_width = w;
+    updateSize();
 }
 
 void OledController::setHeight( int h )
@@ -224,6 +225,7 @@ void OledController::setHeight( int h )
     m_lineMask = (h > 64) ? 0x7F : 0x3F;
     m_rowMask  = (h > 64) ? 0x0F : 0x07;
     m_height = h;
+    updateSize();
 }
 
 void OledController::setSize( int w, int h )
