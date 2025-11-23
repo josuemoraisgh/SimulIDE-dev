@@ -162,7 +162,8 @@ void SR04::setSlider( bool s )
 void SR04::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    p->setRenderHint( QPainter::Antialiasing );
+    p->setRenderHint( QPainter::SmoothPixmapTransform );
+    p->setRenderHint( QPainter::HighQualityAntialiasing );
 
     p->drawRoundedRect( m_area, 2, 2 );
 

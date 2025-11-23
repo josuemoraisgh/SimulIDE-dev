@@ -40,18 +40,14 @@ void QemuTwi::doAction()
     }
     i2cPending_t* newAction = new i2cPending_t{ action, data, nullptr };
 
-    if( m_lastAction )
-    {
+    if( m_lastAction ){
         m_lastAction->next = newAction;
         m_lastAction = newAction;
     }
-    else if( m_nextAction )
-    {
+    else if( m_nextAction ){
         m_lastAction = newAction;
         m_nextAction->next = m_lastAction;
-    }
-    else
-    {
+    }else{
         m_nextAction = newAction;
         //qDebug() <<".....................";
         runNextAction();
@@ -66,37 +62,37 @@ void QemuTwi::runNextAction()
 
     switch( m_nextAction->action )
     {
-        case QI2C_START_READ:
+        case QEMU_I2C_START_READ:
         qDebug()<< simTime << "QI2C START_READ" ;
             //m_write = false;
             //m_device->getArena()->data32 = 0; // report operation end
             break;
-        case QI2C_START_WRITE:
+        case QEMU_I2C_START_WRITE:
             //qDebug()<< simTime << "QI2C START_WRITE" ;
             masterWrite( m_txAddress<<1, true, true );
             break;
-        case QI2C_START_WRITE_ASYNC:
+        case QEMU_I2C_START_WRITE_ASYNC:
             qDebug()<< simTime << "QI2C START_WRITE_ASYNC" ;
 
             //m_write = true;
             break;
-        case QI2C_STOP:
+        case QEMU_I2C_STOP:
             //qDebug()<< simTime << "QI2C STOP" ;
             masterStop();
             m_txAddress = 0;
             //m_device->getArena()->data32 = 0; // report operation end
             break;
-        case QI2C_NOACK: // Masker NACKed a receive byte.
+        case QEMU_I2C_NOACK: // Masker NACKed a receive byte.
             qDebug()<< simTime << "QI2C NOACK" ;
             break;
-        case QI2C_WRITE:
+        case QEMU_I2C_WRITE:
             //qDebug()<< simTime << "QI2C WRITE" << m_nextAction->data ;
-            masterWrite( m_nextAction->data, false, false );
+            masterWrite( m_nextAction->data, false, true );
             break;
-        case QI2C_READ:
+        case QEMU_I2C_READ:
             qDebug()<< simTime << "QI2C READ";
             break;
-        case QI2C_MATCH:
+        case QEMU_I2C_MATCH:
             //qDebug()<< simTime << "QI2C MATCH" << m_nextAction->data;
             m_txAddress = m_nextAction->data;
             masterStart();

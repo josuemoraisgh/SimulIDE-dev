@@ -15,6 +15,7 @@ class I2cRunner : public eElement
     public:
         I2cRunner( QemuTwi* twi );
         void runEvent() override;
+
     private:
         QemuTwi* m_twi;
 };
@@ -27,21 +28,22 @@ class QemuTwi : public QemuModule, public TwiModule
         QemuTwi( QemuDevice* mcu, QString name, int number );
         ~QemuTwi();
 
-        enum i2c_action_t {
-            QI2C_START_READ=1,
-            QI2C_START_WRITE,
-            QI2C_START_WRITE_ASYNC,
-            QI2C_STOP,
-            QI2C_NOACK, /* Masker NACKed a receive byte.  */
-            QI2C_WRITE,
-            QI2C_READ,
-            QI2C_MATCH,
+        enum qemuTwiAction_t {
+            QEMU_I2C_START_READ=1,
+            QEMU_I2C_START_WRITE,
+            QEMU_I2C_START_WRITE_ASYNC,
+            QEMU_I2C_STOP,
+            QEMU_I2C_NOACK, /* Masker NACKed a receive byte.  */
+            QEMU_I2C_WRITE,
+            QEMU_I2C_READ,
+            QEMU_I2C_MATCH,
+            QEMU_I2C_FREQ
         };
 
         struct i2cPending_t
         {
             uint32_t action;
-            uint8_t  data;
+            uint32_t data;
             i2cPending_t* next;
         };
 
@@ -54,7 +56,7 @@ class QemuTwi : public QemuModule, public TwiModule
 
         void setMode( twiMode_t mode ) override;
 
-        void doAction();
+        virtual void doAction() override;
 
     protected:
         void setTwiState( twiState_t state ) override;

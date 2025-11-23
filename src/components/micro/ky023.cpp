@@ -130,7 +130,7 @@ void KY023::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
     
-    p->setBrush(QColor( 50, 50, 70 ));
+    p->setBrush( QColor( 58, 60, 52 ) );
     p->drawRoundedRect( m_area, 2, 2 );
 
     Component::paintSelected( p );
