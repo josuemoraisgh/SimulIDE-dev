@@ -81,7 +81,8 @@ class TftController : public Component
         uint8_t m_mirrorX;
         uint8_t m_mirrorY;
         uint8_t m_swapXY;
-        uint8_t m_mirrorLine;
+        uint8_t m_icEor;
+        //uint8_t m_mirrorLine;
 
         uint32_t m_readBytes;
         uint32_t m_data;
