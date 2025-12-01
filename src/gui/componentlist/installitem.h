@@ -27,8 +27,10 @@ class InstallItem : public QWidget, private Ui::installItem
 
         void setItem( QString itemStr );
 
-        void setVersion( int64_t v );
+        void shouldUpdate( int64_t v );
 
+        //int64_t version() { return m_version; }
+        QString toString();// { return m_itemStr; }
         void updated();
 
     private:
@@ -42,6 +44,7 @@ class InstallItem : public QWidget, private Ui::installItem
         QString m_depends;
         QString m_author;
         int64_t m_version;
+        int64_t m_versionNext;
 
         QString m_itemStr;
 

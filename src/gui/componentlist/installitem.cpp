@@ -22,10 +22,13 @@ InstallItem::InstallItem( Installer* parent, QString item )
     setItem( item );
 }
 
-void InstallItem::setVersion( int64_t v )
+void InstallItem::shouldUpdate( int64_t v )
 {
-    if( m_version == v ) setButtonState( bUninstall );
-    else                 setButtonState( bUpdate );
+    if( m_version == m_versionNext ) setButtonState( bUninstall );
+    else
+    {
+        setButtonState( bUpdate );
+    }
 }
 
 void InstallItem::setItem( QString itemStr )
@@ -83,7 +86,8 @@ void InstallItem::setItem( QString itemStr )
     else{
         m_description = set.at(1);
         m_file = set.at(2);
-        m_version = set.at(3).toLongLong();
+        m_versionNext = set.at(3).toLongLong();
+        m_version = 0;
 
         if( set.size() > 4 ) m_depends = set.at(4);
         if( set.size() > 5 ) m_author  = set.at(5);
@@ -96,7 +100,7 @@ void InstallItem::setItem( QString itemStr )
 
         textEdit->setMarkdown( m_description );
 
-        setButtonState( bInstall );
+        //setButtonState( bInstall );
     }
     //QString md = header+m_name+"\n"+m_description;
     //md.replace("<br>","\n");
@@ -131,6 +135,7 @@ void InstallItem::installClicked()
                 waitUntillInstalled();
             }*/
             m_Installer->installItem( m_name );
+            m_version = m_versionNext;
             setButtonState( bUninstall );
             break;
         case bUninstall:
@@ -151,9 +156,9 @@ void InstallItem::setButtonState( buttonState_t state )
 
     bool update = (state == bUpdate);
     updtButton->setEnabled( update );
-
+    //qDebug() << "InstallItem::setButtonState" << m_name << update;
     QPalette pb = updtButton->palette();
-    if( update ) pb.setColor( QPalette::Button, "#EEEE00" );
+    if( update ) pb.setColor( QPalette::Button, "#DDDD55" );
     else         pb.setColor( QPalette::Button, "#EEEEEE" );
     updtButton->setPalette( pb );
 
@@ -167,7 +172,8 @@ void InstallItem::setButtonState( buttonState_t state )
         installButton->setToolTip( tr("Uninstall") );
         installButton->setIcon( QIcon(":/remove.svg") );
         pb.setColor( QPalette::Button, "#FF8070" );
-        color = "#DDFFDD";
+        if( update ) color = "#CCFFCC";
+        else         color = "#EAFFEA";
     }else{
         installButton->setToolTip( tr("Install") );
         installButton->setIcon( QIcon(":/load.svg") );
@@ -182,4 +188,20 @@ void InstallItem::setButtonState( buttonState_t state )
     this->setPalette( p );
     setNameEdit->setPalette( p );
     textEdit->setPalette( p );
+}
+
+QString InstallItem::toString()
+{
+    QString itemStr;
+    itemStr += m_name+";"+QString::number( m_version );
+
+    //itemStr += m_name+"; ";
+    //itemStr += m_description+"; ";
+    //itemStr += m_file+"; ";
+    //itemStr += QString::number( m_version )+"; ";
+    //itemStr += m_depends+"; ";
+    //itemStr += m_author+"; ";
+
+
+    return itemStr;
 }

@@ -12,6 +12,7 @@
 #include "installitem.h"
 #include "mainwindow.h"
 #include "qzipreader.h"
+#include "utils.h"
 
 Installer::Installer( QWidget* parent )
          : QWidget( parent )
@@ -31,10 +32,84 @@ Installer::Installer( QWidget* parent )
     m_compsDir = MainWindow::self()->getConfigPath("components");
     if( !m_compsDir.exists() ) m_compsDir.mkpath(".");
 
+    loadList();
+
     QSettings* settings = MainWindow::self()->settings();
     QStringList installedList = settings->value("library/installed").toString().split(",");
 
-    for( QString item : installedList ) if( !item.isEmpty() ) m_installed.insert( item, nullptr );
+    for( QString itemStr : installedList )
+    {
+        if( itemStr.isEmpty() ) continue;
+
+        QStringList list = itemStr.split(";");
+        if( list.size() < 2 ) return;
+        QString name = list.first();
+
+        InstallItem* item = m_items.value( name );
+
+        QString version = "2507102250" ;//list.at(1);//
+        int64_t v = version.toLongLong();
+        item->m_version = v;
+        item->shouldUpdate( v );
+
+        qDebug() << "Installer::Installer" << name << version;
+
+        m_installed.insert( item->m_name, v );
+    }
+}
+
+void Installer::loadList()
+{
+    QString compFile = m_compsDir.filePath("components.txt");
+    QString replyStr = fileToString( compFile, "Installer::loadList" );
+
+    QStringList setList = replyStr.split("\n"); // List of Component Sets
+
+    int row = 0;
+    for( QString itemStr : setList )
+    {
+        if( itemStr.isEmpty() ) continue;
+        //qDebug() <<"Installer::loadList"<< itemStr;
+
+        InstallItem* item = nullptr;
+
+        QStringList list = itemStr.split(";");
+        QString name = list.first();
+        //qDebug() << "Installer::addInstallItem" << name <<itemStr;
+        if( m_installed.contains( name ) )
+        {
+            item = m_items.value( name );
+
+            if( item && list.size() > 3 ) {
+                QString v = list.at(3);
+                v.remove(0,1);
+                //qDebug() << "Installer::loadList updated" << name << v << item->m_version;
+
+                item->shouldUpdate( v.toLongLong() );
+            }
+        }
+        else if( m_items.contains( name ) )
+        {
+            item = m_items.value( name );
+        }
+        else
+        {
+            item = new InstallItem( this, itemStr );
+
+            m_items.insert( item->m_name, item );
+
+            installTable->insertRow( row );
+            installTable->setCellWidget( row, 0, item );
+        }
+        float scale = MainWindow::self()->fontScale();
+
+        if( item->m_file.isEmpty() ) installTable->setRowHeight( row, 25*scale );
+        else                         installTable->setRowHeight( row, 50*scale );
+
+        row++;
+    }
+    installTable->setRowCount( row );
+    m_updated = true;
 }
 
 void Installer::loadInstalled()
@@ -74,71 +149,41 @@ void Installer::updtReady()
 {
     if( m_reply->error() == QNetworkReply::NoError )
     {
-        QString    replyStr = m_reply->readAll();
-        QStringList setList = replyStr.split("\n"); // List of Component Sets
+        QString compFile = m_compsDir.filePath( "components.txt" );
+        QFile file( compFile );
+        if( file.exists() ) QFile::remove( compFile );
 
-        //if( setList.size() < 2 ) return;
-        //QString version = setList.takeFirst();
-        //if( version = m_version ) return;
-        //m_version = version;
-        //MainWindow::self()->settings()->setValue("library/version", version );
-
-        int row = 0;
-        for( QString itemStr : setList )
+        if( file.open( QIODevice::WriteOnly | QIODevice::Append ))
         {
-            if( itemStr.isEmpty() ) continue;
-            addInstallItem( itemStr, row );
-            row++;
-            //qDebug() <<"Installer::updtReady"<< itemStr;
+            file.write( m_reply->readAll() );
+            file.close();
+
+            loadList();
+        }else{
+            qDebug() << "Installer::updtReady ERROR: can't write file" << compFile ;
+            m_installItem = nullptr;
         }
-        installTable->setRowCount( row );
-        m_updated = true;
     }
     else qDebug() << "Installer::updtReady ERROR"; // There was a network error
 
     m_reply->close();
 }
 
-void Installer::addInstallItem( QString itemStr, int row )
+void Installer::installItem( QString itemName )
 {
-    InstallItem* item = new InstallItem( this, itemStr );
-
-    if( m_installed.contains( item->m_name ) )
-    {
-        InstallItem* installed = m_installed.value( item->m_name );
-
-        if( installed ) item->setVersion( installed->m_version );
-        else{
-            m_installed[item->m_name] = item;
-            item->updated();
-        }
-    }
-    m_items.insert( item->m_name, item );
-
-    installTable->insertRow( row );
-    installTable->setCellWidget( row, 0, item );
-
-    float scale = MainWindow::self()->fontScale();
-
-    if( item->m_file.isEmpty() ) installTable->setRowHeight( row, 25*scale );
-    else                         installTable->setRowHeight( row, 50*scale );
-}
-
-void Installer::installItem( QString itemStr )
-{
-    InstallItem* item = m_items.value( itemStr );
+    InstallItem* item = m_items.value( itemName );
 
     if( !item->m_depends.isEmpty() && !m_installed.contains( item->m_depends ) )
     {
-        m_nextItem = itemStr;
-        itemStr = item->m_depends;
-        item = m_items.value( itemStr );
+        m_nextItem = itemName;
+        itemName = item->m_depends;
+        item = m_items.value( itemName );
     }
     else m_nextItem.clear();
 
     if( !item ) return;
 
-    qDebug() << "Installing Component Set:" << itemStr;
+    qDebug() << "Installing Component Set:" << itemName;
 
     QString url = m_compsUrl+"dloadset.php?file="+item->m_file;
     QNetworkRequest request( url );
@@ -156,12 +201,12 @@ void Installer::installItem( QString itemStr )
     m_installItem = item;
 }
 
-void Installer::unInstallItem( QString itemStr )
+void Installer::unInstallItem( QString itemName )
 {
     QDir compSetDir = m_compsDir;
-    compSetDir.cd( itemStr );
+    compSetDir.cd( itemName );
     compSetDir.removeRecursively();
-    m_installed.remove( itemStr );
+    m_installed.remove( itemName );
 
     ComponentList::self()->createList();
 }
@@ -204,8 +249,7 @@ void Installer::itemDataReady()
             compSetDir.cd( m_installItem->m_name );
             ComponentList::self()->LoadCompSetAt( compSetDir );
 
-            m_installItem->updated();
-            m_installed.insert( m_installItem->m_name, m_installItem );
+            m_installed.insert( m_installItem->m_name, m_installItem->m_versionNext );
             qDebug() << m_installItem->m_name <<"Installed";
         }
         else qDebug() << "Installer::itemDataReady ERROR extracting" << zipFile ;
@@ -218,7 +262,13 @@ void Installer::itemDataReady()
 
 void Installer::writeSettings()
 {
-    QString installed = m_installed.keys().join(",");
+    QString installed; // = "Arduino,AVR,PIC,MCS51,MCS65,Z80,Analog,74,Digipot,Tools";
+
+    for( QString itemName : m_installed.keys() )
+    {
+        InstallItem* item = m_items.value( itemName );
+        installed += item->toString()+",";
+    }
     QSettings* settings = MainWindow::self()->settings();
     settings->setValue("library/installed", installed );
 }

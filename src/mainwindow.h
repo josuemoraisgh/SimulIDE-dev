@@ -69,6 +69,9 @@ class MainWindow : public QMainWindow
         int autoBck() { return m_autoBck; }
         void setAutoBck( int secs ) { m_autoBck = secs; }
 
+        int autoupdate() { return m_autoUpdt; }
+        void setAutoUpdate( int a ) { m_autoUpdt = a; }
+
         int revision() { return m_revision; }
 
         QString getHelp( QString name, bool save=true );
@@ -105,6 +108,7 @@ class MainWindow : public QMainWindow
         QString m_fontName;
         float m_fontScale;
         int m_autoBck;
+        int m_autoUpdt;
 
         QDir m_configDir;
 
