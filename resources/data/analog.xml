@@ -1,9 +1,0 @@
-<!DOCTYPE SimulIDE>
-
-<itemlib>
-
-  <itemset category="Active/Other Active" type="Subcircuit" folder="analog" >
-    <item name="Optocoupler"  info="" />
-  </itemset>
-
-</itemlib>

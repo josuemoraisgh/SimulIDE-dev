@@ -23,17 +23,18 @@ class Installer : public QWidget, private Ui::installer
 
         void loadInstalled();
 
-        void installItem( QString itemStr );
-        void unInstallItem( QString itemStr );
+        void installItem( QString itemName );
+        void unInstallItem( QString itemName );
 
         void writeSettings();
 
         QStringList getGroupItems( QString group ) { return m_groupItemList.value( group ); }
 
     private:
-        void addInstallItem( QString itemStr, int row );
+        //void addItemInstaller( QString itemStr, int row );
         void updtReady();
         void itemDataReady();
+        void loadList();
 
         bool m_checkUpdates;
         bool m_updated;
@@ -45,7 +46,7 @@ class Installer : public QWidget, private Ui::installer
         QString m_nextItem;
 
         QMap<QString, InstallItem*> m_items;
-        QMap<QString, InstallItem*> m_installed;
+        QMap<QString, int64_t> m_installed;
         QMap<QString, QStringList>  m_groupItemList;
 
         InstallItem* m_installItem;

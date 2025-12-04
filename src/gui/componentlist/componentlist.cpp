@@ -88,7 +88,7 @@ void ComponentList::createList()
     for( TreeItem* it : m_categoryList ) // Remove empty categories
     {
         if( it->childCount() ) continue;
-        qDebug() << it->name();
+        //qDebug() << it->name();
         it->setHidden( true );
         //QTreeWidgetItem* pa = it->parent();
         //if( pa ) pa->removeChild( it  );

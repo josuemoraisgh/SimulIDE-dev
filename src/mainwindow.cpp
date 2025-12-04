@@ -86,7 +86,7 @@ MainWindow::MainWindow()
     m_circuitW->newCircuit();
     readSettings();
 
-    m_installer->checkForUpdates();
+    if( m_autoUpdt ) m_installer->checkForUpdates();
 
     QString backPath = getConfigPath( "backup.sim2" );
     if( QFile::exists( backPath ) )
@@ -142,12 +142,16 @@ void MainWindow::readSettings()
     m_autoBck = 15;
     if( m_settings->contains("autoBck") ) m_autoBck = m_settings->value("autoBck").toInt();
     Circuit::self()->setAutoBck( m_autoBck );
+
+    m_autoUpdt = 1;
+    if( m_settings->contains("autoUpdt") ) m_autoUpdt = m_settings->value("autoUpdt").toInt();
 }
 
 void MainWindow::writeSettings()
 {
+    m_settings->setValue("autoUpdt",  m_autoUpdt );
     m_settings->setValue("autoBck",   m_autoBck );
-    m_settings->setValue("fontName", m_fontName );
+    m_settings->setValue("fontName",  m_fontName );
     m_settings->setValue("fontScale", m_fontScale );
     m_settings->setValue("geometry",  saveGeometry() );
     m_settings->setValue("windowState", saveState() );

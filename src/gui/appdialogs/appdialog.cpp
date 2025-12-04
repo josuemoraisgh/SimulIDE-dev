@@ -29,6 +29,7 @@ AppDialog::AppDialog( QWidget* parent )
     fontScale->setValue( m_scale );
     fontScale->setFixedWidth( 80*m_scale );
     userPath->setText( MainWindow::self()->userPath() );
+    autoUpdate->setChecked( MainWindow::self()->autoupdate() );
 
     // Circuit Settings
     drawGrid->setChecked( Circuit::self()->drawGrid() );
@@ -148,6 +149,11 @@ void AppDialog::on_userPath_editingFinished()
 {
     QString path = userPath->text();
     MainWindow::self()->setUserPath( path );
+}
+
+void AppDialog::on_autoUpdate_toggled( bool updt )
+{
+    MainWindow::self()->setAutoUpdate( updt );
 }
 
 // Circuit Settings ----------------------------

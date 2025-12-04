@@ -31,6 +31,7 @@ class AppDialog : public QDialog, private Ui::AppDialog
         void on_fontScale_valueChanged( double scale );
         void on_setPathButton_clicked();
         void on_userPath_editingFinished();
+        void on_autoUpdate_toggled( bool updt );
 
         // Circuit Settings
         void on_drawGrid_toggled( bool draw );

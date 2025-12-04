@@ -30,7 +30,8 @@ void TftController::displayReset()
     m_endY   = m_maxY;
 
     m_swapXY = 0;
-    m_mirrorLine = 0;
+    m_icEor  = 0;
+    //m_mirrorLine = 0;
 
     m_dispOn   = false;
     //m_dispFull = false;
@@ -154,12 +155,12 @@ void TftController::commandReceived()
     case 0xE8: m_readBytes = 3; break;   /// Driver timing control A: 0x85, 0x00, 0x78,
     case 0xEA: m_readBytes = 2; break;   /// Driver timing control B: 0x00, 0x00,
     case 0xED: m_readBytes = 4; break;   /// Power on sequence control: 0x64, 0x03, 0x12, 0x81,
-    //case 0xEF: m_readBytes = 3; break; //, 0x03, 0x80, 0x02, // Misterious Commands in Adafruit_ILI9341.cpp initcmd[]
+    case 0xEF: m_readBytes = 3; break;   /// 0x03, 0x80, 0x02, // Misterious Commands in Adafruit_ILI9341.cpp initcmd[]
     case 0xF2: m_readBytes = 1; break;   /// Enable 3G: 0x00, 0x00,
     case 0xF6: m_readBytes = 3; break;   // Interface Control
     case 0xF7: m_readBytes = 1; break;   /// Pump ratio control 0x20,
+    default: qDebug() << "Ili9341::proccessCommand: Not implemented" << m_lastCommand;
     }
-    //qDebug() << "Ili9341::proccessCommand: " << command;
 }
 
 void TftController::dataReceived()
@@ -167,10 +168,10 @@ void TftController::dataReceived()
     //qDebug() << "TftController::dataReceived" << m_rxReg;
     uint16_t buffer = m_rxReg;
 
-    if( m_readBytes > 0 )
+    if( !m_readBytes ) return;
+
+    switch( m_lastCommand )
     {
-        switch( m_lastCommand )
-        {
         case 0x2A:   // Column Address Set
         {
             if( m_addrBytes == 1 )
@@ -212,24 +213,31 @@ void TftController::dataReceived()
             if( m_readBytes == 2 ) m_VSP = buffer << 8; // VSP [15:8]
             else                   m_VSP |= buffer;     // VSP [7:0]
         }break;
-        case 0x3A: setPixelMode(); break; // COLMOD: Pixel Formay Set
-        case 0x36:{                       // Memory Access Control
-            m_mirrorLine = buffer & 1<<4;
-            m_swapXY     = buffer & 1<<5;
-            m_mirrorY    = buffer & 1<<7;
+        case 0x3A: setPixelMode(); break; // COLMOD: Pixel Format Set
+        case 0x36:{                       // MADCTL: Memory Access Control
+            m_BGR     = (buffer & 1<<3) == 0;
+            //m_mirrorLine = buffer & 1<<4;
+            m_swapXY  = buffer & 1<<5;
+            m_mirrorX = buffer & 1<<6;
+            m_mirrorY = buffer & 1<<7;
 
-            if(  m_isILI )  // ILI9341 seems to work this way
+            if(  m_isILI && m_dataBytes == 2 )  // ILI9341 seems to work this way
             {
-                m_BGR     = (buffer & 1<<3) == 0;
                 m_mirrorX = (buffer & 1<<6) == 0;
-            }else{
-                m_BGR     = buffer & 1<<3;
-                m_mirrorX = buffer & 1<<6;
             }
         }break;
-        }
-        m_readBytes--;
+        case 0xF6:   // Interface Control m_readBytes = 3;
+        {
+            if(  m_isILI ) // value of MADCTL is derived as exclusive OR
+            {
+                if( m_readBytes == 3 ){
+                    m_icEor = buffer;
+                }
+            }
+
+        }break;
     }
+    m_readBytes--;
 }
 
 void TftController::writeRam() // Memory Write. Overriden by displays
@@ -244,6 +252,7 @@ void TftController::writeRam() // Memory Write. Overriden by displays
     if( addrY > m_maxY ) addrY -= m_maxY+1;
 
     m_DDRAM[addrX][addrY] = m_data;
+
     m_addrX++;
     if( m_addrX > m_endX ){
         m_addrX = m_startX;
