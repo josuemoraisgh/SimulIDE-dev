@@ -55,7 +55,7 @@ void TwiModule::runEvent()
 
     switch( m_i2cState )
     {
-        case I2C_IDLE: break;
+    case I2C_IDLE: break;
 
         case I2C_STOP:           // Send Stop Condition
         {
@@ -66,6 +66,7 @@ void TwiModule::runEvent()
             {
                 setTwiState( TWI_NO_STATE ); // Set State first so old m_i2cState is still avilable
                 m_i2cState = I2C_IDLE;
+                return;                     // Stop clock
             }
         } break;
 
@@ -247,11 +248,6 @@ void TwiModule::voltChanged() // Used by slave
 
 void TwiModule::setMode( twiMode_t mode )
 {
-    if( mode == TWI_MASTER )
-    {
-        Simulator::self()->cancelEvents( this );
-        Simulator::self()->addEvent( m_clockPeriod, this ); // Start Clock
-    }
     m_scl->changeCallBack( this, mode == TWI_SLAVE );
     m_sda->changeCallBack( this, mode == TWI_SLAVE );
 
@@ -309,6 +305,12 @@ void TwiModule::ACK()
 {
     m_lastState = m_i2cState;
     m_i2cState = I2C_ACK;
+}
+
+void TwiModule::masterStart()
+{
+    m_i2cState = I2C_START;
+    runEvent();               // Start Clock
 }
 
 void TwiModule::masterWrite( uint8_t data , bool isAddr, bool write )

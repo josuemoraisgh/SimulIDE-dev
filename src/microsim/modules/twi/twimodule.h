@@ -56,7 +56,7 @@ class TwiModule : public eClockedDevice
         void setPins( IoPin* scl, IoPin* sda );
         virtual void setMode( twiMode_t mode );
 
-        void masterStart() { m_i2cState = I2C_START; }
+        void masterStart();
         void masterWrite( uint8_t data, bool isAddr, bool write );
         void masterRead( bool ack );
         void masterStop();
