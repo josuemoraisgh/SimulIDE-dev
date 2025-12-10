@@ -39,7 +39,7 @@ class SpiModule : public eClockedDevice
 
         void setPins( IoPin* mosi, IoPin* miso, IoPin* clk, IoPin* ss );
 
-        void setUseSS( bool u ) { m_useSS = u; }
+        void setUseSS( bool u );
 
     protected:
         void step();

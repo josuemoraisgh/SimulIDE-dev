@@ -167,13 +167,24 @@ void SpiModule::setMode( spiMode_t mode )
         m_dataOutPin = m_MISO;
         m_dataInPin  = m_MOSI;
         m_clkPin->changeCallBack( this, true );
-        if( m_useSS && m_SS )
-        {
-            m_SS->changeCallBack( this, true );
+
+        if( m_SS ){
+            m_SS->changeCallBack( this, m_useSS );
             SpiModule::voltChanged();
         }
     }
     if( m_dataOutPin && m_mode == SPI_MASTER ) m_dataOutPin->setOutState( true );
+}
+
+void SpiModule::setUseSS( bool u )
+{
+    if( m_useSS == u ) return;
+    m_useSS = u;
+
+    if( m_SS ){
+        m_SS->changeCallBack( this, m_useSS );
+        SpiModule::voltChanged();
+    }
 }
 
 void SpiModule::setPins( IoPin* mosi, IoPin* miso, IoPin* clk, IoPin* ss )
