@@ -6,20 +6,41 @@
 #include "st77xx.h"
 #include "circuit.h"
 
+#include "intprop.h"
+#include "doubleprop.h"
+
 #define tr(str) simulideTr("St77xx",str)
 
 St77xx::St77xx( QString type, QString id )
       : TftController( type, id )
+      , Spi5Pins( id, this )
 {
+    m_pin.resize( 6 );
+    m_pin[0] = &m_pinDC;
+    m_pin[1] = &m_pinCS;
+    m_pin[2] = &m_pinDI;
+    m_pin[3] = &m_pinCK;
+    m_pin[4] = &m_pinRS;
+    m_pin[5] = &m_pinDO;
 
+    addPropGroup( { tr("Main"), {
+        new IntProp<St77xx>("Width", tr("Width"), "_px"
+                            , this, &St77xx::width, &St77xx::setWidth, propNoCopy,"uint" ),
+
+        new IntProp<St77xx>("Height", tr("Height"), "_px"
+                            ,this,&St77xx::height, &St77xx::setHeight, propNoCopy,"uint" ),
+
+        new DoubProp<St77xx>("Scale" , tr("Scale"),""
+                             , this, &St77xx::scale, &St77xx::setScale )
+    }, 0} );
 }
 St77xx::~St77xx(){}
 
 void St77xx::setPixelMode()
 {
-    m_pixelMode = m_rxReg;
+    m_pixelMode = m_rxReg & 0b111;
 
-    switch( m_rxReg & 0b111 )
+    switch( m_pixelMode )
     {
     case 3: m_dataBytes = 3; break; // 4/4/4
     case 5: m_dataBytes = 2; break; // 5/6/5
@@ -30,7 +51,7 @@ void St77xx::setPixelMode()
 void St77xx::writeRam()
 {
     m_dataIndex++;
-    if( m_dataIndex > m_dataBytes ) return;
+    if( m_dataIndex > m_dataBytes ) m_dataIndex = 1;
 
     uint32_t buffer = m_rxReg;
     switch( m_pixelMode )
@@ -70,7 +91,7 @@ void St77xx::writeRam()
                 case 2:{
                     m_data |= (buffer & 0b11111)<<(0+3); // BBBBB
                     buffer >>= 5;
-                    m_data = (buffer & 0b111)<<(8+2);    // ---GGG
+                    m_data |= (buffer & 0b111)<<(8+2);    // ---GGG
                     TftController::writeRam();
                 }break;
             }
@@ -117,9 +138,38 @@ void St77xx::setHeight( int h )
     updateSize();
 }
 
+void St77xx::setScale( double s )
+{
+    m_scale = s;
+    m_scaledWidth = (double)m_width * m_scale;
+    m_scaledHeight = (double)m_height * m_scale;
+    updateSize();
+}
+
 void St77xx::updateSize()
 {
-    m_area = QRectF(-m_width/2-6,-m_height/2-6, m_width+12, m_height+12+10);
+    m_pinDC.setY( m_scaledHeight/2 + 24 );
+    m_pinRS.setY( m_scaledHeight/2 + 24 );
+    m_pinCS.setY( m_scaledHeight/2 + 24 );
+    m_pinDI.setY( m_scaledHeight/2 + 24 );
+    m_pinCK.setY( m_scaledHeight/2 + 24 );
+    m_pinDO.setY( m_scaledHeight/2 + 24 );
+
+    m_pinDC.setX(-20 );
+    m_pinRS.setX(-12 );
+    m_pinCS.setX( -4 );
+    m_pinDI.setX(  4 );
+    m_pinCK.setX( 12 );
+    m_pinDO.setX( 20 );
+
+    m_pinDC.isMoved();
+    m_pinRS.isMoved();
+    m_pinCS.isMoved();
+    m_pinDI.isMoved();
+    m_pinCK.isMoved();
+    m_pinDO.isMoved();
+
+    m_area = QRectF(-m_scaledWidth/2-6,-m_scaledHeight/2-6, m_scaledWidth+12, m_scaledHeight+12+10);
 
     Circuit::self()->update();
 }

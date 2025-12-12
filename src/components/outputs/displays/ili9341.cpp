@@ -36,6 +36,7 @@ Ili9341::Ili9341( QString type, QString id )
     m_isILI = true;
 
     setDisplaySize( 240, 320 );
+    setScale( 1 );
     
     m_area = QRectF( -126, -168, 252, 344 );
 
@@ -138,6 +139,7 @@ void Ili9341::writeRam()
 {
     m_data = (m_data<<8) | m_rxReg;
     m_dataIndex++;
+
     if( m_dataIndex >= m_dataBytes )       // 16/18 bits ready
     {
         m_dataIndex = 0;

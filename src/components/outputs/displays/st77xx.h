@@ -6,11 +6,12 @@
 #pragma once
 
 #include "tftcontroller.h"
-#include "iopin.h"
+#include "spi5pins.h"
+//#include "iopin.h"
 
 class LibraryItem;
 
-class St77xx : public TftController
+class St77xx : public TftController, public Spi5Pins
 {
     public:
         St77xx( QString type, QString id );
@@ -22,6 +23,9 @@ class St77xx : public TftController
         int height() { return m_height; }
         void setHeight( int h );
 
+        double scale() { return m_scale; }
+        void setScale( double s );
+
     protected:
         /// void displayReset() override;
         virtual void updateSize();
@@ -31,6 +35,8 @@ class St77xx : public TftController
         uint16_t m_rows;         // 8 pixel rows (Circuit grid)
         uint16_t m_maxWidth;
         uint16_t m_maxHeight;
+
+        double m_scale;
 
         uint8_t m_pixelMode;
 };

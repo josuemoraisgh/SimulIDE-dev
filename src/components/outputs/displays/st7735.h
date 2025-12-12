@@ -6,11 +6,10 @@
 #pragma once
 
 #include "st77xx.h"
-#include "spi3pins.h"
 
 class LibraryItem;
 
-class St7735 : public St77xx, public Spi3Pins
+class St7735 : public St77xx
 {
     public:
         St7735( QString type, QString id );
@@ -23,6 +22,4 @@ class St7735 : public St77xx, public Spi3Pins
 
     protected:
         void displayReset() override;
-        void updateSize() override;
-
 };

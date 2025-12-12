@@ -28,7 +28,6 @@ LibraryItem* GC9A01A::libraryItem()
 
 GC9A01A::GC9A01A( QString type, QString id )
        : St77xx( type, id )
-       , Spi5Pins( id, this )
 {
     m_graphical = true;
 
@@ -36,21 +35,6 @@ GC9A01A::GC9A01A( QString type, QString id )
     m_maxHeight = 240;
     setDisplaySize( m_maxWidth, m_maxHeight );
     updateSize();
-
-    m_pin.resize( 6 );
-    m_pin[0] = &m_pinDC;
-    m_pin[1] = &m_pinCS;
-    m_pin[2] = &m_pinDI;
-    m_pin[3] = &m_pinCK;
-    m_pin[4] = &m_pinRS;
-    m_pin[5] = &m_pinDO;
-
-    m_pinDC.setX(-20 );
-    m_pinRS.setX(-12 );
-    m_pinCS.setX( -4 );
-    m_pinDI.setX(  4 );
-    m_pinCK.setX( 12 );
-    m_pinDO.setX( 20 );
 
     setLabelPos(-m_width/2+16,-m_height/2-20, 0);
     setShowId( true );
@@ -92,26 +76,6 @@ void GC9A01A::setHeight( int h )
 
     setDisplaySize( h, h );
     updateSize();
-}
-
-void GC9A01A::updateSize()
-{
-    m_pinDC.setY( m_height/2+ 28 );
-    m_pinRS.setY( m_height/2+ 28 );
-    m_pinCS.setY( m_height/2+ 28 );
-    m_pinDI.setY( m_height/2+ 28 );
-    m_pinCK.setY( m_height/2+ 28 );
-    m_pinDO.setY( m_height/2+ 28 );
-
-    m_pinDC.isMoved();
-    m_pinRS.isMoved();
-    m_pinCS.isMoved();
-    m_pinDI.isMoved();
-    m_pinCK.isMoved();
-    m_pinDO.isMoved();
-
-    m_area = QRectF(-m_width/2-6,-m_height/2-6, m_width+12, m_height+12+15);
-    Circuit::self()->update();
 }
 
 void GC9A01A::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )

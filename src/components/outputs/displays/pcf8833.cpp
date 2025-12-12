@@ -29,6 +29,7 @@ PCF8833::PCF8833( QString type, QString id )
     m_graphical = true;
 
     setDisplaySize( 132, 132 );
+    setScale( 1 );
     m_area = QRectF(-m_width/2-6,-m_height/2-6, m_width+12, m_height+12+8);
 
     m_pin.resize( 4 );
@@ -83,7 +84,7 @@ void PCF8833::setPixelMode()
 void PCF8833::writeRam()
 {
     m_dataIndex++;
-    if( m_dataIndex > m_dataBytes ) return;
+    if( m_dataIndex > m_dataBytes ) m_dataIndex = 1;
 
     uint32_t buffer = m_rxReg;
     switch( m_dataBytes )
