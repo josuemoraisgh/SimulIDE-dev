@@ -126,14 +126,12 @@ void St77xx::setWidth( int w )
 
 void St77xx::setHeight( int h )
 {
-    if( h > m_height ) h += 8;
     if     ( h > m_maxHeight ) h = m_maxHeight;
     else if( h <  16         ) h = 16;
 
-    h = (h/8)*8;
     if( m_height == h ) return;
 
-    m_rows = h/8;
+    //m_rows = h/8;
     setDisplaySize( m_width, h );
     updateSize();
 }
@@ -148,12 +146,14 @@ void St77xx::setScale( double s )
 
 void St77xx::updateSize()
 {
-    m_pinDC.setY( m_scaledHeight/2 + 24 );
-    m_pinRS.setY( m_scaledHeight/2 + 24 );
-    m_pinCS.setY( m_scaledHeight/2 + 24 );
-    m_pinDI.setY( m_scaledHeight/2 + 24 );
-    m_pinCK.setY( m_scaledHeight/2 + 24 );
-    m_pinDO.setY( m_scaledHeight/2 + 24 );
+    double y = m_scaledHeight/2 + 22;
+
+    m_pinDC.setY( y );
+    m_pinRS.setY( y );
+    m_pinCS.setY( y );
+    m_pinDI.setY( y );
+    m_pinCK.setY( y );
+    m_pinDO.setY( y );
 
     m_pinDC.setX(-20 );
     m_pinRS.setX(-12 );
@@ -161,6 +161,16 @@ void St77xx::updateSize()
     m_pinDI.setX(  4 );
     m_pinCK.setX( 12 );
     m_pinDO.setX( 20 );
+
+    double h = m_scaledHeight/2+12+10;
+    double space = m_pinDC.y() - h + 0.1;
+
+    m_pinDC.setSpace( space );
+    m_pinRS.setSpace( space );
+    m_pinCS.setSpace( space );
+    m_pinDI.setSpace( space );
+    m_pinCK.setSpace( space );
+    m_pinDO.setSpace( space );
 
     m_pinDC.isMoved();
     m_pinRS.isMoved();

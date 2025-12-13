@@ -21,7 +21,7 @@ class St77xx : public TftController, public Spi5Pins
         void setWidth( int w );
 
         int height() { return m_height; }
-        void setHeight( int h );
+        virtual void setHeight( int h );
 
         double scale() { return m_scale; }
         void setScale( double s );
@@ -32,11 +32,9 @@ class St77xx : public TftController, public Spi5Pins
         void setPixelMode() override;
         void writeRam() override;
 
-        uint16_t m_rows;         // 8 pixel rows (Circuit grid)
+        //uint16_t m_rows;         // 8 pixel rows (Circuit grid)
         uint16_t m_maxWidth;
         uint16_t m_maxHeight;
-
-        double m_scale;
 
         uint8_t m_pixelMode;
 };

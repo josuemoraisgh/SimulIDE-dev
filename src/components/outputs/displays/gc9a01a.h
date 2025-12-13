@@ -15,7 +15,7 @@ class GC9A01A : public St77xx
         GC9A01A( QString type, QString id );
         ~GC9A01A();
 
-        void setHeight( int h );
+        void setHeight( int h ) override;
 
         void endTransaction() override;
 

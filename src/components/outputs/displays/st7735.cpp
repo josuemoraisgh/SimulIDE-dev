@@ -32,7 +32,6 @@ St7735::St7735( QString type, QString id )
     m_maxHeight = 162;
     setDisplaySize( m_maxWidth, m_maxHeight );
     setScale( 1 );
-    updateSize();
 
     setLabelPos(-m_width/2+16,-m_height/2-20, 0);
     setShowId( true );

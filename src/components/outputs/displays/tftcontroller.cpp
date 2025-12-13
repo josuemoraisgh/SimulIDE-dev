@@ -15,6 +15,9 @@ TftController::TftController( QString type, QString id )
 {
     m_graphical = true;
     m_isILI = false;
+
+    m_maxX = 0;
+    m_maxY = 0;
 }
 
 void TftController::displayReset()
@@ -64,7 +67,6 @@ void TftController::updateStep()
 {
     update();
 }
-
 
 void TftController::commandReceived()
 {
@@ -326,10 +328,10 @@ void TftController::setRamSize( int x, int y )
     if( x > 256 || y > 256 ) m_addrBytes = 2;
     else                     m_addrBytes = 1;
 
+    if( m_maxX == 0 ) m_DDRAM.resize( x, std::vector<uint32_t>(y, 0) ); // Resize only first time
+
     m_maxX = x-1;
     m_maxY = y-1;
-
-    m_DDRAM.resize( x, std::vector<uint32_t>(y, 0) );
 }
 
 void TftController::setDisplaySize( int x, int y )
@@ -340,6 +342,8 @@ void TftController::setDisplaySize( int x, int y )
 
     m_width  = x;
     m_height = y;
+    m_scaledWidth = (double)m_width * m_scale;
+    m_scaledHeight = (double)m_height * m_scale;
 
     setRamSize( x, y );
 }

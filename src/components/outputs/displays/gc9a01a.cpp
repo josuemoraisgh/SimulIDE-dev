@@ -34,18 +34,12 @@ GC9A01A::GC9A01A( QString type, QString id )
     m_maxWidth  = 240;
     m_maxHeight = 240;
     setDisplaySize( m_maxWidth, m_maxHeight );
-    updateSize();
+    setScale( 1 );
 
     setLabelPos(-m_width/2+16,-m_height/2-20, 0);
     setShowId( true );
 
-    addPropGroup( { tr("Main"), {
-        new IntProp<GC9A01A>("Height", tr("Size"), "_px"
-                             , this, &GC9A01A::height, &GC9A01A::setHeight, propNoCopy,"uint" ),
-
-        //new IntProp<GC9A01A>("Height", tr("Height"), "_px"
-        //                     ,this,&GC9A01A::height, &GC9A01A::setHeight, propNoCopy,"uint" ),
-    }, 0} );
+    remProperty("Width");
 }
 GC9A01A::~GC9A01A(){}
 
@@ -65,15 +59,12 @@ void GC9A01A::endTransaction()
 
 void GC9A01A::setHeight( int h )
 {
-    if( h > m_height ) h += 8;
     if     ( h > m_maxHeight ) h = m_maxHeight;
     else if( h <  16         ) h = 16;
 
-    h = (h/8)*8;
     if( m_height == h ) return;
 
-    m_rows = h/8;
-
+    //m_rows = h/8;
     setDisplaySize( h, h );
     updateSize();
 }
@@ -85,10 +76,10 @@ void GC9A01A::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget* )
     p->setPen( pen );
 
     p->setBrush( QColor(50, 70, 100) );
-    p->drawRoundedRect( QRectF(-m_width*3/8, 0, m_width*6/8, m_height/2+12+8), 5, 5 );
-    p->drawEllipse( QRectF(-m_width/2-6,-m_height/2-6, m_width+12, m_height+12 ) );
+    p->drawRoundedRect( QRectF(-m_scaledWidth*3/8, 0, m_scaledWidth*6/8, m_scaledHeight/2+12+4), 5, 5 );
+    p->drawEllipse( QRectF(-m_scaledWidth/2-6,-m_scaledHeight/2-6, m_scaledWidth+12, m_scaledHeight+12 ) );
 
-    QRectF imgRect = QRectF(-m_width/2,-m_height/2, m_width, m_height );
+    QRectF imgRect = QRectF(-m_scaledWidth/2,-m_scaledHeight/2, m_scaledWidth, m_scaledHeight );
 
     if( !m_dispOn ){                // Display Off
         p->setPen( Qt::NoPen );

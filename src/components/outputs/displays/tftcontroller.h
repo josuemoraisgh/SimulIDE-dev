@@ -48,6 +48,7 @@ class TftController : public Component
         uint16_t m_width;
         uint16_t m_height;
 
+        double m_scale;
         double m_scaledWidth;
         double m_scaledHeight;
 
