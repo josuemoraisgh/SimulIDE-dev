@@ -18,6 +18,8 @@ TftController::TftController( QString type, QString id )
 
     m_maxX = 0;
     m_maxY = 0;
+
+    Simulator::self()->addToUpdateList( this );
 }
 
 void TftController::displayReset()
@@ -57,8 +59,6 @@ void TftController::displayReset()
     m_readBytes = 0;
 
     //m_reset = true;
-
-    Simulator::self()->addToUpdateList( this );
 }
 TftController::~TftController(){}
 

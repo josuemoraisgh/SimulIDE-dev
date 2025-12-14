@@ -28,7 +28,9 @@ PCF8833::PCF8833( QString type, QString id )
 {
     m_graphical = true;
 
-    setDisplaySize( 132, 132 );
+    m_maxWidth  = 132;
+    m_maxHeight = 132;
+    setDisplaySize( m_maxWidth, m_maxHeight );
     setScale( 1 );
     m_area = QRectF(-m_width/2-6,-m_height/2-6, m_width+12, m_height+12+8);
 

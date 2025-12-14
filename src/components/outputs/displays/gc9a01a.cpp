@@ -36,9 +36,6 @@ GC9A01A::GC9A01A( QString type, QString id )
     setDisplaySize( m_maxWidth, m_maxHeight );
     setScale( 1 );
 
-    setLabelPos(-m_width/2+16,-m_height/2-20, 0);
-    setShowId( true );
-
     remProperty("Width");
 }
 GC9A01A::~GC9A01A(){}

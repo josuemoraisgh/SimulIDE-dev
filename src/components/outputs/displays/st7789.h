@@ -15,12 +15,6 @@ class St7789 : public St77xx
         St7789( QString type, QString id );
         ~St7789();
 
-        void endTransaction() override;
-
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
-
-    protected:
-        void displayReset() override;
-
 };

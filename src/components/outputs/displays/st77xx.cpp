@@ -5,6 +5,7 @@
 
 #include "st77xx.h"
 #include "circuit.h"
+#include "simulator.h"
 
 #include "intprop.h"
 #include "doubleprop.h"
@@ -15,6 +16,8 @@ St77xx::St77xx( QString type, QString id )
       : TftController( type, id )
       , Spi5Pins( id, this )
 {
+    m_graphical = true;
+
     m_pin.resize( 6 );
     m_pin[0] = &m_pinDC;
     m_pin[1] = &m_pinCS;
@@ -22,6 +25,9 @@ St77xx::St77xx( QString type, QString id )
     m_pin[3] = &m_pinCK;
     m_pin[4] = &m_pinRS;
     m_pin[5] = &m_pinDO;
+
+    setLabelPos(-m_width/2+16,-m_height/2-20, 0);
+    setShowId( true );
 
     addPropGroup( { tr("Main"), {
         new IntProp<St77xx>("Width", tr("Width"), "_px"
@@ -35,6 +41,31 @@ St77xx::St77xx( QString type, QString id )
     }, 0} );
 }
 St77xx::~St77xx(){}
+
+
+void St77xx::initialize()
+{
+    SpiModule::initialize();
+    clearDDRAM();
+    displayReset();
+    updateStep();
+}
+
+
+void St77xx::endTransaction()
+{
+    Spi5Pins::endTransaction();
+    m_rxReg = m_buffer;
+    if( m_isData ) dataReceived();
+    else           commandReceived();
+}
+
+void St77xx::displayReset()
+{
+    TftController::displayReset();
+    Spi5Pins::reset();
+    //m_dataBytes = 2; //16bit mode
+}
 
 void St77xx::setPixelMode()
 {
