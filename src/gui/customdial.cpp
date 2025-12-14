@@ -5,13 +5,13 @@
 
 #include "customdial.h"
 
+#include <QDebug>
 #include <QPainter>
 #include <QColor>
 #include <QPalette>
 #include <QtMath>
+#include <QMouseEvent>
 #include <QStyleOptionSlider>
-
-#define Q_PI 3,141592653589793
 
 CustomDial::CustomDial( QWidget* parent )
           : QDial( parent )
@@ -22,6 +22,27 @@ CustomDial::CustomDial( QWidget* parent )
     setSingleStep( 25 );
     setNotchesVisible( true );
     setAttribute( Qt::WA_TranslucentBackground );
+
+    installEventFilter(this);
+}
+
+bool CustomDial::eventFilter( QObject* object, QEvent* event )
+{
+    if( event->type() != QEvent::MouseButtonPress ) return false;
+
+    QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+    if( mouseEvent->buttons() != Qt::LeftButton ) return false;
+
+    QPoint mp = mouseEvent->pos();
+    double distance = sqrt( pow( mp.x()-m_arrowX, 2 ) + pow( mp.y()-m_arrowY, 2 ) );
+
+    if( distance > 5 ) {
+        event->ignore();
+        return true;
+    }
+
+    event->accept();
+    return false;
 }
 
 void CustomDial::paintEvent( QPaintEvent* e )
@@ -99,11 +120,11 @@ void CustomDial::paintEvent( QPaintEvent* e )
     pen.setWidth( 1 );
     pen.setColor( QColor(70,70,70) );
     painter.setPen( pen );
-    painter.drawEllipse( QRectF( dx, dy, fi, fi ) );                          // Draw first circle
+    painter.drawEllipse( QRectF( dx, dy, fi, fi ) );
 
     pen.setColor( Qt::white );
     painter.setPen( pen );
-    painter.drawEllipse( br );                          // Draw first circle
+    painter.drawEllipse( br );
 
     QRadialGradient radialGrad( QPoint(dx, dy), fi);
     radialGrad.setColorAt( 0   , QColor( 255,255,255 ) );
@@ -112,14 +133,17 @@ void CustomDial::paintEvent( QPaintEvent* e )
     radialGrad.setColorAt( 1   , QColor( 200,200,195 ) );
     painter.setBrush( radialGrad );
     painter.setPen( QPen(Qt::NoPen) );
-    painter.drawEllipse( br );                          // Draw first circle
+    painter.drawEllipse( br );
 
     double ratio = double(QDial::value())/QDial::maximum();    // Get ratio between current value and maximum to calculate angle
-    double angle = ratio*degreer - degrees;                  // The maximum amount of degrees is 270, offset by 225
+    double angle = ratio*degreer - degrees;                    // The maximum amount of degrees is 270, offset by 225
 
     // Add r to have (0,0) in center of dial
     double y = sin(angle)*(fi/2-knobRadius*2.5) + r;
     double x = cos(angle)*(fi/2-knobRadius*2.5) + r;
+
+    m_arrowY = y+knobRadius/2;
+    m_arrowX = x+knobRadius/2;
 
     // Draw the knob ellipse
     pen.setColor( QColor( 240, 240, 230) );
