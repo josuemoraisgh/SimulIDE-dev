@@ -29,6 +29,8 @@ class JoystickWidget : public QWidget
         void paintEvent( QPaintEvent* event );
 
     private:
+        bool eventFilter(QObject *object, QEvent *event) override;
+
         double m_xValue;
         double m_yValue;
 

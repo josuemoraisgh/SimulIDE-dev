@@ -78,7 +78,7 @@ KY023::KY023( QString type, QString id )
     m_sw->setLabelText( "SW" );
     m_pin[2] = m_sw;
 
-    //setAngle( 90 );
+    setAngle( 90 );
     setLabelPos(-34, 20,-90 );
     
     Simulator::self()->addToUpdateList( this );

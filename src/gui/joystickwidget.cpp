@@ -11,6 +11,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QDebug>
+#include <QtMath>
 
 #include "joystickwidget.h"
 
@@ -19,6 +20,8 @@
 JoystickWidget::JoystickWidget()
 {
     m_changed = true;
+
+    installEventFilter(this);
 }
 JoystickWidget::~JoystickWidget() {}
 
@@ -59,10 +62,32 @@ QPointF JoystickWidget::center()
     return QPointF( width()/2, height()/2 );
 }
 
+bool JoystickWidget::eventFilter( QObject* object, QEvent* event )
+{
+    if( event->type() != QEvent::MouseButtonPress ) return false;
+
+    QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+    if( mouseEvent->buttons() != Qt::LeftButton ) return false;
+
+    QPoint mp = mouseEvent->pos();
+    double distance = sqrt( pow( mp.x()-width()/2, 2 ) + pow( mp.y()-height()/2, 2 ) );
+
+    if( distance > 9 ) {
+        event->ignore();
+        return true;
+    }
+
+    event->accept();
+    return false;
+}
+
 void JoystickWidget::mousePressEvent( QMouseEvent* event )
 {
-    if( event->button() == Qt::LeftButton )
-        m_grabCenter = centerEllipse().contains( event->pos() );
+    if( event->button() == Qt::LeftButton ){
+        QPoint mp = event->pos();
+        double distance = sqrt( pow( mp.x()-width()/2, 2 ) + pow( mp.y()-height()/2, 2 ) );
+        m_grabCenter = distance < 10;
+    }
     else QWidget::mousePressEvent( event );
 }
  
@@ -95,7 +120,7 @@ void JoystickWidget::paintEvent( QPaintEvent* )
     int y0 = height()/2;
     QRectF bounds = QRectF(-size/2,-size/2, size, size ).translated( center() );
     QRadialGradient lg0( QPointF( x0-3, y0-3 ), 20, QPointF( x0-30, y0-30 ) );
-    lg0.setColorAt( 0, QColor( 80, 80, 80 ) );
+    lg0.setColorAt( 0, QColor( 100, 100, 100 ) );
     lg0.setColorAt( 1, QColor( 0, 0, 0 ) );
     painter.setBrush( lg0 );
     painter.drawEllipse( bounds );
