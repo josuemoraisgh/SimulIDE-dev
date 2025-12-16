@@ -10,5 +10,13 @@ QemuModule::QemuModule( QemuDevice* mcu, int number )
     m_device = mcu;
     m_number = number;
     m_arena = m_device->getArena();
+
+    m_device->addModule( this );
 }
 QemuModule::~QemuModule(){}
+
+void QemuModule::reset()
+{
+    nextEvent = nullptr;
+    eventTime = 0;
+}

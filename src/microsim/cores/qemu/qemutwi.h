@@ -29,14 +29,15 @@ class QemuTwi : public QemuModule, public TwiModule
         ~QemuTwi();
 
         enum qemuTwiAction_t {
-            QEMU_I2C_START_READ=1,
+            QEMU_I2C_START=1,
+            QEMU_I2C_START_READ,
             QEMU_I2C_START_WRITE,
-            QEMU_I2C_START_WRITE_ASYNC,
+            //QEMU_I2C_START_WRITE_ASYNC,
             QEMU_I2C_STOP,
-            QEMU_I2C_NOACK, /* Masker NACKed a receive byte.  */
+            //QEMU_I2C_NOACK,
             QEMU_I2C_WRITE,
             QEMU_I2C_READ,
-            QEMU_I2C_MATCH,
+            //QEMU_I2C_MATCH,
             QEMU_I2C_FREQ
         };
 
@@ -55,6 +56,9 @@ class QemuTwi : public QemuModule, public TwiModule
         //void sendByte( uint8_t data );
 
         void setMode( twiMode_t mode ) override;
+
+        IoPin** getSclPinPointer() { return &m_scl; }
+        IoPin** getSdaPinPointer() { return &m_sda; }
 
         virtual void doAction() override;
 

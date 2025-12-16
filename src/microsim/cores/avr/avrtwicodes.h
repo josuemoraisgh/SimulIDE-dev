@@ -5,19 +5,6 @@
 
 #pragma once
 
-/// TODO: this should dissapear once we use our own TWI Module
-enum {
-    TWI_COND_START = (1 << 0),
-    TWI_COND_STOP  = (1 << 1),
-    TWI_COND_ADDR  = (1 << 2),
-    TWI_COND_ACK   = (1 << 3),
-    TWI_COND_WRITE = (1 << 4),
-    TWI_COND_READ  = (1 << 5),
-    TWI_COND_SLAVE = (1 << 6), // internal state, do not use in irq messages
-    TWI_MSG        = (1 << 7), // for simulide AvrCompBase
-};
-
-
 /*
  * This block respectfully nicked straight out from the Atmel sample
  * code for AVR315. Typos and all.

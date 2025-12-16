@@ -13,7 +13,14 @@ class QemuModule
         QemuModule( QemuDevice* mcu, int number );
         ~QemuModule();
 
+        virtual void reset();
+
         virtual void doAction() {;}
+
+        virtual void connected( bool c ) {;}
+
+        QemuModule* nextEvent;
+        uint64_t eventTime;
 
     protected:
 

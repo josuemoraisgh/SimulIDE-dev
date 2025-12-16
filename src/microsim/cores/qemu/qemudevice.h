@@ -12,6 +12,7 @@
 typedef struct qemuArena{
     uint64_t simuTime;    // in ps
     uint64_t qemuTime;    // in ps
+    uint64_t qemuEvent;
     uint32_t data32;
     uint32_t mask32;
     uint16_t data16;
@@ -20,8 +21,8 @@ typedef struct qemuArena{
     uint8_t  mask8;
     uint8_t  simuAction;
     uint8_t  qemuAction;
+    uint8_t  running;
     double   ps_per_inst;
-    bool     running;
 } qemuArena_t;
 
 enum simuAction{
@@ -34,6 +35,7 @@ enum simuAction{
 };
 
 class IoPin;
+class QemuModule;
 class QemuUsart;
 class QemuTimer;
 class QemuTwi;
@@ -63,10 +65,15 @@ class QemuDevice : public Chip
         volatile qemuArena_t* getArena() { return m_arena; }
 
         void runToTime( uint64_t time );
+        //void setNexTEvent( uint64_t e ) { m_nextEvent = e; }
 
         void slotLoad();
         void slotReload();
         void slotOpenTerm( int num );
+
+        //void addEvent( uint64_t time, QemuModule* el );
+        //void cancelEvents( QemuModule* el );
+        void addModule( QemuModule* m ) { m_modules.append( m ); }
 
  static QemuDevice* self() { return m_pSelf; }
  static Component* construct( QString type, QString id );
@@ -88,7 +95,12 @@ class QemuDevice : public Chip
 
         QString m_extraArgs;
 
+        //QemuModule* m_firstEvent;
+
         volatile qemuArena_t* m_arena;
+
+        //bool m_fullSynch;
+        //uint64_t m_lastTime;
 
         int m_gpioSize;
         std::vector<IoPin*> m_ioPin;
@@ -111,4 +123,6 @@ class QemuDevice : public Chip
         std::vector<QemuTwi*> m_i2cs;
         std::vector<QemuSpi*> m_spis;
         std::vector<QemuUsart*> m_usarts;
+
+        QList<QemuModule*> m_modules;
 };

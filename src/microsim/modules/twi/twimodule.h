@@ -64,6 +64,8 @@ class TwiModule : public eClockedDevice
 
         virtual void I2Cstop() { m_i2cState = I2C_STOP; }
 
+        uint64_t getTrasferTime();
+
     protected:
         inline void setSCL( bool st );
         inline void setSDA( bool st );

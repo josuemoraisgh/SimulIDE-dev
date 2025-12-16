@@ -3,7 +3,6 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
-
 #include <QDebug>
 
 #include "qemuusart.h"
@@ -11,6 +10,7 @@
 #include "serialmon.h"
 #include "usartrx.h"
 #include "usarttx.h"
+#include "iopin.h"
 
 #include "simulator.h"
 
@@ -26,12 +26,34 @@ QemuUsart::~QemuUsart( ){}
 
 void QemuUsart::enable( bool e )
 {
+    m_enabled = e;
     //m_serData.clear();
     //m_uartData.clear();
     m_sender->enable( e );
     m_receiver->enable( e );
     //m_sending = false;
     //m_receiving = false;
+}
+
+void QemuUsart::setTxPin( IoPin* pin )
+{
+    //qDebug() << "QemuUsart::setTxPin" << pin->pinId();
+    m_sender->setPins({pin});
+}
+void QemuUsart::setRxPin( IoPin* pin )
+{
+    ///qDebug() << "QemuUsart::setRxPin" << pin->pinId();
+    m_receiver->setPins({pin});
+}
+
+IoPin** QemuUsart::getTxPinPointer()
+{
+    return m_sender->getPinPointer();
+}
+
+IoPin** QemuUsart::getRxPinPointer()
+{
+    return m_receiver->getPinPointer();
 }
 
 void QemuUsart::doAction()
@@ -46,6 +68,7 @@ void QemuUsart::bufferEmpty()
 
 void QemuUsart::frameSent( uint8_t data )
 {
+    //qDebug() << "QemuUsart::frameSent"<< m_number;
     if( m_monitor ) m_monitor->printOut( data );
     //m_sender->raiseInt();
 }

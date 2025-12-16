@@ -24,6 +24,11 @@ class QemuSpi : public QemuModule, public SpiModule
         //void setMode( spiMode_t mode ) override;
         //void endTransaction() override;
 
+        IoPin** getMoPinPointer() { return &m_MOSI; }
+        IoPin** getMiPinPointer() { return &m_MISO; }
+        IoPin** getCkPinPointer() { return &m_clkPin; }
+        IoPin** getSsPinPointer() { return &m_SS; }
+
     protected:
         uint8_t m_dataReg;
 

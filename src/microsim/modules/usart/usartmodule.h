@@ -158,6 +158,7 @@ class UartTR : public McuModule, public eElement
 
         void setPins( QList<IoPin*> pinList );
         IoPin* getPin() { return m_ioPin; }
+        IoPin** getPinPointer() { return &m_ioPin; }
 
         void raiseInt( uint8_t data=0 );
 

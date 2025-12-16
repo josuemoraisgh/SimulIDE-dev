@@ -71,20 +71,20 @@ void QemuTwi::runNextAction()
             //qDebug()<< simTime << "QI2C START_WRITE" ;
             masterWrite( m_txAddress<<1, true, true );
             break;
-        case QEMU_I2C_START_WRITE_ASYNC:
-            qDebug()<< simTime << "QI2C START_WRITE_ASYNC" ;
+        //case QEMU_I2C_START_WRITE_ASYNC:
+        //    qDebug()<< simTime << "QI2C START_WRITE_ASYNC" ;
 
-            //m_write = true;
-            break;
+        //    //m_write = true;
+        //    break;
         case QEMU_I2C_STOP:
             //qDebug()<< simTime << "QI2C STOP" ;
             masterStop();
             m_txAddress = 0;
             //m_device->getArena()->data32 = 0; // report operation end
             break;
-        case QEMU_I2C_NOACK: // Masker NACKed a receive byte.
-            qDebug()<< simTime << "QI2C NOACK" ;
-            break;
+        //case QEMU_I2C_NOACK: // Masker NACKed a receive byte.
+        //    qDebug()<< simTime << "QI2C NOACK" ;
+        //    break;
         case QEMU_I2C_WRITE:
             //qDebug()<< simTime << "QI2C WRITE" << m_nextAction->data ;
             masterWrite( m_nextAction->data, false, true );
@@ -92,12 +92,12 @@ void QemuTwi::runNextAction()
         case QEMU_I2C_READ:
             qDebug()<< simTime << "QI2C READ";
             break;
-        case QEMU_I2C_MATCH:
-            //qDebug()<< simTime << "QI2C MATCH" << m_nextAction->data;
-            m_txAddress = m_nextAction->data;
-            masterStart();
-            //m_device->getArena()->data32 = 0; // report operation end
-            break;
+        //case QEMU_I2C_MATCH:
+        //    //qDebug()<< simTime << "QI2C MATCH" << m_nextAction->data;
+        //    m_txAddress = m_nextAction->data;
+        //    masterStart();
+        //    //m_device->getArena()->data32 = 0; // report operation end
+        //    break;
     }
 }
 

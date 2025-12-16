@@ -15,10 +15,10 @@ class Esp32Twi : public QemuTwi
         Esp32Twi( QemuDevice* mcu, QString name, int number );
         ~Esp32Twi();
 
-        enum stm32TwiAction_t {
-            ESP32_TWI_CR1=100,
-            ESP32_TWI_CR2,
-            ESP32_TWI_
+        enum esp32TwiAction_t {
+            ESP32_TWI_CTR=100,
+            //ESP32_TWI_CR2,
+            ESP32_TWI_EVENT
         };
 
         void reset();
@@ -26,6 +26,8 @@ class Esp32Twi : public QemuTwi
         void doAction() override;
 
     protected:
+        void writeCTR( uint16_t data );
 
+        void setTwiState( twiState_t state ) override;
 };
 

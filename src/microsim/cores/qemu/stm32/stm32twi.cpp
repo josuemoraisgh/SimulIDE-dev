@@ -11,7 +11,7 @@
 #include "simulator.h"
 
 Stm32Twi::Stm32Twi( QemuDevice* mcu, QString name, int number )
-       : QemuTwi( mcu, name, number )
+        : QemuTwi( mcu, name, number )
 {
 }
 Stm32Twi::~Stm32Twi(){}

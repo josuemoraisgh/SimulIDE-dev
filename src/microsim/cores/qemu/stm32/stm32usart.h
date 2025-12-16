@@ -25,12 +25,11 @@ class Stm32Usart : public QemuUsart
 
         void doAction() override;
 
+
         //void endTransaction() override;
 
     private:
         void writeCR1( uint16_t data );
         void writeCR2( uint16_t data );
-
-        uint8_t m_enabled;
 };
 

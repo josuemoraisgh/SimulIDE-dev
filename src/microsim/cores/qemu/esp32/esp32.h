@@ -7,8 +7,11 @@
 
 #include "qemudevice.h"
 #include "qemutwi.h"
+#include "esp32pin.h"
 
 class LibraryItem;
+//class esp32Pin;
+//struct funcPin;
 
 class Esp32 : public QemuDevice
 {
@@ -24,14 +27,22 @@ class Esp32 : public QemuDevice
 
         bool createArgs() override;
         void doAction() override;
+        void matrixFunc( uint8_t out );
         void createPins();
+        void createMatrix();
+        void createIoMux();
         void readInputs();
-        void setPinFunction( IoPin* ioPin, int func );
+
 
         uint64_t m_state;
         uint64_t m_direc;
 
-        uint64_t m_pullUps;
-        uint64_t m_pullDown;
-        uint64_t m_inputEn;
+       //uint64_t m_pullUps;
+       //uint64_t m_pullDown;
+       //uint64_t m_inputEn;
+
+        IoPin* m_dummyPin;
+        esp32Pin* m_espPad[40];
+        funcPin m_matrixIn[256];
+        funcPin m_matrixOut[256];
 };

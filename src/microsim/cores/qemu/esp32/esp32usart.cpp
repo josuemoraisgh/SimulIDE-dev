@@ -36,8 +36,14 @@ void Esp32Usart::doAction()
         case ESP32_USART_CR0:   writeCR0( data ); break;
         case ESP32_USART_CR1:   writeCR1( data ); break;
       //case ESP32_USART_READ:  /*readByte( data );*/ break;
-        case ESP32_USART_WRITE: sendByte( data ); break; //qDebug() << "Esp32Usart::doAction send Byte:"<<m_number<<QChar(data); break;
-        case ESP32_USART_BAUD:  setBaudRate( data ); qDebug() << "Esp32 Usart" << m_number <<"Baudrate:"<< data; break;
+        case ESP32_USART_WRITE:{ //qDebug() << "Esp32Usart::doAction send Byte:"<<m_number<<QChar(data);
+            sendByte( data );
+            uint64_t nextTime = Simulator::self()->circTime()+m_sender->getFrameTime();
+            //qDebug() << "Esp32Usart::doAction send Byte:"<< nextTime;
+            m_arena->qemuEvent = nextTime;
+            //m_device->addEvent( nextTime, this );
+        }break;
+        case ESP32_USART_BAUD:  setBaudRate( data ); break; //qDebug() << "Esp32 Usart" << m_number <<"Baudrate:"<< data; break;
 
         default: break;
     }
@@ -67,16 +73,17 @@ void Esp32Usart::frameSent( uint8_t data )
 {
     QemuUsart::frameSent( data );
 
-    //qDebug() << "Esp32Usart::frameSent"<< m_number;
+    //qDebug() << "Esp32Usart::frameSent"<< m_number<<Simulator::self()->circTime();
 
-    while( m_arena->qemuAction )        // Wait for previous action executed
-    {
-        ; /// TODO: add timeout
-    }
+    //m_device->cancelEvents( this );
+    //while( m_arena->qemuAction )        // Wait for previous action executed
+    //{
+    //    ; /// TODO: add timeout
+    //}
 
-    m_arena->mask8  = QEMU_USART_SENT;
-    m_arena->data8  = m_number;
-    m_arena->qemuAction = SIM_USART;
+    //m_arena->mask8  = QEMU_USART_SENT;
+    //m_arena->data8  = m_number;
+    //m_arena->qemuAction = SIM_USART;
 }
 
 //void Esp32Usart::endTransaction()

@@ -165,7 +165,7 @@ bool Stm32::createArgs()
     //m_arguments <<"clock=vm";
 
     m_arguments << "-icount";
-    m_arguments <<"shift=14,align=off,sleep=off";
+    m_arguments <<"shift=0,align=off,sleep=off";
 
     //m_arguments << "-kernel";
     //m_arguments << m_firmware;
@@ -395,11 +395,11 @@ Pin* Stm32::addPin( QString id, QString type, QString label,
         uint n = id.right(2).toInt();
         QString portStr = id.at(1);
         std::vector<Stm32Pin*>* port = nullptr;
-        if     ( portStr == "A" ) port = &m_ports[0];
-        else if( portStr == "B" ) port = &m_ports[1];
-        else if( portStr == "C" ) port = &m_ports[2];
-        else if( portStr == "D" ) port = &m_ports[3];
-        else if( portStr == "E" ) port = &m_ports[4];
+        if     ( portStr == "A") port = &m_ports[0];
+        else if( portStr == "B") port = &m_ports[1];
+        else if( portStr == "C") port = &m_ports[2];
+        else if( portStr == "D") port = &m_ports[3];
+        else if( portStr == "E") port = &m_ports[4];
 
         if( !port ) return nullptr; //new IoPin( angle, QPoint(x, y), m_id+"-"+id, n-1, this, input );
 
