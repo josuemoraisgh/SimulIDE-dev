@@ -25,9 +25,9 @@ InstallItem::InstallItem( Installer* parent, QString item )
 void InstallItem::shouldUpdate( int64_t v )
 {
     if( m_version == m_versionNext ) setButtonState( bUninstall );
-    else
-    {
-        setButtonState( bUpdate );
+    else{
+        if( v == 0 ) setButtonState( bInstall );
+        else         setButtonState( bUpdate );
     }
 }
 
