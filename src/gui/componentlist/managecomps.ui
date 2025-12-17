@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>283</width>
-    <height>233</height>
+    <height>515</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Manage Components</string>
+   <string>Component Shortcuts</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">

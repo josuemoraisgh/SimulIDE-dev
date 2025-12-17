@@ -17,7 +17,7 @@ class manCompDialog : public QDialog, private Ui::manCompDialog
     public:
         manCompDialog( QWidget* parent );
 
-        void initialize();
+        void initialize( TreeItem* treeItem );
 
     private slots:
         void slotItemChanged( QTableWidgetItem* item );

@@ -35,6 +35,7 @@ ComponentList::ComponentList( QWidget* parent )
     m_pSelf = this;
 
     m_searchFilter = "";
+    m_clickedItem = nullptr;
 
     m_mcDialog.setVisible( false );
 
@@ -329,8 +330,8 @@ void ComponentList::addItem( QString caption, TreeItem* catItem, QIcon &icon, QS
 
     if( m_oldConfig )
     {
-        bool hidden = MainWindow::self()->compSettings()->value( name+"/hidden" ).toBool();
-        item->setItemHidden( hidden );
+        //bool hidden = MainWindow::self()->compSettings()->value( name+"/hidden" ).toBool();
+        //item->setItemHidden( hidden );
 
         QString shortCut = MainWindow::self()->compSettings()->value( name+"/shortcut" ).toString();
         item->setShortCut( shortCut );
@@ -351,7 +352,7 @@ TreeItem* ComponentList::addCategory( QString nameTr, QString name, QString pare
     TreeItem* catParent = nullptr;
 
     bool expanded = false;
-    bool hidden   = false;
+    //bool hidden   = false;
 
     if( parent.isEmpty() )                              // Is Main Category
     {
@@ -366,7 +367,7 @@ TreeItem* ComponentList::addCategory( QString nameTr, QString name, QString pare
     else if( catParent )
     {
         catParent->addChild( catItem );
-        catParent->setHidden( false );
+        //catParent->setHidden( false );
     }
     m_categories.insert( name, catItem );
 
@@ -375,11 +376,11 @@ TreeItem* ComponentList::addCategory( QString nameTr, QString name, QString pare
         if( MainWindow::self()->compSettings()->contains(name+"/collapsed") )
             expanded = !MainWindow::self()->compSettings()->value( name+"/collapsed" ).toBool();
 
-        if( MainWindow::self()->compSettings()->contains(name+"/hidden") )
-            hidden = MainWindow::self()->compSettings()->value( name+"/hidden" ).toBool();
+        //if( MainWindow::self()->compSettings()->contains(name+"/hidden") )
+        //    hidden = MainWindow::self()->compSettings()->value( name+"/hidden" ).toBool();
     }
     catItem->setText( 0, nameTr );
-    catItem->setItemHidden( hidden );
+    //catItem->setItemHidden( hidden );
     catItem->setItemExpanded( expanded );
 
     return catItem;
@@ -408,6 +409,7 @@ void ComponentList::slotItemClicked( QTreeWidgetItem* item, int  )
     if( dragDropMode() == QAbstractItemView::InternalMove ) return; // Moving items in the list
 
     TreeItem* treeItem = (TreeItem*)item;
+
     QMimeData* mimeData = new QMimeData;
     mimeData->setText( treeItem->name()+","+treeItem->compType() );
 
@@ -431,7 +433,9 @@ void ComponentList::slotContextMenu( const QPoint& point )
 {
     QMenu menu;
 
-    QAction* manageComponents = menu.addAction( QIcon(":/fileopen.png"),tr("Manage Components") );
+    m_clickedItem = (TreeItem*)this->itemAt( point );
+
+    QAction* manageComponents = menu.addAction( QIcon(":/fileopen.png"),tr("Manage Shortcuts") );
     connect( manageComponents, &QAction::triggered,
              this, &ComponentList::slotManageComponents, Qt::UniqueConnection );
 
@@ -440,8 +444,9 @@ void ComponentList::slotContextMenu( const QPoint& point )
 
 void ComponentList::slotManageComponents()
 {
-    m_mcDialog.initialize();
+    m_mcDialog.initialize( m_clickedItem );
     m_mcDialog.setVisible( true );
+    m_clickedItem = nullptr;
 }
 
 void ComponentList::search( QString filter )
@@ -463,11 +468,11 @@ void ComponentList::search( QString filter )
         }
         if( !cList.contains( item ) ) continue;
 
-        bool hidden = treeItem->isItemHidden();
+        //bool hidden = treeItem->isItemHidden();
         while( treeItem )
         {
-            treeItem->setHidden( hidden );
-            if( treeItem->childCount() > 0 && !hidden && !filter.isEmpty() )
+            treeItem->setHidden( false );
+            if( treeItem->childCount() > 0 /*&& !hidden*/ && !filter.isEmpty() )
                 treeItem->setExpanded( true );
 
             treeItem = treeItem->parentItem();
@@ -534,15 +539,15 @@ void ComponentList::readNodCfg( QDomNode* node, TreeItem* parent )
         }
     }
 
-    if( item ){
+    //if( item ){
         /*if( !m_oldConfig )
         {
             if( parent ) parent->addChild( item );
             else         addTopLevelItem( item );
         }*/
-        bool hidden = element.attribute("hidden") == "1";
-        item->setItemHidden( hidden );
-    }
+        //bool hidden = element.attribute("hidden") == "1";
+        //item->setItemHidden( hidden );
+    //}
 
     QDomNode child = node->firstChild(); // Recursively read child items
     while( !child.isNull() ){
