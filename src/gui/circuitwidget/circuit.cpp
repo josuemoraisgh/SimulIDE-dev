@@ -1027,7 +1027,7 @@ void Circuit::keyPressEvent( QKeyEvent* event )
         Linker::stopLinking();
         return;
     }
-    if( event->modifiers() & Qt::AltModifier ) // Create Component shortcut
+    if( event->modifiers() & Qt::AltModifier ) // Create Component from shortcut
     {
         QString str = event->text();
         if( str.isEmpty() )
@@ -1038,8 +1038,9 @@ void Circuit::keyPressEvent( QKeyEvent* event )
         QString compNam = ComponentList::self()->getComponent( str );
         if( !compNam.isEmpty() )
         {
-            QPoint cPos = QCursor::pos()-CircuitView::self()->mapToGlobal( QPoint(0,0) );
-            createComponent( compNam, compNam, cPos );
+            QPoint cPos = CircuitView::self()->mapFromGlobal( QCursor::pos() );
+            QPointF sPos = CircuitView::self()->mapToScene( cPos );
+            createComponent( compNam, compNam, sPos.toPoint() );
         }
     }
     if( event->modifiers() & Qt::ControlModifier )
