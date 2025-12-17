@@ -244,10 +244,12 @@ void ComponentList::loadXml( QString xmlFile )
 
         QString type = reader.attributes().value("type").toString();
         QString folder = reader.attributes().value("folder").toString();
-        QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
+
 
         while( reader.readNextStartElement() )
         {
+            QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
+
             if( reader.name() != "item") continue;
 
             QString name = reader.attributes().value("name").toString();
@@ -280,6 +282,7 @@ void ComponentList::loadXml( QString xmlFile )
                 }
                 m_dirFileList[ name ] = compFolder;
                 m_dataFileList[ name ] = xmlFile;   // Save xml File used to create this item
+
                 if( reader.attributes().hasAttribute("info") )
                     name += "???"+reader.attributes().value("info").toString();
 
