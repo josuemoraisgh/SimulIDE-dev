@@ -165,7 +165,7 @@ void MainWindow::writeSettings()
 
 QString MainWindow::loc()
 {
-    //if( m_lang == Chinese )    return "zh_CN";
+    if( m_lang == Chinese )    return "zh_CN";
     if( m_lang == Czech )      return "cz";
     //if( m_lang == Dutch )      return "nl";
     //if( m_lang == French )     return "fr";
@@ -185,9 +185,8 @@ QString MainWindow::loc()
 void MainWindow::setLoc( QString loc )
 {
     Langs lang = English;
-    //if     ( loc == "zh_CN" ) lang = Chinese;
-    //else
-        if( loc == "zh_TW" ) lang = Traditional_Chinese;
+    if     ( loc == "zh_CN" ) lang = Chinese;
+    else if( loc == "zh_TW" ) lang = Traditional_Chinese;
     else if( loc == "cz" )    lang = Czech;
     //else if( loc == "nl" )    lang = Dutch;
     //else if( loc == "fr" )    lang = French;
