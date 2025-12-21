@@ -1,57 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>AppDialog</class>
+ <connections/>
+ <resources/>
  <widget class="QDialog" name="AppDialog">
-  <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
-  </property>
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>673</width>
-    <height>570</height>
-   </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>320</width>
-    <height>100</height>
-   </size>
-  </property>
-  <property name="windowTitle">
-   <string>Settings</string>
-  </property>
-  <property name="sizeGripEnabled">
-   <bool>true</bool>
-  </property>
-  <property name="modal">
-   <bool>false</bool>
-  </property>
   <layout class="QHBoxLayout" name="mainLayout">
-   <property name="leftMargin">
-    <number>6</number>
-   </property>
-   <property name="topMargin">
-    <number>6</number>
-   </property>
-   <property name="rightMargin">
-    <number>6</number>
-   </property>
-   <property name="bottomMargin">
-    <number>6</number>
-   </property>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="spacing">
-      <number>9</number>
-     </property>
      <item>
       <widget class="QTabWidget" name="tabList">
        <property name="sizePolicy">
@@ -62,12 +17,12 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>200</width>
          <height>300</height>
+         <width>200</width>
         </size>
        </property>
        <property name="locale">
-        <locale language="C" country="AnyCountry"/>
+        <locale country="AnyCountry" language="C"/>
        </property>
        <property name="currentIndex">
         <number>1</number>
@@ -80,17 +35,8 @@
          <string>App</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_4">
-         <property name="spacing">
-          <number>9</number>
-         </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_13">
-           <property name="topMargin">
-            <number>9</number>
-           </property>
-           <property name="bottomMargin">
-            <number>4</number>
-           </property>
            <item>
             <widget class="QLabel" name="label_19">
              <property name="sizePolicy">
@@ -101,11 +47,11 @@
              </property>
              <property name="font">
               <font>
+               <bold>false</bold>
                <family>Ubuntu</family>
+               <italic>false</italic>
                <pointsize>12</pointsize>
                <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
               </font>
              </property>
              <property name="styleSheet">
@@ -135,6 +81,12 @@
              </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
+           <property name="bottomMargin">
+            <number>4</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -147,11 +99,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>10</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -170,9 +122,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_9">
-           <property name="topMargin">
-            <number>12</number>
-           </property>
            <item>
             <widget class="QLabel" name="label_3">
              <property name="text">
@@ -182,32 +131,16 @@
            </item>
            <item>
             <widget class="QComboBox" name="language">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="currentText">
-              <string notr="true">English</string>
-             </property>
              <item>
               <property name="text">
                <string notr="true">English</string>
               </property>
              </item>
+             <item>
+            <property name="text">
+             <string notr="true">简体中文</string>
+            </property>
+            </item>
              <item>
               <property name="text">
                <string notr="true">繁體中文</string>
@@ -233,8 +166,32 @@
                <string notr="true">Brasileiro</string>
               </property>
              </item>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <height>0</height>
+               <width>100</width>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <height>16777215</height>
+               <width>100</width>
+              </size>
+             </property>
+             <property name="currentText">
+              <string notr="true">English</string>
+             </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>12</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -256,14 +213,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>100</width>
                <height>0</height>
+               <width>100</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>100</width>
                <height>16777215</height>
+               <width>100</width>
               </size>
              </property>
              <property name="editable">
@@ -298,14 +255,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>100</width>
                <height>0</height>
+               <width>100</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>100</width>
                <height>16777215</height>
+               <width>100</width>
               </size>
              </property>
              <property name="specialValueText">
@@ -360,15 +317,15 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>35</width>
                <height>16777215</height>
+               <width>35</width>
               </size>
              </property>
              <property name="toolTip">
               <string>Select tool path</string>
              </property>
              <property name="locale">
-              <locale language="C" country="AnyCountry"/>
+              <locale country="AnyCountry" language="C"/>
              </property>
              <property name="text">
               <string notr="true">...</string>
@@ -390,8 +347,8 @@
           <widget class="Line" name="line_5">
            <property name="minimumSize">
             <size>
-             <width>0</width>
              <height>32</height>
+             <width>0</width>
             </size>
            </property>
            <property name="orientation">
@@ -409,11 +366,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>12</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -441,12 +398,15 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>20</width>
              <height>40</height>
+             <width>20</width>
             </size>
            </property>
           </spacer>
          </item>
+         <property name="spacing">
+          <number>9</number>
+         </property>
         </layout>
        </widget>
        <widget class="QWidget" name="circTab">
@@ -454,29 +414,8 @@
          <string>Circuit</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="spacing">
-          <number>6</number>
-         </property>
-         <property name="leftMargin">
-          <number>9</number>
-         </property>
-         <property name="topMargin">
-          <number>9</number>
-         </property>
-         <property name="rightMargin">
-          <number>9</number>
-         </property>
-         <property name="bottomMargin">
-          <number>9</number>
-         </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <property name="topMargin">
-            <number>9</number>
-           </property>
-           <property name="bottomMargin">
-            <number>9</number>
-           </property>
            <item>
             <widget class="QLabel" name="label_8">
              <property name="sizePolicy">
@@ -487,11 +426,11 @@
              </property>
              <property name="font">
               <font>
+               <bold>false</bold>
                <family>Ubuntu</family>
+               <italic>false</italic>
                <pointsize>12</pointsize>
                <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
               </font>
              </property>
              <property name="styleSheet">
@@ -521,6 +460,12 @@
              </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
+           <property name="bottomMargin">
+            <number>9</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -564,14 +509,14 @@
             <widget class="QSpinBox" name="canvasWidth">
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="suffix">
@@ -598,14 +543,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="text">
@@ -628,14 +573,14 @@
             <widget class="QSpinBox" name="canvasHeight">
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="suffix">
@@ -662,14 +607,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="text">
@@ -692,14 +637,14 @@
             <widget class="QSpinBox" name="fps">
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="suffix">
@@ -726,14 +671,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="text">
@@ -747,8 +692,8 @@
           <widget class="Line" name="line_6">
            <property name="minimumSize">
             <size>
-             <width>0</width>
              <height>32</height>
+             <width>0</width>
             </size>
            </property>
            <property name="orientation">
@@ -766,11 +711,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>12</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -808,8 +753,8 @@
           <widget class="Line" name="line_3">
            <property name="minimumSize">
             <size>
-             <width>0</width>
              <height>32</height>
+             <width>0</width>
             </size>
            </property>
            <property name="orientation">
@@ -827,11 +772,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>12</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -858,14 +803,14 @@
             <widget class="QSpinBox" name="backup">
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="suffix">
@@ -889,14 +834,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="text">
@@ -919,14 +864,14 @@
             <widget class="QSpinBox" name="undo_steps">
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="suffix">
@@ -950,14 +895,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>75</width>
                <height>0</height>
+               <width>75</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>75</width>
                <height>16777215</height>
+               <width>75</width>
               </size>
              </property>
              <property name="text">
@@ -974,21 +919,14 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>20</width>
              <height>40</height>
+             <width>20</width>
             </size>
            </property>
           </spacer>
          </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="simTab">
-        <attribute name="title">
-         <string>Simulation</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
          <property name="spacing">
-          <number>0</number>
+          <number>6</number>
          </property>
          <property name="leftMargin">
           <number>9</number>
@@ -1002,14 +940,15 @@
          <property name="bottomMargin">
           <number>9</number>
          </property>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="simTab">
+        <attribute name="title">
+         <string>Simulation</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout">
-           <property name="topMargin">
-            <number>9</number>
-           </property>
-           <property name="bottomMargin">
-            <number>18</number>
-           </property>
            <item>
             <widget class="QLabel" name="label_6">
              <property name="sizePolicy">
@@ -1020,11 +959,11 @@
              </property>
              <property name="font">
               <font>
+               <bold>false</bold>
                <family>Ubuntu</family>
+               <italic>false</italic>
                <pointsize>12</pointsize>
                <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
               </font>
              </property>
              <property name="styleSheet">
@@ -1052,125 +991,125 @@
                 <colorrole role="WindowText">
                  <brush brushstyle="SolidPattern">
                   <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                 <colorrole role="Text">
                  <brush brushstyle="SolidPattern">
                   <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                 <colorrole role="ButtonText">
                  <brush brushstyle="SolidPattern">
                   <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                 <colorrole role="PlaceholderText">
                  <brush brushstyle="SolidPattern">
                   <color alpha="128">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                </active>
-               <inactive>
-                <colorrole role="WindowText">
-                 <brush brushstyle="SolidPattern">
-                  <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
-                   <blue>127</blue>
-                  </color>
-                 </brush>
-                </colorrole>
-                <colorrole role="Text">
-                 <brush brushstyle="SolidPattern">
-                  <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
-                   <blue>127</blue>
-                  </color>
-                 </brush>
-                </colorrole>
-                <colorrole role="ButtonText">
-                 <brush brushstyle="SolidPattern">
-                  <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
-                   <blue>127</blue>
-                  </color>
-                 </brush>
-                </colorrole>
-                <colorrole role="PlaceholderText">
-                 <brush brushstyle="SolidPattern">
-                  <color alpha="128">
-                   <red>85</red>
-                   <green>0</green>
-                   <blue>127</blue>
-                  </color>
-                 </brush>
-                </colorrole>
-               </inactive>
                <disabled>
                 <colorrole role="WindowText">
                  <brush brushstyle="SolidPattern">
                   <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                 <colorrole role="Text">
                  <brush brushstyle="SolidPattern">
                   <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                 <colorrole role="ButtonText">
                  <brush brushstyle="SolidPattern">
                   <color alpha="255">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                 <colorrole role="PlaceholderText">
                  <brush brushstyle="SolidPattern">
                   <color alpha="128">
-                   <red>85</red>
-                   <green>0</green>
                    <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
                   </color>
                  </brush>
                 </colorrole>
                </disabled>
+               <inactive>
+                <colorrole role="WindowText">
+                 <brush brushstyle="SolidPattern">
+                  <color alpha="255">
+                   <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
+                  </color>
+                 </brush>
+                </colorrole>
+                <colorrole role="Text">
+                 <brush brushstyle="SolidPattern">
+                  <color alpha="255">
+                   <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
+                  </color>
+                 </brush>
+                </colorrole>
+                <colorrole role="ButtonText">
+                 <brush brushstyle="SolidPattern">
+                  <color alpha="255">
+                   <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
+                  </color>
+                 </brush>
+                </colorrole>
+                <colorrole role="PlaceholderText">
+                 <brush brushstyle="SolidPattern">
+                  <color alpha="128">
+                   <blue>127</blue>
+                   <green>0</green>
+                   <red>85</red>
+                  </color>
+                 </brush>
+                </colorrole>
+               </inactive>
               </palette>
              </property>
              <property name="font">
               <font>
+               <bold>false</bold>
                <family>Ubuntu</family>
+               <italic>false</italic>
                <pointsize>12</pointsize>
                <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
               </font>
              </property>
              <property name="styleSheet">
@@ -1200,6 +1139,12 @@
              </property>
             </widget>
            </item>
+           <property name="bottomMargin">
+            <number>18</number>
+           </property>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -1243,14 +1188,14 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>0</width>
              <height>0</height>
+             <width>0</width>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
              <height>20</height>
+             <width>16777215</width>
             </size>
            </property>
            <property name="cursor">
@@ -1281,12 +1226,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <property name="topMargin">
-            <number>9</number>
-           </property>
            <item>
             <widget class="QLabel" name="stepLabel_2">
              <property name="sizePolicy">
@@ -1310,8 +1249,8 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
                <height>16777215</height>
+               <width>16777215</width>
               </size>
              </property>
              <property name="suffix">
@@ -1330,27 +1269,6 @@
            </item>
            <item>
             <widget class="QComboBox" name="simStepUnitBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="currentText">
-              <string notr="true">ps</string>
-             </property>
-             <property name="currentIndex">
-              <number>0</number>
-             </property>
-             <property name="maxCount">
-              <number>10</number>
-             </property>
              <item>
               <property name="text">
                <string notr="true">ps</string>
@@ -1376,8 +1294,35 @@
                <string notr="true">s</string>
               </property>
              </item>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <height>0</height>
+               <width>0</width>
+              </size>
+             </property>
+             <property name="currentText">
+              <string notr="true">ps</string>
+             </property>
+             <property name="currentIndex">
+              <number>0</number>
+             </property>
+             <property name="maxCount">
+              <number>10</number>
+             </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -1390,8 +1335,8 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>280</width>
              <height>32</height>
+             <width>280</width>
             </size>
            </property>
            <property name="orientation">
@@ -1409,11 +1354,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>12</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -1429,12 +1374,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_14">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <property name="topMargin">
-            <number>9</number>
-           </property>
            <item>
             <widget class="QLabel" name="reactiveStep">
              <property name="sizePolicy">
@@ -1469,21 +1408,6 @@
            </item>
            <item>
             <widget class="QComboBox" name="reactStepUnitBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="currentText">
-              <string notr="true">ps</string>
-             </property>
-             <property name="currentIndex">
-              <number>0</number>
-             </property>
-             <property name="maxCount">
-              <number>10</number>
-             </property>
              <item>
               <property name="text">
                <string notr="true">ps</string>
@@ -1509,18 +1433,33 @@
                <string notr="true">s</string>
               </property>
              </item>
+             <property name="currentText">
+              <string notr="true">ps</string>
+             </property>
+             <property name="currentIndex">
+              <number>0</number>
+             </property>
+             <property name="maxCount">
+              <number>10</number>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
           </layout>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_20">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <property name="topMargin">
-            <number>9</number>
-           </property>
            <item>
             <widget class="QLabel" name="realStep">
              <property name="sizePolicy">
@@ -1558,24 +1497,6 @@
            </item>
            <item>
             <widget class="QComboBox" name="realStepUnitBox">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="currentText">
-              <string notr="true">ps</string>
-             </property>
-             <property name="currentIndex">
-              <number>0</number>
-             </property>
-             <property name="maxCount">
-              <number>10</number>
-             </property>
              <item>
               <property name="text">
                <string notr="true">ps</string>
@@ -1601,16 +1522,40 @@
                <string notr="true">s</string>
               </property>
              </item>
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="currentText">
+              <string notr="true">ps</string>
+             </property>
+             <property name="currentIndex">
+              <number>0</number>
+             </property>
+             <property name="maxCount">
+              <number>10</number>
+             </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
           </layout>
          </item>
          <item>
           <widget class="Line" name="line">
            <property name="minimumSize">
             <size>
-             <width>280</width>
              <height>32</height>
+             <width>280</width>
             </size>
            </property>
            <property name="orientation">
@@ -1628,11 +1573,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>12</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -1648,9 +1593,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <property name="topMargin">
-            <number>9</number>
-           </property>
            <item>
             <widget class="QLabel" name="label_14">
              <property name="sizePolicy">
@@ -1674,14 +1616,14 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>100</width>
                <height>0</height>
+               <width>100</width>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
                <height>16777215</height>
+               <width>16777215</width>
               </size>
              </property>
              <property name="suffix">
@@ -1695,6 +1637,9 @@
              </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -1707,8 +1652,8 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>280</width>
              <height>32</height>
+             <width>280</width>
             </size>
            </property>
            <property name="orientation">
@@ -1726,11 +1671,11 @@
            </property>
            <property name="font">
             <font>
+             <bold>false</bold>
              <family>Ubuntu</family>
+             <italic>false</italic>
              <pointsize>12</pointsize>
              <weight>50</weight>
-             <italic>false</italic>
-             <bold>false</bold>
             </font>
            </property>
            <property name="styleSheet">
@@ -1743,9 +1688,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <property name="topMargin">
-            <number>9</number>
-           </property>
            <item>
             <widget class="QLabel" name="label_2">
              <property name="text">
@@ -1763,8 +1705,8 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>100</width>
                <height>0</height>
+               <width>100</width>
               </size>
              </property>
              <property name="suffix">
@@ -1775,6 +1717,9 @@
              </property>
             </widget>
            </item>
+           <property name="topMargin">
+            <number>9</number>
+           </property>
           </layout>
          </item>
          <item>
@@ -1784,16 +1729,34 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>20</width>
              <height>40</height>
+             <width>20</width>
             </size>
            </property>
           </spacer>
          </item>
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>9</number>
+         </property>
+         <property name="topMargin">
+          <number>9</number>
+         </property>
+         <property name="rightMargin">
+          <number>9</number>
+         </property>
+         <property name="bottomMargin">
+          <number>9</number>
+         </property>
         </layout>
        </widget>
       </widget>
      </item>
+     <property name="spacing">
+      <number>9</number>
+     </property>
     </layout>
    </item>
    <item>
@@ -1806,8 +1769,8 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>290</width>
        <height>0</height>
+       <width>290</width>
       </size>
      </property>
      <property name="acceptDrops">
@@ -1834,8 +1797,50 @@ p, li { white-space: pre-wrap; }
      </property>
     </widget>
    </item>
+   <property name="rightMargin">
+    <number>6</number>
+   </property>
+   <property name="bottomMargin">
+    <number>6</number>
+   </property>
+   <property name="leftMargin">
+    <number>6</number>
+   </property>
+   <property name="topMargin">
+    <number>6</number>
+   </property>
   </layout>
+  <property name="geometry">
+   <rect>
+    <height>570</height>
+    <width>673</width>
+    <x>0</x>
+    <y>0</y>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <height>100</height>
+    <width>320</width>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Settings</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <property name="modal">
+   <bool>false</bool>
+  </property>
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
  </widget>
- <resources/>
- <connections/>
 </ui>

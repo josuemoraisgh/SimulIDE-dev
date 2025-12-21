@@ -14,6 +14,7 @@
         <file alias="simulide_es.qm">../resources/qm/simulide_es.qm</file>
         <file alias="simulide_pt_BR.qm">../resources/qm/simulide_pt_BR.qm</file>
         <file alias="simulide_zh_TW.qm">../resources/qm/simulide_zh_TW.qm</file>
+        <file alias="simulide_zh_CN.qm">../resources/qm/simulide_zh_CN.qm</file>
 
         <file alias="qt_cz.qm">../resources/qm/qt_cz.qm</file>
         <file alias="qt_de.qm">../resources/qm/qt_de.qm</file>
@@ -21,6 +22,7 @@
         <file alias="qt_es.qm">../resources/qm/qt_es.qm</file>
         <file alias="qt_pt_BR.qm">../resources/qm/qt_pt_BR.qm</file>
         <file alias="qt_zh_TW.qm">../resources/qm/qt_zh_TW.qm</file>
+        <file alias="qt_zh_CN.qm">../resources/qm/qt_zh_CN.qm</file>
 
         <file alias="angelscript.xml">../resources/data/codeeditor/compilers/compilers/angelscript.xml</file>
         <file alias="arduino.xml">../resources/data/codeeditor/compilers/compilers/arduino.xml</file>
