@@ -66,6 +66,17 @@ void Switch::stamp()
     onbuttonclicked();
 }
 
+void Switch::setLinkedValue( double v, int i )
+{
+    int vInt = v;
+    bool checked = Switch::checked();
+
+    bool new_state = vInt == 0;
+    if (checked != new_state) {
+        Switch::setChecked(new_state);
+    }
+}
+
 void Switch::keyEvent( QString key, bool pressed )
 {
     if( key == m_key )
