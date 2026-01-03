@@ -1802,7 +1802,7 @@ No se pudo encontrar el archivo:
     <message>
         <location filename="../../src/components/other/dial.cpp" line="203"/>
         <source>Link to Component</source>
-        <translation>Enalzar a Componente</translation>
+        <translation>Enlazar a Componente</translation>
     </message>
     <message>
         <location filename="../../src/components/other/dial.cpp" line="69"/>
@@ -3499,7 +3499,7 @@ No se pudo encontrar el archivo:
     <message>
         <location filename="../../src/components/outputs/leds/led.cpp" line="69"/>
         <source>Link to Component</source>
-        <translation>Enalzar a Componente</translation>
+        <translation>Enlazar a Componente</translation>
     </message>
 </context>
 <context>
@@ -3761,7 +3761,7 @@ No se pudo encontrar el archivo:
     <message>
         <location filename="../../src/components/linkercomponent.cpp" line="51"/>
         <source>Link to Component</source>
-        <translation>Enalzar a Componente</translation>
+        <translation>Enlazar a Componente</translation>
     </message>
 </context>
 <context>
@@ -4107,7 +4107,7 @@ No se pudo encontrar el archivo:
     <message>
         <location filename="../../src/microsim/mcu.cpp" line="553"/>
         <source>Link to Component</source>
-        <translation>Enalzar a Componente</translation>
+        <translation>Enlazar a Componente</translation>
     </message>
     <message>
         <location filename="../../src/microsim/mcu.cpp" line="238"/>
