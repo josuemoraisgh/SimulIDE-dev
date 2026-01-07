@@ -15,7 +15,7 @@ struct funcPin
     QString label;
 };
 
-class esp32Pin : public IoPin, public QemuModule
+class esp32Pin : public IoPin//, public QemuModule
 {
     friend class Esp32;
 

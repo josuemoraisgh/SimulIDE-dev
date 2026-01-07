@@ -7,6 +7,11 @@
 
 #include "qemutwi.h"
 
+struct esp32TwiArena_t
+{
+    uint8_t state;
+};
+
 class Esp32Twi : public QemuTwi
 {
     friend class I2cRunner;
@@ -29,5 +34,7 @@ class Esp32Twi : public QemuTwi
         void writeCTR( uint16_t data );
 
         void setTwiState( twiState_t state ) override;
+
+        bool m_opDone;
 };
 

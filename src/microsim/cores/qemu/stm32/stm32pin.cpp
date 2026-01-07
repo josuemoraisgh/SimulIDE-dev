@@ -8,9 +8,9 @@
 
 #include "stm32pin.h"
 
-Stm32Pin::Stm32Pin( uint8_t port, int i, QString id, QemuDevice* mcu )
+Stm32Pin::Stm32Pin( uint8_t port, int i, QString id, Component* mcu )
         : IoPin( 0, QPoint(0,0), id, 0, mcu, input )
-        , QemuModule( mcu, i )
+        //, QemuModule( mcu, i )
 {
     //m_id     = id;
     m_port   = port;
@@ -66,18 +66,19 @@ void Stm32Pin::voltChanged()
 
     if( oldState == newState ) return;
 
-    while( m_arena->qemuAction )        // Wait for previous action executed
-    {
-        ; /// TODO: add timeout
-    }
-    m_arena->data8 = m_port-1;
-    m_arena->mask8 = m_number;
-    m_arena->data16 = newState;
-    m_arena->qemuAction = SIM_GPIO_IN;
+    /// while( m_arena->qemuAction )        // Wait for previous action executed
+    /// {
+    ///     ; /// TODO: add timeout
+    /// }
+    /// m_arena->data8 = m_port-1;
+    /// m_arena->mask8 = m_number;
+    /// m_arena->data16 = newState;
+    /// m_arena->qemuAction = SIM_GPIO_IN;
 }
 
 void Stm32Pin::setPinMode( pinMode_t mode )
 {
+    //qDebug() << "Stm32Pin::setPinMode" << this->m_id << mode;
     IoPin::setPinMode( mode );
     changeCallBack( this, mode == input );
 }

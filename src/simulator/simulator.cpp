@@ -249,13 +249,13 @@ void Simulator::runCircuit()
 
     while( true )          // Simulator event loop
     {
-        if( QemuDevice::self() )
-        {
-            if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
-            else               nextTime = m_circTime + 1000000000;
+        //if( QemuDevice::self() )
+        //{
+        //    if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
+        //    else               nextTime = m_circTime + 1000000000;
 
-            QemuDevice::self()->runToTime( nextTime ); // This will add events
-        }
+        //    QemuDevice::self()->runToTime( nextTime ); // This will add events
+        //}
         if( !m_firstEvent ) break;
 
 
@@ -522,7 +522,8 @@ void Simulator::clearEventList()
 {
     m_firstEvent = nullptr;
 }
-void Simulator::addEvent( uint64_t time, eElement* el )
+
+void Simulator::addEventAt( uint64_t time, eElement* el )
 {
     if( m_state < SIM_STARTING ) return;
 
@@ -532,7 +533,6 @@ void Simulator::addEvent( uint64_t time, eElement* el )
         return;
     }
 
-    time += m_circTime;
     eElement* last  = nullptr;
     eElement* event = m_firstEvent;
 

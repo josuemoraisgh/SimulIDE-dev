@@ -11,25 +11,39 @@
 class Stm32Usart : public QemuUsart
 {
     public:
-        Stm32Usart( QemuDevice* mcu, QString name, int number );
+        Stm32Usart( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd );
         ~Stm32Usart();
 
-        enum stm32UsartAction_t{
-            STM32_USART_CR1=1,
-            STM32_USART_CR2,
-//            STM32_USART_READ,
-            STM32_USART_WRITE,
-            STM32_USART_BAUD,
-            STM32_USART_ENABLE,
-        };
+        void reset() override;
 
-        void doAction() override;
+        void freqChanged() override;
 
 
-        //void endTransaction() override;
+        void frameSent( uint8_t data ) override;
+        void byteReceived( uint8_t data ) override;
 
     private:
-        void writeCR1( uint16_t data );
-        void writeCR2( uint16_t data );
+        void writeRegister() override;
+        void readRegister() override;
+
+        void updateIrq();
+        void sendNext();
+
+        void writeCR1( uint16_t newCR1 );
+        void writeCR2( uint16_t newCR2 );
+        void writeCR3( uint16_t newCR3 );
+        void writeSR(  uint16_t newSR );
+        void writeDR(  uint16_t newDR );
+        void writeBRR( uint16_t newBRR );
+
+        uint16_t m_DR;
+        uint16_t m_SR;
+        double   m_divider;
+
+        uint16_t m_intEnable;
+        uint16_t m_irqLevel;
+        uint16_t m_oreRead;
+
+        uint8_t m_interrupt;
 };
 

@@ -43,7 +43,8 @@ class Simulator : public QObject
 
  static Simulator* self() { return m_pSelf; }
 
-        void addEvent( uint64_t time, eElement* el );
+        void addEventAt( uint64_t time, eElement* el );
+        inline void addEvent( uint64_t time, eElement* el ){ addEventAt( time+m_circTime, el ); }
         void cancelEvents( eElement* el );
 
         void startSim( bool paused=false );

@@ -28,33 +28,38 @@ void Esp32Usart::connected( bool c )
 
 void Esp32Usart::doAction()
 {
-    //if( !m_enabled ) enable( true );
-    uint8_t  action = m_arena->data8;
-    uint32_t  data  = m_arena->data32;
-    //qDebug() << "Esp32Usart::doAction Uart:"<< m_number << "action:"<< action<< "data:" << data;
-    switch( action ) {
-        case ESP32_USART_CR0:   writeCR0( data ); break;
-        case ESP32_USART_CR1:   writeCR1( data ); break;
-      //case ESP32_USART_READ:  /*readByte( data );*/ break;
-        case ESP32_USART_WRITE:{ //qDebug() << "Esp32Usart::doAction send Byte:"<<m_number<<QChar(data);
-            sendByte( data );
-            uint64_t nextTime = Simulator::self()->circTime()+m_sender->getFrameTime();
-            //qDebug() << "Esp32Usart::doAction send Byte:"<< nextTime;
-            m_arena->qemuEvent = nextTime;
-            //m_device->addEvent( nextTime, this );
-        }break;
-        case ESP32_USART_BAUD:  setBaudRate( data ); break; //qDebug() << "Esp32 Usart" << m_number <<"Baudrate:"<< data; break;
+    ////if( !m_enabled ) enable( true );
+    //uint8_t  action = m_arena->data8;
+    //uint32_t  data  = m_arena->data32;
+    ////qDebug() << "Esp32Usart::doAction Uart:"<< m_number << "action:"<< action<< "data:" << data;
+    //switch( action ) {
+    //    case ESP32_USART_CR0:   writeCR0( data ); break;
+    //    case ESP32_USART_CR1:   writeCR1( data ); break;
+    //  //case ESP32_USART_READ:  /*readByte( data );*/ break;
+    //    case ESP32_USART_WRITE:{ //qDebug() << "Esp32Usart::doAction send Byte:"<<m_number<<QChar(data);
+    //        sendByte( data );
+    //        //uint64_t nextTime = Simulator::self()->circTime()+m_sender->getFrameTime();
+    //        //qDebug() << "Esp32Usart::doAction send Byte:"<< nextTime;
+    //        //m_arena->qemuEvent = nextTime;
+    //        //m_device->addEvent( nextTime, this );
+    //    }break;
+    //    case ESP32_USART_BAUD:  setBaudRate( data ); break; //qDebug() << "Esp32 Usart" << m_number <<"Baudrate:"<< data; break;
 
-        default: break;
-    }
+    //    default: break;
+    //}
 }
 
 void Esp32Usart::writeCR0( uint32_t data )
 {
     uint8_t parityOdd = (data & 1<< 0) ? 1 : 0;
     uint8_t parityEn  = (data & 1<< 1) ? 1 : 0;
-    uint8_t bitNum    = (data & 0b001100) >> 2;
-    uint8_t stopbits  = (data & 0b110000) >> 4;
+
+    if( parityEn ) m_parity = parityOdd ? parODD : parEVEN;
+    else           m_parity = parNONE;
+
+    setDataBits( (data & 0b001100) >> 2 );
+    m_stopBits = (data & 0b110000) >> 4;
+
     //uint8_t enableRx = (data & 1<< 2) ? 1 : 0;
     //uint8_t enableTx = (data & 1<< 3) ? 1 : 0;
     //uint8_t enabled  = (data & 1<<13) ? 1 : 0;

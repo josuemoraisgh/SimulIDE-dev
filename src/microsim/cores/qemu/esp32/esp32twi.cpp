@@ -18,50 +18,57 @@ Esp32Twi::~Esp32Twi(){}
 
 void Esp32Twi::reset()
 {
+    m_opDone = true;
 }
 
 void Esp32Twi::doAction()
 {
-    uint32_t  data = m_arena->data32;
-    uint8_t action = m_arena->data8;
+    //uint32_t  data = m_arena->data32;
+    //uint8_t action = m_arena->data8;
 
-    if( !m_clkPin ) m_clkPin = m_scl; /// FIXME
+    //if( !m_clkPin ) m_clkPin = m_scl; /// FIXME
 
-    uint64_t now = Simulator::self()->circTime();
+    ////uint64_t now = Simulator::self()->circTime();
+    //if( !m_opDone ) qDebug() << "Esp32Twi::doAction ERROR----------------------------";
+    //switch( action ) {
+    //case QEMU_I2C_START: //qDebug() << "Esp32Twi Start" << now<<now+m_clockPeriod;
+    //    masterStart();
+    //    m_opDone = false;
+    //    //m_arena->qemuEvent = now+m_clockPeriod;
+    //    break;
+    //case QEMU_I2C_START_READ: //qDebug() << "Esp32Twi Read"  << now<<now+9*m_clockPeriod*2;
+    //    masterWrite( data<<1, true, false );
+    //    m_opDone = false;
+    //    //m_arena->qemuEvent = now+19*m_clockPeriod;
+    //    break;
+    //case QEMU_I2C_START_WRITE: //qDebug() << "Esp32Twi Write"<< now<<now+19*m_clockPeriod;
+    //    masterWrite( data<<1, true, true );
+    //    m_opDone = false;
+    //    //m_arena->qemuEvent = now+19*m_clockPeriod;
+    //    break;
+    //case QEMU_I2C_STOP: //qDebug() << "Esp32Twi Stop"  << now<<now+m_clockPeriod*3;
+    //    masterStop();
+    //    m_opDone = false;
+    //    //m_arena->qemuEvent = now+m_clockPeriod*3;
+    //    break;
+    //case QEMU_I2C_WRITE: //qDebug() << "Esp32Twi write" << now<<now+19*m_clockPeriod;
+    //    masterWrite( data, false, true );
+    //    m_opDone = false;
+    //    //m_arena->qemuEvent = now+19*m_clockPeriod;
+    //    break;
+    //case QEMU_I2C_READ: //qDebug() << "Esp32Twi read"  << data;
+    //    masterRead( true );
+    //    break;
+    //case QEMU_I2C_FREQ: //qDebug() << "Esp32Twi Freq"  << data;
+    //    m_clockPeriod = data*1000/2;
+    //    //setFreqKHz( data/1000);
+    //    break;
+    //case ESP32_TWI_CTR: //qDebug() << "Esp32Twi CTR"   << data;
+    //    writeCTR( data );
+    //    break;
 
-    switch( action ) {
-    case QEMU_I2C_START: qDebug() << "Esp32Twi Start" << now<<now+m_clockPeriod;
-        masterStart();
-        m_arena->qemuEvent = now+m_clockPeriod;
-        break;
-    case QEMU_I2C_START_READ: qDebug() << "Esp32Twi Read"  << now<<now+9*m_clockPeriod*2;
-        masterWrite( data<<1, true, false );
-        m_arena->qemuEvent = now+9*m_clockPeriod*2;
-        break;
-    case QEMU_I2C_START_WRITE: qDebug() << "Esp32Twi Write"<< now<<now+19*m_clockPeriod;
-        masterWrite( data<<1, true, true );
-        m_arena->qemuEvent = now+19*m_clockPeriod;
-        break;
-    case QEMU_I2C_STOP: qDebug() << "Esp32Twi Stop"  << now<<now+m_clockPeriod;
-        masterStop();
-        m_arena->qemuEvent = now+m_clockPeriod;
-        break;
-    case QEMU_I2C_WRITE: qDebug() << "Esp32Twi write" << now<<now+19*m_clockPeriod;
-        masterWrite( data, false, true );
-        m_arena->qemuEvent = now+19*m_clockPeriod;
-        break;
-    case QEMU_I2C_READ: //qDebug() << "Esp32Twi read"  << data;
-        masterRead( true );
-        break;
-    case QEMU_I2C_FREQ: qDebug() << "Esp32Twi Freq"  << data/1000;
-        setFreqKHz( data/1000);
-        break;
-    case ESP32_TWI_CTR: //qDebug() << "Esp32Twi CTR"   << data;
-        writeCTR( data );
-        break;
-
-    default: break;
-    }
+    //default: break;
+    //}
 }
 
 void Esp32Twi::writeCTR( uint16_t data )
@@ -88,9 +95,49 @@ void Esp32Twi::writeCTR( uint16_t data )
 void Esp32Twi::setTwiState( twiState_t state )
 {
     TwiModule::setTwiState( state );
+    m_opDone = true;
 
-    qDebug() << "Esp32Twi::setTwiState" << Simulator::self()->circTime();
-    m_arena->qemuEvent = state;
+    /// uint8_t ackT = 1;
+    /// uint8_t ackR = 1;
+    ///
+    /// switch( state )
+    /// {                        // MASTER
+    /// case TWI_START    : //fall through // START transmitted
+    /// case TWI_REP_START:
+    ///     //printf("Qemu: esp32_i2c_event START %i\n", s->number); fflush( stdout );
+    ///     break;     // Repeated START transmitted
+    ///
+    /// case TWI_MTX_ADR_ACK  : ackT = 0; //fall through // SLA+W transmitted, ACK  received
+    /// case TWI_MTX_ADR_NACK :
+    ///     //printf("Qemu: esp32_i2c_event ADR %i %i\n", s->number, ackT ); fflush( stdout );
+    ///     break; // SLA+W transmitted, NACK received
+    /// case TWI_MTX_DATA_ACK : ackT = 0; //fall through // Data transmitted, ACK  received
+    /// case TWI_MTX_DATA_NACK:
+    ///     //printf("Qemu: esp32_i2c_event DATA %i %i\n", s->number, ackT ); fflush( stdout );
+    ///     break; // Data transmitted, NACK received
+    ///
+    /// case TWI_MRX_ADR_ACK  : ackT = 0; //fall through // SLA+R transmitted, ACK  received
+    /// case TWI_MRX_ADR_NACK :               break; // SLA+R transmitted, NACK received
+    /// case TWI_MRX_DATA_ACK : ackR = 0; //fall through // Data received, ACK  returned
+    /// case TWI_MRX_DATA_NACK: s->bytesRx--; break; // Data received, NACK returned
+    ///
+    ///     // SLAVE
+    /// case TWI_SRX_ADR_ACK      : ackR = 0; break; // Own SLA+W received, ACK returned
+    /// case TWI_SRX_GEN_ACK      : ackR = 0; break; // General call received, ACK returned
+    /// case TWI_SRX_ADR_DATA_ACK : ackR = 0; break; // data received, ACK returned
+    /// case TWI_SRX_ADR_DATA_NACK:           break; // data received, NACK returned
+    /// case TWI_SRX_GEN_DATA_ACK : ackR = 0; break; // general call; data received, ACK  returned
+    /// case TWI_SRX_GEN_DATA_NACK:           break; // general call; data received, NACK returned
+    ///
+    /// case TWI_STX_ADR_ACK      : ackR = 0; break; // Own SLA+R received, ACK returned
+    /// case TWI_STX_DATA_ACK     : ackT = 0;        // Data transmitted, ACK received
+    /// case TWI_STX_DATA_NACK    :           break; // Data transmitted, NACK received
+    ///
+    /// case TWI_NO_STATE:                    break; // STOP transmitted, Transmission ended
+    /// }
+
+    /// //qDebug() << "Esp32Twi::setTwiState" << Simulator::self()->circTime();
+    /// m_arena->qemuEvent = state;
 
     //while( m_arena->qemuAction )        // Wait for previous action executed
     //{

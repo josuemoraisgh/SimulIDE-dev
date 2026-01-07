@@ -353,7 +353,6 @@ void TwiModule::setFreqKHz( double f )
     m_freq = f*1e3;
     double stepsPerS = 1e12;
     m_clockPeriod = stepsPerS/m_freq/2;
-    qDebug() << "TwiModule::setFreqKHz m_clockPeriod" << m_clockPeriod << f;
 }
 void TwiModule::setSdaPin( IoPin* pin ) { m_sda = pin; }
 void TwiModule::setSclPin( IoPin* pin )

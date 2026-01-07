@@ -137,141 +137,141 @@ void Esp32::stamp()
 
 void Esp32::readInputs()
 {
-    //qDebug("readInputs");
-    int n = m_arena->data8;
-    int start = n ? 32 : 0;
-    int end   = n ? 40 : 32;
+    ////qDebug("readInputs");
+    //int n = m_arena->data8;
+    //int start = n ? 32 : 0;
+    //int end   = n ? 40 : 32;
 
-    int i = 0;
-    uint32_t inputVal = 0;
-    for( int pin=start; pin<end; ++pin )
-    {
-        IoPin* ioPin =  m_espPad[pin];
+    //int i = 0;
+    //uint32_t inputVal = 0;
+    //for( int pin=start; pin<end; ++pin )
+    //{
+    //    IoPin* ioPin =  m_espPad[pin];
 
-        if( ioPin )
-        {
-            uint32_t mask = 1<<i;
-            bool state = ioPin->getInpState();
-            if( state ) inputVal |= mask;
-        }
-        i++;
-        //if( state != ((*m_nextInput & mask)!=0) ) *m_maskInput |= mask; // Pin changed
-    }
-    m_arena->mask32 = inputVal ^ m_arena->data32;
-    m_arena->data32 = inputVal;
+    //    if( ioPin )
+    //    {
+    //        uint32_t mask = 1<<i;
+    //        bool state = ioPin->getInpState();
+    //        if( state ) inputVal |= mask;
+    //    }
+    //    i++;
+    //    //if( state != ((*m_nextInput & mask)!=0) ) *m_maskInput |= mask; // Pin changed
+    //}
+    //m_arena->mask32 = inputVal ^ m_arena->data32;
+    //m_arena->data32 = inputVal;
 }
 
 void Esp32::matrixFunc( uint8_t out )
 {
-    int pin  = m_arena->data8 & 0x3F;
-    if( pin >= m_gpioSize ) return;
-    esp32Pin* espPin = m_espPad[pin];
-    if( !espPin )
-        return;
+    //int pin  = m_arena->data8 & 0x3F;
+    //if( pin >= m_gpioSize ) return;
+    //esp32Pin* espPin = m_espPad[pin];
+    //if( !espPin )
+    //    return;
 
-    uint16_t value = m_arena->data16;
-    uint16_t function = value & 0x1FF;
+    //uint16_t value = m_arena->data16;
+    //uint16_t function = value & 0x1FF;
 
-    funcPin fp = { nullptr, nullptr, "---" };;
+    //funcPin fp = { nullptr, nullptr, "---" };;
 
-    if      ( function < 256 ) fp = out ? m_matrixOut[function] : m_matrixIn[function];
-    else if( function == 256 ) fp = { nullptr, &m_ioPin[pin], ""};
+    //if      ( function < 256 ) fp = out ? m_matrixOut[function] : m_matrixIn[function];
+    //else if( function == 256 ) fp = { nullptr, &m_ioPin[pin], ""};
 
-    if( fp.label == "---") return;
+    //if( fp.label == "---") return;
 
-    //qDebug() << "Esp32::matrixFunc"<< pin << function;
-    espPin->setMatrixFunc( value, fp );
+    ////qDebug() << "Esp32::matrixFunc"<< pin << function;
+    //espPin->setMatrixFunc( value, fp );
 }
 
 void Esp32::doAction()
 {
-    //qDebug() << "Esp32::doAction";
-    switch( m_arena->simuAction)
-    {
-        case ESP_GPIO_OUT:       // Set Output
-        {
-            //qDebug() << "i"<<m_arena->nextState<<eventEnter;
-            uint32_t state = m_arena->data32;
-            for( uint i=0; i<32; ++i )
-            {
-                IoPin* pin = m_ioPin[i];
-                if( !pin ) continue;
-                uint32_t mask = 1<<i;
-                uint32_t oldState = m_state & mask;
-                uint32_t newState = state & mask;
-                if( oldState == newState ) continue;
-                //qDebug() << "outChanged" << i << newState;
-                pin->setOutState( newState );
-            }
-            m_state = m_arena->data32;
-            //qDebug() << "o"<<m_state<<eventEnter;
-        } break;
-        case ESP_GPIO_DIR:       // Set Direction
-        {
-            for( uint i=0; i<32; ++i ) // GPIO pads 34-39 are input-only.
-            {
-                IoPin* pin =  m_espPad[i];
-                if( !pin ) continue;
-                uint32_t mask =1<<i;
-                //if( m_arena->inputEn & mask ) continue;
+    ////qDebug() << "Esp32::doAction";
+    //switch( m_arena->simuAction)
+    //{
+    //    case ESP_GPIO_OUT:       // Set Output
+    //    {
+    //        //qDebug() << "i"<<m_arena->nextState<<eventEnter;
+    //        uint32_t state = m_arena->data32;
+    //        for( uint i=0; i<32; ++i )
+    //        {
+    //            IoPin* pin = m_ioPin[i];
+    //            if( !pin ) continue;
+    //            uint32_t mask = 1<<i;
+    //            uint32_t oldState = m_state & mask;
+    //            uint32_t newState = state & mask;
+    //            if( oldState == newState ) continue;
+    //            //qDebug() << "outChanged" << i << newState;
+    //            pin->setOutState( newState );
+    //        }
+    //        m_state = m_arena->data32;
+    //        //qDebug() << "o"<<m_state<<eventEnter;
+    //    } break;
+    //    case ESP_GPIO_DIR:       // Set Direction
+    //    {
+    //        for( uint i=0; i<32; ++i ) // GPIO pads 34-39 are input-only.
+    //        {
+    //            IoPin* pin =  m_espPad[i];
+    //            if( !pin ) continue;
+    //            uint32_t mask =1<<i;
+    //            //if( m_arena->inputEn & mask ) continue;
 
-                uint32_t oldDirec = m_direc & mask;
-                uint32_t newDirec = m_arena->data32 & mask;
-                if( oldDirec == newDirec ) continue;
+    //            uint32_t oldDirec = m_direc & mask;
+    //            uint32_t newDirec = m_arena->data32 & mask;
+    //            if( oldDirec == newDirec ) continue;
 
-                if( newDirec ) pin->setPinMode( output );
-                else           pin->setPinMode( input );
-                //qDebug() << "dirChanged" << i << newDirec;
-                //pin->changeCallBack( this, !newDirec ); // CallBack only on Inputs
-            }
-            m_direc = m_arena->data32;
-        } break;
-        case ESP_GPIO_IN:                  // Read Inputs
-        {
-            readInputs();
-            //m_arena->simuAction= 0;
-        } break;
-        case ESP_IOMUX:
-        {
-            // Sleep bits 0-6
-            // PD bit 7
-            // PU bit 8
-            // IE bit 9
-            // Drive bits 10-11
-            // function bits 12-14
+    //            if( newDirec ) pin->setPinMode( output );
+    //            else           pin->setPinMode( input );
+    //            //qDebug() << "dirChanged" << i << newDirec;
+    //            //pin->changeCallBack( this, !newDirec ); // CallBack only on Inputs
+    //        }
+    //        m_direc = m_arena->data32;
+    //    } break;
+    //    case ESP_GPIO_IN:                  // Read Inputs
+    //    {
+    //        readInputs();
+    //        //m_arena->simuAction= 0;
+    //    } break;
+    //    case ESP_IOMUX:
+    //    {
+    //        // Sleep bits 0-6
+    //        // PD bit 7
+    //        // PU bit 8
+    //        // IE bit 9
+    //        // Drive bits 10-11
+    //        // function bits 12-14
 
-            int pin = m_arena->data8;
-            esp32Pin* ioPin =  m_espPad[pin];
-            if( !ioPin ) return;
+    //        int pin = m_arena->data8;
+    //        esp32Pin* ioPin =  m_espPad[pin];
+    //        if( !ioPin ) return;
 
-            uint64_t value = m_arena->data32;
+    //        uint64_t value = m_arena->data32;
 
-            ioPin->setIoMuxFunc( value );
+    //        ioPin->setIoMuxFunc( value );
 
-        } break;
-        case ESP_MATRIX_IN:  matrixFunc( 0 );
-            break;
-        case ESP_MATRIX_OUT: matrixFunc( 1 );
-            break;
-        case SIM_I2C:
-        {
-            uint16_t id = m_arena->data16;
-            //qDebug() << "Stm32::doAction SIM_I2C:"<< id ;
-            if( id < m_i2cN ) m_i2cs[id]->doAction();
-        } break;
-        case SIM_SPI:
-        {
-            uint16_t id = m_arena->data16;
-            //qDebug() << "Stm32::doAction SIM_SPI:"<< id ;
-            if( id < m_spiN ) m_spis[id]->doAction();
-        }break;
-        case SIM_USART:
-        {
-            uint16_t id = m_arena->data16;
-            //qDebug() << "Stm32::doAction SIM_USART:"<< id ;
-            if( id < m_usartN ) m_usarts[id]->doAction();
-        }break;
-    }
+    //    } break;
+    //    case ESP_MATRIX_IN:  matrixFunc( 0 );
+    //        break;
+    //    case ESP_MATRIX_OUT: matrixFunc( 1 );
+    //        break;
+    //    case SIM_I2C:
+    //    {
+    //        uint16_t id = m_arena->data16;
+    //        //qDebug() << "Stm32::doAction SIM_I2C:"<< id ;
+    //        if( id < m_i2cN ) m_i2cs[id]->doAction();
+    //    } break;
+    //    case SIM_SPI:
+    //    {
+    //        uint16_t id = m_arena->data16;
+    //        //qDebug() << "Stm32::doAction SIM_SPI:"<< id ;
+    //        if( id < m_spiN ) m_spis[id]->doAction();
+    //    }break;
+    //    case SIM_USART:
+    //    {
+    //        uint16_t id = m_arena->data16;
+    //        //qDebug() << "Stm32::doAction SIM_USART:"<< id ;
+    //        if( id < m_usartN ) m_usarts[id]->doAction();
+    //    }break;
+    //}
 }
 
 Pin* Esp32::addPin( QString id, QString type, QString label,
@@ -334,10 +334,10 @@ void Esp32::createMatrix()
     m_matrixIn[6]   = { nullptr, nullptr, "SPICS1" }; // SPICS1
     m_matrixIn[7]   = { nullptr, nullptr, "SPICS2" }; // SPICS2
 
-    m_matrixIn[8]   = { m_spis[0], m_spis[0]->getCkPinPointer()  , "Ck2" }; // HSPICLK
-    m_matrixIn[9]   = { m_spis[0], m_spis[0]->getMiPinPointer()  , "Mi2" }; // HSPIQ
-    m_matrixIn[10]  = { m_spis[0], m_spis[0]->getMoPinPointer()  , "Mo2" }; // HSPID
-    m_matrixIn[11]  = { m_spis[0], m_spis[0]->getSsPinPointer()  , "Ss2" }; // HSPICS0
+    m_matrixIn[8]   = { m_spis[0], m_spis[0]->getCkPinPtr()  , "Ck2" }; // HSPICLK
+    m_matrixIn[9]   = { m_spis[0], m_spis[0]->getMiPinPtr()  , "Mi2" }; // HSPIQ
+    m_matrixIn[10]  = { m_spis[0], m_spis[0]->getMoPinPtr()  , "Mo2" }; // HSPID
+    m_matrixIn[11]  = { m_spis[0], m_spis[0]->getSsPinPtr()  , "Ss2" }; // HSPICS0
 
     m_matrixIn[12]  = { nullptr, nullptr, "HSPIHD" }; // HSPIHD
     m_matrixIn[13]  = { nullptr, nullptr, "HSPIWP" }; // HSPIWP
@@ -361,8 +361,8 @@ void Esp32::createMatrix()
     m_matrixIn[27]  = { nullptr, nullptr, "I2S0I_BCK" }; // I2S0I_BCK
     m_matrixIn[28]  = { nullptr, nullptr, "I2S0I_WS" }; // I2S0I_WS
 
-    m_matrixIn[29]  = { m_i2cs[0], m_i2cs[0]->getSclPinPointer() , "Scl0"}; // I2CEXT0_SCL
-    m_matrixIn[30]  = { m_i2cs[0], m_i2cs[0]->getSdaPinPointer() , "Sda0"}; // I2CEXT0_SDA
+    m_matrixIn[29]  = { m_i2cs[0], m_i2cs[0]->getSclPinPtr() , "Scl0"}; // I2CEXT0_SCL
+    m_matrixIn[30]  = { m_i2cs[0], m_i2cs[0]->getSdaPinPtr() , "Sda0"}; // I2CEXT0_SDA
 
     m_matrixIn[31]  = { nullptr, nullptr, "PWM0_SYNC0" }; // PWM0_SYNC0
     m_matrixIn[32]  = { nullptr, nullptr, "PWM0_SYNC1" }; // PWM0_SYNC1
@@ -374,31 +374,31 @@ void Esp32::createMatrix()
     m_matrixIn[38]  = { nullptr, nullptr, "GPIO_BT_PRIORITY" }; // GPIO_BT_PRIORITY
     m_matrixIn[39]  = { nullptr, nullptr, "PCNT_SIG_CH0_IN0" }; // PCNT_SIG_CH0_IN0
     m_matrixIn[40]  = { nullptr, nullptr, "PCNT_SIG_CH1_IN0" }; // PCNT_SIG_CH1_IN0
-    m_matrixIn[41]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN0" }; // PCNT_CTRL_CH0_IN0
-    m_matrixIn[42]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN0" }; // PCNT_CTRL_CH1_IN0
+    m_matrixIn[41]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN0"}; // PCNT_CTRL_CH0_IN0
+    m_matrixIn[42]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN0"}; // PCNT_CTRL_CH1_IN0
     m_matrixIn[43]  = { nullptr, nullptr, "PCNT_SIG_CH0_IN1" }; // PCNT_SIG_CH0_IN1
     m_matrixIn[44]  = { nullptr, nullptr, "PCNT_SIG_CH1_IN1" }; // PCNT_SIG_CH1_IN1
-    m_matrixIn[45]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN1" }; // PCNT_CTRL_CH0_IN1
-    m_matrixIn[46]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN1" }; // PCNT_CTRL_CH1_IN1
+    m_matrixIn[45]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN1"}; // PCNT_CTRL_CH0_IN1
+    m_matrixIn[46]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN1"}; // PCNT_CTRL_CH1_IN1
     m_matrixIn[47]  = { nullptr, nullptr, "PCNT_SIG_CH0_IN2" }; // PCNT_SIG_CH0_IN2
     m_matrixIn[48]  = { nullptr, nullptr, "PCNT_SIG_CH1_IN2" }; // PCNT_SIG_CH1_IN2
-    m_matrixIn[49]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN2" }; // PCNT_CTRL_CH0_IN2
-    m_matrixIn[50]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN2" }; // PCNT_CTRL_CH1_IN2
+    m_matrixIn[49]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN2"}; // PCNT_CTRL_CH0_IN2
+    m_matrixIn[50]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN2"}; // PCNT_CTRL_CH1_IN2
     m_matrixIn[51]  = { nullptr, nullptr, "PCNT_SIG_CH0_IN3" }; // PCNT_SIG_CH0_IN3
     m_matrixIn[52]  = { nullptr, nullptr, "PCNT_SIG_CH1_IN3" }; // PCNT_SIG_CH1_IN3
-    m_matrixIn[53]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN3" }; // PCNT_CTRL_CH0_IN3
-    m_matrixIn[54]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN3" }; // PCNT_CTRL_CH1_IN3
+    m_matrixIn[53]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN3"}; // PCNT_CTRL_CH0_IN3
+    m_matrixIn[54]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN3"}; // PCNT_CTRL_CH1_IN3
     m_matrixIn[55]  = { nullptr, nullptr, "PCNT_SIG_CH0_IN4" }; // PCNT_SIG_CH0_IN4
     m_matrixIn[56]  = { nullptr, nullptr, "PCNT_SIG_CH1_IN4" }; // PCNT_SIG_CH1_IN4
-    m_matrixIn[57]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN4" }; // PCNT_CTRL_CH0_IN4
-    m_matrixIn[58]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN4" }; // PCNT_CTRL_CH1_IN4
+    m_matrixIn[57]  = { nullptr, nullptr, "PCNT_CTRL_CH0_IN4"}; // PCNT_CTRL_CH0_IN4
+    m_matrixIn[58]  = { nullptr, nullptr, "PCNT_CTRL_CH1_IN4"}; // PCNT_CTRL_CH1_IN4
     m_matrixIn[59]  = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[60]  = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[61]  = { nullptr, nullptr, "HSPICS1" }; // HSPICS1
     m_matrixIn[62]  = { nullptr, nullptr, "HSPICS2" }; // HSPICS2
     m_matrixIn[63]  = { nullptr, nullptr, "VSPICLK" }; // VSPICLK
 
-    m_matrixIn[64]  = { m_spis[1], m_spis[1]->getMiPinPointer()  , "Mi3" };  // VSPIQ
+    m_matrixIn[64]  = { m_spis[1], m_spis[1]->getMiPinPtr()  , "Mi3" };  // VSPIQ
 
     m_matrixIn[65]  = { nullptr, nullptr, "VSPID" }; // VSPID
     m_matrixIn[66]  = { nullptr, nullptr, "VSPIHD" }; // VSPIHD
@@ -408,16 +408,16 @@ void Esp32::createMatrix()
     m_matrixIn[70]  = { nullptr, nullptr, "VSPICS2" }; // VSPICS2
     m_matrixIn[71]  = { nullptr, nullptr, "PCNT_SIG_CH0_5" }; // PCNT_SIG_CH0_IN5
     m_matrixIn[72]  = { nullptr, nullptr, "PCNT_SIG_CH1_5" }; // PCNT_SIG_CH1_IN5
-    m_matrixIn[73]  = { nullptr, nullptr, "PCNT_CTRL_CH0_5" }; // PCNT_CTRL_CH0_IN5
-    m_matrixIn[74]  = { nullptr, nullptr, "PCNT_CTRL_CH1_5" }; // PCNT_CTRL_CH1_IN5
+    m_matrixIn[73]  = { nullptr, nullptr, "PCNT_CTRL_CH0_5"}; // PCNT_CTRL_CH0_IN5
+    m_matrixIn[74]  = { nullptr, nullptr, "PCNT_CTRL_CH1_5"}; // PCNT_CTRL_CH1_IN5
     m_matrixIn[75]  = { nullptr, nullptr, "PCNT_SIG_CH0_6" }; // PCNT_SIG_CH0_IN6
     m_matrixIn[76]  = { nullptr, nullptr, "PCNT_SIG_CH1_6" }; // PCNT_SIG_CH1_IN6
-    m_matrixIn[77]  = { nullptr, nullptr, "PCNT_CTRL_CH0_6" }; // PCNT_CTRL_CH0_IN6
-    m_matrixIn[78]  = { nullptr, nullptr, "PCNT_CTRL_CH1_6" }; // PCNT_CTRL_CH1_IN6
+    m_matrixIn[77]  = { nullptr, nullptr, "PCNT_CTRL_CH0_6"}; // PCNT_CTRL_CH0_IN6
+    m_matrixIn[78]  = { nullptr, nullptr, "PCNT_CTRL_CH1_6"}; // PCNT_CTRL_CH1_IN6
     m_matrixIn[79]  = { nullptr, nullptr, "PCNT_SIG_CH0_7" }; // PCNT_SIG_CH0_IN7
     m_matrixIn[80]  = { nullptr, nullptr, "PCNT_SIG_CH1_7" }; // PCNT_SIG_CH1_IN7
-    m_matrixIn[81]  = { nullptr, nullptr, "PCNT_CTRL_CH0_7" }; // PCNT_CTRL_CH0_IN7
-    m_matrixIn[82]  = { nullptr, nullptr, "PCNT_CTRL_CH1_7" }; // PCNT_CTRL_CH1_IN7
+    m_matrixIn[81]  = { nullptr, nullptr, "PCNT_CTRL_CH0_7"}; // PCNT_CTRL_CH0_IN7
+    m_matrixIn[82]  = { nullptr, nullptr, "PCNT_CTRL_CH1_7"}; // PCNT_CTRL_CH1_IN7
     m_matrixIn[83]  = { nullptr, nullptr, "RMT_0" }; // RMT_SIG_IN0
     m_matrixIn[84]  = { nullptr, nullptr, "RMT_1" }; // RMT_SIG_IN1
     m_matrixIn[85]  = { nullptr, nullptr, "RMT_2" }; // RMT_SIG_IN2
@@ -431,13 +431,13 @@ void Esp32::createMatrix()
     m_matrixIn[93]  = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[94]  = { nullptr, nullptr, "TWAI_RX" }; // TWAI_RX
 
-    m_matrixIn[95]  = { m_i2cs[1], m_i2cs[1]->getSclPinPointer() , "Scl1"}; // I2CEXT1_SCL
-    m_matrixIn[96]  = { m_i2cs[1], m_i2cs[1]->getSdaPinPointer() , "Sda1"}; // I2CEXT1_SDA
+    m_matrixIn[95]  = { m_i2cs[1], m_i2cs[1]->getSclPinPtr() , "Scl1"}; // I2CEXT1_SCL
+    m_matrixIn[96]  = { m_i2cs[1], m_i2cs[1]->getSdaPinPtr() , "Sda1"}; // I2CEXT1_SDA
 
     m_matrixIn[97]  = { nullptr, nullptr, "HOST_CARD_DETECT_N_1" }; // HOST_CARD_DETECT_N_1
     m_matrixIn[98]  = { nullptr, nullptr, "HOST_CARD_DETECT_N_2" }; // HOST_CARD_DETECT_N_2
-    m_matrixIn[99]  = { nullptr, nullptr, "HOST_CARD_WRITE_PRT_1" }; // HOST_CARD_WRITE_PRT_1
-    m_matrixIn[100] = { nullptr, nullptr, "HOST_CARD_WRITE_PRT_2" }; // HOST_CARD_WRITE_PRT_2
+    m_matrixIn[99]  = { nullptr, nullptr, "HOST_CARD_WRITE_PRT_1"}; // HOST_CARD_WRITE_PRT_1
+    m_matrixIn[100] = { nullptr, nullptr, "HOST_CARD_WRITE_PRT_2"}; // HOST_CARD_WRITE_PRT_2
     m_matrixIn[101] = { nullptr, nullptr, "HOST_CARD_INT_N_1" }; // HOST_CARD_INT_N_1
     m_matrixIn[102] = { nullptr, nullptr, "HOST_CARD_INT_N_2" }; // HOST_CARD_INT_N_2
     m_matrixIn[103] = { nullptr, nullptr, "PWM1_SYNC0" }; // PWM1_SYNC0_IN
@@ -489,12 +489,12 @@ void Esp32::createMatrix()
     m_matrixIn[147] = { nullptr, nullptr, "I2S0I_D7" }; // I2S0I_DATA_IN7
     m_matrixIn[148] = { nullptr, nullptr, "I2S0I_D8" }; // I2S0I_DATA_IN8
     m_matrixIn[149] = { nullptr, nullptr, "I2S0I_D9" }; // I2S0I_DATA_IN9
-    m_matrixIn[150] = { nullptr, nullptr, "I2S0I_D10" }; // I2S0I_DATA_IN10
-    m_matrixIn[151] = { nullptr, nullptr, "I2S0I_D11" }; // I2S0I_DATA_IN11
-    m_matrixIn[152] = { nullptr, nullptr, "I2S0I_D12" }; // I2S0I_DATA_IN12
-    m_matrixIn[153] = { nullptr, nullptr, "I2S0I_D13" }; // I2S0I_DATA_IN13
-    m_matrixIn[154] = { nullptr, nullptr, "I2S0I_D14" }; // I2S0I_DATA_IN14
-    m_matrixIn[155] = { nullptr, nullptr, "I2S0I_D15" }; // I2S0I_DATA_IN15
+    m_matrixIn[150] = { nullptr, nullptr, "I2S0I_D10"}; // I2S0I_DATA_IN10
+    m_matrixIn[151] = { nullptr, nullptr, "I2S0I_D11"}; // I2S0I_DATA_IN11
+    m_matrixIn[152] = { nullptr, nullptr, "I2S0I_D12"}; // I2S0I_DATA_IN12
+    m_matrixIn[153] = { nullptr, nullptr, "I2S0I_D13"}; // I2S0I_DATA_IN13
+    m_matrixIn[154] = { nullptr, nullptr, "I2S0I_D14"}; // I2S0I_DATA_IN14
+    m_matrixIn[155] = { nullptr, nullptr, "I2S0I_D15"}; // I2S0I_DATA_IN15
     m_matrixIn[156] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[157] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[158] = { nullptr, nullptr, "---" }; // (not assigned)
@@ -503,7 +503,7 @@ void Esp32::createMatrix()
     m_matrixIn[161] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[162] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[163] = { nullptr, nullptr, "---" }; // (not assigned)
-    m_matrixIn[164] = { nullptr, nullptr, "I2S1I_BCK" }; // I2S1I_BCK_IN
+    m_matrixIn[164] = { nullptr, nullptr, "I2S1I_BCK"}; // I2S1I_BCK_IN
     m_matrixIn[165] = { nullptr, nullptr, "I2S1I_WS" }; // I2S1I_WS_IN
     m_matrixIn[166] = { nullptr, nullptr, "I2S1I_D0" }; // I2S1I_DATA_IN0
     m_matrixIn[167] = { nullptr, nullptr, "I2S1I_D1" }; // I2S1I_DATA_IN1
@@ -515,12 +515,12 @@ void Esp32::createMatrix()
     m_matrixIn[173] = { nullptr, nullptr, "I2S1I_D7" }; // I2S1I_DATA_IN7
     m_matrixIn[174] = { nullptr, nullptr, "I2S1I_D8" }; // I2S1I_DATA_IN8
     m_matrixIn[175] = { nullptr, nullptr, "I2S1I_D9" }; // I2S1I_DATA_IN9
-    m_matrixIn[176] = { nullptr, nullptr, "I2S1I_D10" }; // I2S1I_DATA_IN10
-    m_matrixIn[177] = { nullptr, nullptr, "I2S1I_D11" }; // I2S1I_DATA_IN11
-    m_matrixIn[178] = { nullptr, nullptr, "I2S1I_D12" }; // I2S1I_DATA_IN12
-    m_matrixIn[179] = { nullptr, nullptr, "I2S1I_D13" }; // I2S1I_DATA_IN13
-    m_matrixIn[180] = { nullptr, nullptr, "I2S1I_D14" }; // I2S1I_DATA_IN14
-    m_matrixIn[181] = { nullptr, nullptr, "I2S1I_D15" }; // I2S1I_DATA_IN15
+    m_matrixIn[176] = { nullptr, nullptr, "I2S1I_D10"}; // I2S1I_DATA_IN10
+    m_matrixIn[177] = { nullptr, nullptr, "I2S1I_D11"}; // I2S1I_DATA_IN11
+    m_matrixIn[178] = { nullptr, nullptr, "I2S1I_D12"}; // I2S1I_DATA_IN12
+    m_matrixIn[179] = { nullptr, nullptr, "I2S1I_D13"}; // I2S1I_DATA_IN13
+    m_matrixIn[180] = { nullptr, nullptr, "I2S1I_D14"}; // I2S1I_DATA_IN14
+    m_matrixIn[181] = { nullptr, nullptr, "I2S1I_D15"}; // I2S1I_DATA_IN15
     m_matrixIn[182] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[183] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[184] = { nullptr, nullptr, "---" }; // (not assigned)
@@ -529,12 +529,12 @@ void Esp32::createMatrix()
     m_matrixIn[187] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[188] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[189] = { nullptr, nullptr, "---" }; // (not assigned)
-    m_matrixIn[190] = { nullptr, nullptr, "I2S0I_H_SYNC" }; // I2S0I_H_SYNC
-    m_matrixIn[191] = { nullptr, nullptr, "I2S0I_V_SYNC" }; // I2S0I_V_SYNC
-    m_matrixIn[192] = { nullptr, nullptr, "I2S0I_H_ENABLE" }; // I2S0I_H_ENABLE
-    m_matrixIn[193] = { nullptr, nullptr, "I2S1I_H_SYNC" }; // I2S1I_H_SYNC
-    m_matrixIn[194] = { nullptr, nullptr, "I2S1I_V_SYNC" }; // I2S1I_V_SYNC
-    m_matrixIn[195] = { nullptr, nullptr, "I2S1I_H_ENABLE" }; // I2S1I_H_ENABLE
+    m_matrixIn[190] = { nullptr, nullptr, "I2S0I_H_SYNC"  }; // I2S0I_H_SYNC
+    m_matrixIn[191] = { nullptr, nullptr, "I2S0I_V_SYNC"  }; // I2S0I_V_SYNC
+    m_matrixIn[192] = { nullptr, nullptr, "I2S0I_H_ENABLE"}; // I2S0I_H_ENABLE
+    m_matrixIn[193] = { nullptr, nullptr, "I2S1I_H_SYNC"  }; // I2S1I_H_SYNC
+    m_matrixIn[194] = { nullptr, nullptr, "I2S1I_V_SYNC"  }; // I2S1I_V_SYNC
+    m_matrixIn[195] = { nullptr, nullptr, "I2S1I_H_ENABLE"}; // I2S1I_H_ENABLE
     m_matrixIn[196] = { nullptr, nullptr, "---" }; // (not assigned)
     m_matrixIn[197] = { nullptr, nullptr, "---" }; // (not assigned)
 
@@ -612,10 +612,10 @@ void Esp32::createMatrix()
     m_matrixOut[6]   = { nullptr, nullptr, "SPICS1" }; // SPICS1
     m_matrixOut[7]   = { nullptr, nullptr, "SPICS2" }; // SPICS2
 
-    m_matrixOut[8]  = { m_spis[0], m_spis[0]->getCkPinPointer()  , "Ck2" }; // HSPICLK
-    m_matrixOut[9]  = { m_spis[0], m_spis[0]->getMiPinPointer()  , "Mi2" }; // HSPIQ
-    m_matrixOut[10] = { m_spis[0], m_spis[0]->getMoPinPointer()  , "Mo2" }; // HSPID
-    m_matrixOut[11] = { m_spis[0], m_spis[0]->getSsPinPointer()  , "Ss2" }; // HSPICS0
+    m_matrixOut[8]  = { m_spis[0], m_spis[0]->getCkPinPtr()  , "Ck2" }; // HSPICLK
+    m_matrixOut[9]  = { m_spis[0], m_spis[0]->getMiPinPtr()  , "Mi2" }; // HSPIQ
+    m_matrixOut[10] = { m_spis[0], m_spis[0]->getMoPinPtr()  , "Mo2" }; // HSPID
+    m_matrixOut[11] = { m_spis[0], m_spis[0]->getSsPinPtr()  , "Ss2" }; // HSPICS0
 
     m_matrixOut[12]  = { nullptr, nullptr, "HSPIHD" }; // HSPIHD
     m_matrixOut[13]  = { nullptr, nullptr, "HSPIWP" }; // HSPIWP
@@ -639,8 +639,8 @@ void Esp32::createMatrix()
     m_matrixOut[27]  = { nullptr, nullptr, "I2S0I_BCK" }; // I2S0I_BCK
     m_matrixOut[28]  = { nullptr, nullptr, "I2S0I_WS" }; // I2S0I_WS
 
-    m_matrixOut[29] = { m_i2cs[0], m_i2cs[0]->getSclPinPointer() , "Scl0"}; // I2CEXT0_SCL
-    m_matrixOut[30] = { m_i2cs[0], m_i2cs[0]->getSdaPinPointer() , "Sda0"}; // I2CEXT0_SDA
+    m_matrixOut[29] = { m_i2cs[0], m_i2cs[0]->getSclPinPtr() , "Scl0"}; // I2CEXT0_SCL
+    m_matrixOut[30] = { m_i2cs[0], m_i2cs[0]->getSdaPinPtr() , "Sda0"}; // I2CEXT0_SDA
 
     m_matrixOut[31]  = { nullptr, nullptr, "SDIO_TOHOST_INT" }; // SDIO_TOHOST_INT
     m_matrixOut[32]  = { nullptr, nullptr, "PWM0_OUT0A" }; // PWM0_OUT0A
@@ -676,14 +676,14 @@ void Esp32::createMatrix()
     m_matrixOut[61] = { nullptr, nullptr, "Spi2CS1" }; // spis[0]->cs_pin[1] // HSPICS1
     m_matrixOut[62] = { nullptr, nullptr, "Spi2CS2" }; // spis[0]->cs_pin[2] // HSPICS2
 
-    m_matrixOut[63] = { m_spis[1], m_spis[1]->getCkPinPointer()  , "Ck3" }; // VSPICLK
-    m_matrixOut[64] = { m_spis[1], m_spis[1]->getMiPinPointer()  , "Mi3" }; // VSPIQ
-    m_matrixOut[65] = { m_spis[1], m_spis[1]->getMoPinPointer()  , "Mo3" }; // VSPID
+    m_matrixOut[63] = { m_spis[1], m_spis[1]->getCkPinPtr()  , "Ck3" }; // VSPICLK
+    m_matrixOut[64] = { m_spis[1], m_spis[1]->getMiPinPtr()  , "Mi3" }; // VSPIQ
+    m_matrixOut[65] = { m_spis[1], m_spis[1]->getMoPinPtr()  , "Mo3" }; // VSPID
 
     m_matrixOut[66]  = { nullptr, nullptr, "VSPIHD" }; // VSPIHD
     m_matrixOut[67]  = { nullptr, nullptr, "VSPIWP" }; // VSPIWP
 
-    m_matrixOut[68] = { m_spis[1], m_spis[1]->getSsPinPointer()  , "Ss3" }; // VSPICS0
+    m_matrixOut[68] = { m_spis[1], m_spis[1]->getSsPinPtr()  , "Ss3" }; // VSPICS0
 
     m_matrixOut[69] = { nullptr, nullptr, "Spi3CS1" }; // spis[1]->cs_pin[1] // VSPICS1
     m_matrixOut[70] = { nullptr, nullptr, "Spi3CS2" }; // spis[1]->cs_pin[2] // VSPICS2
@@ -712,8 +712,8 @@ void Esp32::createMatrix()
     m_matrixOut[92] = { nullptr, nullptr                       , "Rmt5" }; // rmt_sig_out5
     m_matrixOut[93] = { nullptr, nullptr                       , "Rmt6" }; // rmt_sig_out6
     m_matrixOut[94] = { nullptr, nullptr                       , "Rmt7" }; // rmt_sig_out7
-    m_matrixOut[95]  = { m_i2cs[1], m_i2cs[1]->getSclPinPointer() , "Scl1"}; // I2CEXT1_SCL
-    m_matrixOut[96]  = { m_i2cs[1], m_i2cs[1]->getSdaPinPointer() , "Sda1"}; // I2CEXT1_SDA
+    m_matrixOut[95]  = { m_i2cs[1], m_i2cs[1]->getSclPinPtr()  , "Scl1"}; // I2CEXT1_SCL
+    m_matrixOut[96]  = { m_i2cs[1], m_i2cs[1]->getSdaPinPtr()  , "Sda1"}; // I2CEXT1_SDA
 
     m_matrixOut[97]  = { nullptr, nullptr, "HOST_CCMD_OD_PULLUP_EN_N" }; // HOST_CCMD_OD_PULLUP_EN_N
     m_matrixOut[98]  = { nullptr, nullptr, "HOST_RST_N_1" }; // HOST_RST_N_1

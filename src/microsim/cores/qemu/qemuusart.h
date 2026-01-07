@@ -11,7 +11,7 @@
 class QemuUsart : public QemuModule, public UsartModule
 {
     public:
-        QemuUsart( QemuDevice* mcu, QString name, int number );
+        QemuUsart( QemuDevice* mcu, QString name, int n, uint32_t* clk=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
         ~QemuUsart();
 
         enum qemuUsartAction_t{
@@ -25,7 +25,7 @@ class QemuUsart : public QemuModule, public UsartModule
         void bufferEmpty() override;
         void frameSent( uint8_t data ) override;
         void readByte( uint8_t data ) override;
-        void byteReceived( uint8_t data ) override;
+        //void byteReceived( uint8_t data ) override;
 
         uint8_t getBit9Tx() override;
         void setBit9Rx( uint8_t bit ) override;

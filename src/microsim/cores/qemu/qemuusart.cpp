@@ -14,8 +14,8 @@
 
 #include "simulator.h"
 
-QemuUsart::QemuUsart( QemuDevice* mcu, QString name, int number )
-         : QemuModule( mcu, number )
+QemuUsart::QemuUsart(QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
+         : QemuModule( mcu, name, n, clk, memStart, memEnd )
          , UsartModule( nullptr, mcu->getId()+"-"+name )
 {
     /// FIXME ----------------------------
@@ -78,20 +78,20 @@ void QemuUsart::readByte( uint8_t )
     //if( m_mcu->isCpuRead() ) m_mcu->m_regOverride = m_receiver->getData();
 }
 
-void QemuUsart::byteReceived( uint8_t data )
-{
-    UsartModule::byteReceived( data );
-
-    while( m_arena->qemuAction )        // Wait for previous action executed
-    {
-        ; /// TODO: add timeout
-    }
-    m_arena->mask8  = QEMU_USART_RECEIVE;
-    m_arena->data8  = m_number;
-    m_arena->data16 = m_receiver->getData();
-    //qDebug() << "QemuUsart::byteReceived"<< m_number << m_arena->data16 << "at time" << Simulator::self()->circTime();
-    m_arena->qemuAction = SIM_USART;
-}
+//void QemuUsart::byteReceived( uint8_t data )
+//{
+//    UsartModule::byteReceived( data );
+//
+//    // while( m_arena->qemuAction )        // Wait for previous action executed
+//    // {
+//    //     ; /// TODO: add timeout
+//    // }
+//    // m_arena->mask8  = QEMU_USART_RECEIVE;
+//    // m_arena->data8  = m_number;
+//    // m_arena->data16 = m_receiver->getData();
+//    // //qDebug() << "QemuUsart::byteReceived"<< m_number << m_arena->data16 << "at time" << Simulator::self()->circTime();
+//    // m_arena->qemuAction = SIM_USART;
+//}
 
 uint8_t QemuUsart::getBit9Tx()
 {

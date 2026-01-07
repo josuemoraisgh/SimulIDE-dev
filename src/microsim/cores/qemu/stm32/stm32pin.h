@@ -6,16 +6,16 @@
 #pragma once
 
 #include "iopin.h"
-#include "qemumodule.h"
+//#include "qemumodule.h"
 
 class IoPort;
 
-class Stm32Pin : public IoPin, public QemuModule
+class Stm32Pin : public IoPin//, public QemuModule
 {
     //friend class Stm32;
 
     public:
-        Stm32Pin( uint8_t port, int i, QString id, QemuDevice* mcu );
+        Stm32Pin( uint8_t port, int i, QString id, Component* mcu );
         ~Stm32Pin();
 
         void initialize() override;

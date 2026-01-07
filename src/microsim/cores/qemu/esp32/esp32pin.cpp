@@ -12,7 +12,7 @@
 
 esp32Pin::esp32Pin( int i, QString id, QemuDevice* mcu, IoPin* dummyPin )
         : IoPin( 0, QPoint(0,0), mcu->getId()+"-"+id, i, mcu, input )
-        , QemuModule( mcu, i )
+        //, QemuModule( mcu, i )
 {
     //m_id     = id;
 
