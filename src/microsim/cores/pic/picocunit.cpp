@@ -58,15 +58,18 @@ void PicOcUnit::configure( uint8_t CCPxM )  // CCPxM0,CCPxM1,CCPxM2,CCPxM3
     setOcActs( ocNON, ocNON );
 
     switch( CCPxM ) {
-        case 2: setOcActs( ocTOG, ocNON );     break; // Toggle OC Pin - by ci (works in non-enhanced real device)
-        case 8: setOcActs( ocSET, ocCLR );     break; // Set OC Pin
-        case 9: setOcActs( ocCLR, ocSET );     break; // Clear OC Pin
-        case 10: ctrlPin = false;              break; // Only interrupt
-        case 11: ctrlPin = false; m_specEvent = true; // Special event
+    case 2: setOcActs( ocTOG, ocNON );     break; // Toggle OC Pin - by ci (works in non-enhanced real device)
+    case 8: setOcActs( ocSET, ocCLR );     break; // Set OC Pin
+    case 9: setOcActs( ocCLR, ocSET );     break; // Clear OC Pin
+    case 10: ctrlPin = false;              break; // Only interrupt
+    case 11: ctrlPin = false; m_specEvent = true; // Special event
     }
     m_ocPin->controlPin( ctrlPin, false ); // Connect/Disconnect PORT
-    if( ctrlPin ) m_ocPin->setOutState( false );
-    m_enabled = true;
+
+    if( !m_enabled){
+        m_enabled = true;
+        m_ocPin->setOutState( false ); // Enabling, start low state
+    }
 }
 
 void PicOcUnit::ocrWriteL( uint8_t val )

@@ -27,6 +27,8 @@ class McuIcUnit : public McuModule, public eElement
         void enable( bool en );
 
     protected:
+        void clear();
+
         McuTimer* m_timer;
         McuPin*   m_icPin;
 
@@ -39,4 +41,7 @@ class McuIcUnit : public McuModule, public eElement
         uint8_t m_mode;
 
         bool m_fallingEdge;
+
+        uint64_t m_prescaler;
+        uint64_t m_counter;
 };

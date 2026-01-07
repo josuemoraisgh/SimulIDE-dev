@@ -23,14 +23,19 @@ void McuOcUnit::initialize()
 {
     m_comMatch = 0;
     m_extMatch = 0;
+    m_ocPin->controlPin( false, false );
 
+    clear();
+}
+
+void McuOcUnit::clear()
+{
     m_enabled = false;
     m_ctrlPin = false;
     m_mode = 0;
 
     m_comAct = ocNON;
     m_tovAct = ocNON;
-    m_ocPin->controlPin( false, false );
 }
 
 void McuOcUnit::clockStep( uint16_t count )
