@@ -372,7 +372,7 @@ bool EditorWidget::saveAs()
     if( ext == "" ) extensions = tr("All files")+" (*);;Arduino (*.ino);;Asm (*.asm);;GcBasic (*.gcb)";
     else            extensions = "."+ext+"(*."+ext+");;"+tr("All files")+" (*.*)";
 
-    QString fileName = QFileDialog::getSaveFileName( this, tr("Save Document As"), path, extensions );
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Document As"), path, extensions );
     if( fileName.isEmpty() ) return false;
 
     m_fileList.remove( ce->getFile() );

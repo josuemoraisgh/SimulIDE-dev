@@ -567,7 +567,7 @@ void SubPackage::slotSave()
     QString pkgeFile = pdir.absoluteFilePath( m_pkgeFile );
 
     const QString dir = pkgeFile;
-    QString fileName = QFileDialog::getSaveFileName( 0l, tr("Save Package"), dir,
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Package"), dir,
                                                      tr("Packages (*.package);;All files (*.*)"));
     if( fileName.isEmpty() ) return;
     savePackage( fileName );

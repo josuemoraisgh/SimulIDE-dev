@@ -312,7 +312,7 @@ void CircuitView::saveImage()
 {
     QString circPath = changeExt( Circuit::self()->getFilePath(), ".png" );
     
-    QString fileName = QFileDialog::getSaveFileName( this
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self()
                             , tr( "Save as Image" )
                             , circPath
                             , "PNG (*.png);;JPEG (*.jpeg);;BMP (*.bmp);;SVG (*.svg);;All (*.*)"  );
