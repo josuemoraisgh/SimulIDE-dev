@@ -22,6 +22,7 @@ class Switch : public SwitchBase
 
         bool checked();
         void setChecked( bool c );
+        void setLinkedValue( double v, int i ) override;
 
         void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 

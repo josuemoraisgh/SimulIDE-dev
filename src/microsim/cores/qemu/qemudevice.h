@@ -12,19 +12,24 @@
 typedef struct qemuArena{
     uint64_t simuTime;    // in ps
     uint64_t qemuTime;    // in ps
-    uint32_t data32;
-    uint32_t mask32;
-    uint16_t data16;
-    uint16_t mask16;
-    uint8_t  data8;
-    uint8_t  mask8;
-    uint8_t  simuAction;
-    uint8_t  qemuAction;
+    uint64_t regData;
+    uint64_t regAddr;
+    uint64_t irqNumber;
+    uint64_t irqLevel;
+    uint64_t simuAction;
+    uint64_t qemuAction;
+    uint64_t running;
+    int64_t  loop_timeout_ns;
     double   ps_per_inst;
-    bool     running;
+
 } qemuArena_t;
 
 enum simuAction{
+    SIM_NONE=0,
+    SIM_READ,
+    SIM_WRITE,
+    SIM_FREQ,
+    SIM_INTERRUPT,
     SIM_I2C=10,
     SIM_SPI,
     SIM_USART,
@@ -34,6 +39,7 @@ enum simuAction{
 };
 
 class IoPin;
+class QemuModule;
 class QemuUsart;
 class QemuTimer;
 class QemuTwi;
@@ -60,13 +66,19 @@ class QemuDevice : public Chip
 
         void setPackageFile( QString package );
 
+        std::vector<uint32_t>* getIoMem() { return &m_ioMem; }
         volatile qemuArena_t* getArena() { return m_arena; }
 
         void runToTime( uint64_t time );
+        //void setNexTEvent( uint64_t e ) { m_nextEvent = e; }
 
         void slotLoad();
         void slotReload();
         void slotOpenTerm( int num );
+
+        //void addEvent( uint64_t time, QemuModule* el );
+        //void cancelEvents( QemuModule* el );
+        void addModule( QemuModule* m ) { m_modules.append( m ); }
 
  static QemuDevice* self() { return m_pSelf; }
  static Component* construct( QString type, QString id );
@@ -77,7 +89,8 @@ class QemuDevice : public Chip
 
         virtual bool createArgs(){ return false;}
 
-        virtual void doAction(){;}
+        virtual void doAction();
+        virtual void updtFrequency(){;}
 
         void contextMenu( QGraphicsSceneContextMenuEvent* e, QMenu* m ) override;
 
@@ -88,7 +101,19 @@ class QemuDevice : public Chip
 
         QString m_extraArgs;
 
+        //QemuModule* m_firstEvent;
+
         volatile qemuArena_t* m_arena;
+
+        QemuModule* m_dummyModule;
+        QemuModule* m_eventModule;
+        uint64_t m_nextEvent;
+        uint64_t m_lastEvent;
+
+        uint32_t m_ioMemStart;
+
+        //bool m_fullSynch;
+        //uint64_t m_lastTime;
 
         int m_gpioSize;
         std::vector<IoPin*> m_ioPin;
@@ -104,11 +129,15 @@ class QemuDevice : public Chip
 
         uint8_t m_portN;
         uint8_t m_usartN;
-        //uint8_t m_timerN;
+        uint8_t m_timerN;
         uint8_t m_i2cN;
         uint8_t m_spiN;
 
-        std::vector<QemuTwi*> m_i2cs;
-        std::vector<QemuSpi*> m_spis;
+        std::vector<QemuTwi*>   m_i2cs;
+        std::vector<QemuSpi*>   m_spis;
         std::vector<QemuUsart*> m_usarts;
+        std::vector<QemuTimer*> m_timers;
+        std::vector<uint32_t>   m_ioMem;
+
+        QList<QemuModule*> m_modules;
 };

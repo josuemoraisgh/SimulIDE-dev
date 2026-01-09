@@ -366,3 +366,8 @@ void TwiModule::setPins( IoPin* scl, IoPin* sda )
     setSclPin( scl );
     setSdaPin( sda );
 }
+
+uint64_t TwiModule::getTrasferTime()
+{
+    return 9*m_clockPeriod;
+}

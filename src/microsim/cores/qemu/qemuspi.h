@@ -12,17 +12,16 @@
 class QemuSpi : public QemuModule, public SpiModule
 {
     public:
-        QemuSpi( QemuDevice* mcu, QString name, int number );
+        QemuSpi( QemuDevice* mcu, QString name, int n, uint32_t* clk=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
         ~QemuSpi();
-
-        //enum spi_action_t {
-        //    QSPI_STOP,
-        //};
-        //
-        //void doAction() override;
 
         //void setMode( spiMode_t mode ) override;
         //void endTransaction() override;
+
+        IoPin** getMoPinPtr() { return &m_MOSI; }
+        IoPin** getMiPinPtr() { return &m_MISO; }
+        IoPin** getCkPinPtr() { return &m_clkPin; }
+        IoPin** getSsPinPtr() { return &m_SS; }
 
     protected:
         uint8_t m_dataReg;

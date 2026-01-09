@@ -52,13 +52,15 @@ void Spi5Pins::stamp()
     m_pinRS.changeCallBack( this );
     m_pinCS.changeCallBack( this );
 
+    m_useSS = true;
+
     SpiModule::setMode( SPI_SLAVE );
 }
 
 void Spi5Pins::reset()
 {
     m_inBit  = 0;
-    m_buffer   = 0;
+    m_buffer = 0;
 }
 
 void Spi5Pins::endTransaction()

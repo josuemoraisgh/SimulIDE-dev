@@ -5,13 +5,11 @@
 
 #pragma once
 
-#include "tftcontroller.h"
-#include "e-clocked_device.h"
-#include "iopin.h"
+#include "st77xx.h"
 
 class LibraryItem;
 
-class Ili9341 : public TftController, public eClockedDevice
+class Ili9341 : public St77xx
 {
     public:
         Ili9341( QString type, QString id );
@@ -20,21 +18,7 @@ class Ili9341 : public TftController, public eClockedDevice
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
 
-        void stamp() override;
-        void initialize() override;
-        void voltChanged() override;
-        void updateStep() override;
-
     protected:
-        void displayReset() override;
         void setPixelMode() override;
         void writeRam() override;
-
-        int m_inBit;        //How many bits have we read since last byte
-
-        IoPin m_pinCS;
-        IoPin m_pinRst;
-        IoPin m_pinDC;
-        IoPin m_pinMosi;
-        IoPin m_pinSck;
 };

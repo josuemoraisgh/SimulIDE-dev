@@ -6,17 +6,16 @@
 #pragma once
 
 #include "st77xx.h"
-#include "spi5pins.h"
 
 class LibraryItem;
 
-class GC9A01A : public St77xx, public Spi5Pins
+class GC9A01A : public St77xx
 {
     public:
         GC9A01A( QString type, QString id );
         ~GC9A01A();
 
-        void setHeight( int h );
+        void setHeight( int h ) override;
 
         void endTransaction() override;
 
@@ -27,5 +26,4 @@ class GC9A01A : public St77xx, public Spi5Pins
 
     protected:
         void displayReset() override;
-        void updateSize() override;
 };

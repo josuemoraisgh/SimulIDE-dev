@@ -22,11 +22,18 @@ McuIcUnit::~McuIcUnit( ){}
 
 void McuIcUnit::initialize()
 {
+    m_prescaler = 1;
+    if( m_icPin ) m_icPin->changeCallBack( this, false );
+    clear();
+}
+
+void McuIcUnit::clear()
+{
+    m_counter = 0;
     m_enabled = false;
     m_inState = false;
     m_fallingEdge = false;
     m_mode = 0;
-    if( m_icPin ) m_icPin->changeCallBack( this, false );
 }
 
 void McuIcUnit::voltChanged() // Pin change
@@ -36,6 +43,10 @@ void McuIcUnit::voltChanged() // Pin change
     if( m_inState == inState ) return;  // No Edge
     m_inState = inState;
     if( inState == m_fallingEdge ) return; // Wrong Edge
+
+    m_counter++;
+    if( m_counter < m_prescaler ) return;
+    m_counter = 0;
 
     if( m_icRegL )
     {

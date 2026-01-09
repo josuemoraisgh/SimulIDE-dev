@@ -93,27 +93,31 @@ SdCard::~SdCard()
 
 void SdCard::stamp()
 {
-    m_boot = 9;
-    m_useSS = false;
+    m_boot = 10;
+
     resetCard();
 
     if( m_diskImage ) SpiModule::setMode( SPI_SLAVE );
     else              SpiModule::setMode( SPI_OFF );
+
 }
 
 void SdCard::voltChanged()
 {
     SpiModule::voltChanged();
-    if( !m_enabled ) resetCard();
+    //if( !m_enabled ) resetCard();
 }
 
 void SdCard::endTransaction()
 {
     SpiModule::endTransaction();
 
-    if( m_boot ){ m_boot--; return; }  // Booting
+    if( m_boot ){   // Booting
+        m_boot--;
+        if( m_boot == 0 ) m_useSS = true;
+        else              return;
+    }
 
-    m_useSS = true;
     m_rxReg = m_srReg;
     m_srReg = 0xFF;
     m_rxBytes++;
@@ -154,7 +158,7 @@ void SdCard::endTransaction()
             if( m_doCRC && m_rxReg != (( CRC7(m_cmdBuff, 5) << 1) | 1) )
                 m_R1 |= 1<<3;  /// FIXME???     // R1 |0|ParameterE|AddressE|EraseE|CRCE|IllegalC|EraseR|idle|
 
-            qDebug() << "SdCard::endTransaction Command" << m_command;
+            //qDebug() << "SdCard::endTransaction Command" << m_command;
 
             m_repply = nullptr;
             m_bytesToWrite = 0;
@@ -167,7 +171,7 @@ void SdCard::endTransaction()
              && m_command != 41 && m_command != 55 && m_command != 58 && m_command != 59 )
             {
                 m_R1 |= 1<<2;   // Illegal Command
-                qDebug() << "Warning: SdCard::endTransaction Illegal Command in Idle State";
+                //qDebug() << "Warning: SdCard::endTransaction Illegal Command in Idle State";
             }
             else if( m_appCom ) appCommand();
             else                command();
@@ -176,7 +180,7 @@ void SdCard::endTransaction()
             m_replyIndex = 0;
             if( m_repply ) m_replyBytes = m_repply[0]-1;
 
-            qDebug() << "SdCard::endTransaction Reply:" << m_srReg << "reply data:"<<m_replyBytes;
+            //qDebug() << "SdCard::endTransaction Reply:" << m_srReg << "reply data:"<<m_replyBytes;
         }break;
         default: readData();
     }
@@ -224,7 +228,7 @@ void SdCard::command()
     case 59: m_doCRC = m_arg;     break; // CRC_OFF  - Set CRC checking
     default:
         //m_reply[0] |= 0x04;  // R1 |0|ParameterE|AddressE|EraseE|CRCE|IllegalC|EraseR|idle|
-        //qDebug() << QString("sdcard command CMD%1 not implemented!!!\n").arg(m_command);
+        qDebug() << "sdcard command CMD%1 not implemented" << m_command;
         break;
     }
 }
@@ -263,13 +267,13 @@ void SdCard::readData()
         m_repply[2] = crc16 & 0xFF;
         m_replyBytes = 2;
 
-        //if( !m_multi ) return;
-        //m_reply[2] = 0xFF;
-        //m_reply[3] = 0xFE;  // start block
-        //m_replyBytes = 5;
+        if( !m_multi ) return;
+        m_reply[2] = 0xFF;
+        m_reply[3] = 0xFE;  // start block
+        m_replyBytes = 5;
 
-        //m_arg += 512;
-        //readDataBlock();
+        m_arg += 512;
+        readDataBlock();
     }
 }
 
@@ -294,8 +298,8 @@ void SdCard::writeData()
     else if( m_bytesToWrite == 3 ){          // Write data to Disk
         int64_t writen = m_diskImage->write( reinterpret_cast<const char*>(m_buffer), 512 );
         if( writen < 0 ) {;} /// TODO: write error
-        qDebug() << "Writen" << writen ;
-        qDebug() << reinterpret_cast<const char*>(m_buffer);
+        //qDebug() << "Writen" << writen ;
+        //qDebug() << reinterpret_cast<const char*>(m_buffer);
         //qDebug() << m_buffer;
     }
     else {
@@ -310,7 +314,7 @@ void SdCard::readDataBlock()
     m_bytesToRead = 512;
     QByteArray data = m_diskImage->read(512);
     std::copy( data.constData(), data.constData() + qMin(data.size(), 512 ), m_buffer );
-    qDebug() << reinterpret_cast<const char*>(m_buffer);
+    //qDebug() << reinterpret_cast<const char*>(m_buffer);
     //qDebug() << m_buffer;
 }
 
@@ -372,7 +376,7 @@ void SdCard::setFile( QString fileName )
     if( m_diskKb >= 4194304L) d_SCR[1] = 0xC1;  // Busy:1 CCS:1 resrved:5  S18A:1
     else                      d_SCR[1] = 0x81;  // Busy:1 CCS:1 resrved:5  S18A:1
 
-    qDebug() << "sdcard size=" << m_diskKb << "KB  ->  " << (m_diskImage->size() / 512) << "blocks";
+    qDebug() << "sdcard size =" << m_diskKb << "KB  ->  " << (m_diskImage->size() / 512) << "blocks";
     update();
 }
 
@@ -381,10 +385,10 @@ void SdCard::resetCard()
     m_repply = nullptr;
     m_appCom = 0;
     m_replyBytes = 0;
+    m_replyBytes = 0;
     m_bytesToRead = 0;
     m_bytesToWrite = 0;
     m_rxBytes = 0;
-    m_multi = 0;
     m_multi = 0;
     m_doCRC = 0;
     m_R1 = 1;           // Idle

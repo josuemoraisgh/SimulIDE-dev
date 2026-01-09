@@ -31,9 +31,6 @@ class ComponentList : public QTreeWidget
 
         void search( QString filter );
 
-        //TreeItem* getCategory( QString category );
-        //QStringList getCategories(){ return m_categories.keys(); }
-
         void setShortcut( QString s, QString c ) { m_shortCuts[s] = c; }
         QString getComponent( QString shortcut ) { return m_shortCuts.value( shortcut ); }
 
@@ -63,6 +60,8 @@ class ComponentList : public QTreeWidget
 
         TreeItem* getCategory( QString category );
         TreeItem* addCategory( QString nameTr, QString name, QString parent, QString icon );
+
+        TreeItem* m_clickedItem;
 
         QString getIcon( QString folder, QString name );
 

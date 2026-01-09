@@ -161,6 +161,8 @@ UartTR::UartTR( UsartModule* usart, eMcu* mcu, QString name )
 
     m_state = usartSTOPPED;
     m_enabled = false;
+
+    m_ioPin = nullptr;
 }
 UartTR::~UartTR( ){}
 

@@ -15,4 +15,8 @@ class CustomDial : public QDial
 
     private:
         virtual void paintEvent( QPaintEvent* e ) override;
+        bool eventFilter(QObject *object, QEvent *event) override;
+
+        double m_arrowX;
+        double m_arrowY;
 };

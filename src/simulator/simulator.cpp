@@ -249,13 +249,13 @@ void Simulator::runCircuit()
 
     while( true )          // Simulator event loop
     {
-        if( QemuDevice::self() )
-        {
-            if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
-            else               nextTime = endRun;
+        //if( QemuDevice::self() )
+        //{
+        //    if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
+        //    else               nextTime = m_circTime + 1000000000;
 
-            QemuDevice::self()->runToTime( nextTime ); // This will add events
-        }
+        //    QemuDevice::self()->runToTime( nextTime ); // This will add events
+        //}
         if( !m_firstEvent ) break;
 
 
@@ -486,29 +486,6 @@ void Simulator::resumeSim()
     m_state = m_oldState;
 }
 
-/*void Simulator::stopTimer()
-{
-    if( m_timerId == 0 ) return;
-    this->killTimer( m_timerId );
-    m_timerId = 0;
-
-    InfoWidget::self()->setRate( 0, 0 );
-    CircuitWidget::self()->setMsg( " "+tr("Stopped")+" ", 1 );
-    Circuit::self()->update();
-    qDebug() << "\n    Simulation Stopped ";
-    m_state = SIM_STOPPED;
-}*/
-
-/*void Simulator::initTimer()
-{
-    if( m_timerId != 0 ) return;
-    CircuitWidget::self()->setMsg( " "+tr("Running")+" ", 0 );
-    m_refTime  = m_RefTimer.nsecsElapsed();
-    m_loopTime = m_refTime;
-    m_timerId = this->startTimer( m_timerTick_ms, Qt::PreciseTimer );
-    m_state = SIM_RUNNING;
-}*/
-
 void Simulator::setFps( uint64_t fps )
 {
     m_fps = fps;
@@ -545,7 +522,8 @@ void Simulator::clearEventList()
 {
     m_firstEvent = nullptr;
 }
-void Simulator::addEvent( uint64_t time, eElement* el )
+
+void Simulator::addEventAt( uint64_t time, eElement* el )
 {
     if( m_state < SIM_STARTING ) return;
 
@@ -555,7 +533,6 @@ void Simulator::addEvent( uint64_t time, eElement* el )
         return;
     }
 
-    time += m_circTime;
     eElement* last  = nullptr;
     eElement* event = m_firstEvent;
 

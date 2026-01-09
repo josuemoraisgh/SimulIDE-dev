@@ -46,6 +46,7 @@ Installer::Installer( QWidget* parent )
         QString name = list.first();
 
         InstallItem* item = m_items.value( name );
+        if( !item ) continue;
 
         QString version = "2507102250" ;//list.at(1);//
         int64_t v = version.toLongLong();
@@ -95,6 +96,8 @@ void Installer::loadList()
         else
         {
             item = new InstallItem( this, itemStr );
+
+            item->shouldUpdate( 0 );
 
             m_items.insert( item->m_name, item );
 

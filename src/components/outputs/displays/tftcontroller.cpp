@@ -15,6 +15,11 @@ TftController::TftController( QString type, QString id )
 {
     m_graphical = true;
     m_isILI = false;
+
+    m_maxX = 0;
+    m_maxY = 0;
+
+    Simulator::self()->addToUpdateList( this );
 }
 
 void TftController::displayReset()
@@ -54,8 +59,6 @@ void TftController::displayReset()
     m_readBytes = 0;
 
     //m_reset = true;
-
-    Simulator::self()->addToUpdateList( this );
 }
 TftController::~TftController(){}
 
@@ -64,7 +67,6 @@ void TftController::updateStep()
 {
     update();
 }
-
 
 void TftController::commandReceived()
 {
@@ -75,6 +77,7 @@ void TftController::commandReceived()
 
     switch( m_rxReg )
     {
+    case 0x00: displayReset();           break; //   NOP
     case 0x01: displayReset();           break; //   Software Reset
     /*case 0x04: m_readBytes = 4; break; // Read Display identification information
         case 0x09: m_readBytes = 5; break; // Read Display Status
@@ -95,7 +98,10 @@ void TftController::commandReceived()
     case 0x29: m_dispOn = true;             break; // Display On
     case 0x2A: m_readBytes = 2*m_addrBytes; break; // Column Address Set
     case 0x2B: m_readBytes = 2*m_addrBytes; break; // Page Address Set
-    case 0x2C: m_readBytes = -1;            break; // Memory Write (until next command)
+    case 0x2C: m_readBytes = -1;                   // Memory Write (until next command)
+        m_addrX = m_startX;
+        m_addrY = m_startY;
+        break;
     case 0x2D: m_readBytes = 128;           break; /// FIXME // Color Set
     case 0x2E: // Memory Read
     case 0x30: m_readBytes = 2*m_addrBytes; break;  // Partial Area
@@ -153,13 +159,18 @@ void TftController::commandReceived()
     case 0xE2: m_readBytes = 16; break;  // Digital Gamma Control 1
     case 0xE3: m_readBytes = 64; break;  // Digital Gamma Control 2
     case 0xE8: m_readBytes = 3; break;   /// Driver timing control A: 0x85, 0x00, 0x78,
+    case 0xE9: m_readBytes = 3; break;   // Equalize time control
     case 0xEA: m_readBytes = 2; break;   /// Driver timing control B: 0x00, 0x00,
+    case 0xEC: m_readBytes = 1; break;   // Program Mode Control
     case 0xED: m_readBytes = 4; break;   /// Power on sequence control: 0x64, 0x03, 0x12, 0x81,
     case 0xEF: m_readBytes = 3; break;   /// 0x03, 0x80, 0x02, // Misterious Commands in Adafruit_ILI9341.cpp initcmd[]
     case 0xF2: m_readBytes = 1; break;   /// Enable 3G: 0x00, 0x00,
     case 0xF6: m_readBytes = 3; break;   // Interface Control
     case 0xF7: m_readBytes = 1; break;   /// Pump ratio control 0x20,
-    default: qDebug() << "Ili9341::proccessCommand: Not implemented" << m_lastCommand;
+    case 0xFA: m_readBytes = 4; break;   // Program Mode Enable
+    case 0xFC: m_readBytes = 2; break;   // NVM Setting
+    case 0xFE: m_readBytes = 2; break;   // Program action
+    default: qDebug() << "TftController::proccessCommand: Not implemented" << m_lastCommand;
     }
 }
 
@@ -215,15 +226,19 @@ void TftController::dataReceived()
         }break;
         case 0x3A: setPixelMode(); break; // COLMOD: Pixel Format Set
         case 0x36:{                       // MADCTL: Memory Access Control
-            m_BGR     = (buffer & 1<<3) == 0;
-            //m_mirrorLine = buffer & 1<<4;
+            m_BGR     = buffer & 1<<3;
             m_swapXY  = buffer & 1<<5;
             m_mirrorX = buffer & 1<<6;
             m_mirrorY = buffer & 1<<7;
+            //qDebug() << "MX"<<m_mirrorX<<"MY"<<m_mirrorY<<"MV"<<m_swapXY;
 
-            if(  m_isILI && m_dataBytes == 2 )  // ILI9341 seems to work this way
+            if(  m_isILI )  // ILI9341 seems to work this way
             {
-                m_mirrorX = (buffer & 1<<6) == 0;
+                m_BGR     = (buffer & 1<<3) == 0;
+
+                // m_dataBytes == 2
+                //if( m_swapXY ) m_mirrorY = (buffer & 1<<7) == 0;
+                //m_mirrorX = (buffer & 1<<6) == 0;
             }
         }break;
         case 0xF6:   // Interface Control m_readBytes = 3;
@@ -313,10 +328,10 @@ void TftController::setRamSize( int x, int y )
     if( x > 256 || y > 256 ) m_addrBytes = 2;
     else                     m_addrBytes = 1;
 
+    if( m_maxX == 0 ) m_DDRAM.resize( x, std::vector<uint32_t>(y, 0) ); // Resize only first time
+
     m_maxX = x-1;
     m_maxY = y-1;
-
-    m_DDRAM.resize( x, std::vector<uint32_t>(y, 0) );
 }
 
 void TftController::setDisplaySize( int x, int y )
@@ -327,6 +342,8 @@ void TftController::setDisplaySize( int x, int y )
 
     m_width  = x;
     m_height = y;
+    m_scaledWidth = (double)m_width * m_scale;
+    m_scaledHeight = (double)m_height * m_scale;
 
     setRamSize( x, y );
 }
@@ -369,7 +386,10 @@ void TftController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidget
     p->setBrush( QColor(50, 70, 100) );
     p->drawRoundedRect( m_area,2,2 );
 
-    QRectF imgRect = QRectF(-m_width/2,-m_height/2, m_width, m_height );
+    p->setPen( QColor( 10, 10, 10 ) );
+    p->drawEllipse( -m_scaledWidth/2-3,-m_scaledHeight/2-3, 2, 2);
+
+    QRectF imgRect = QRectF(-m_scaledWidth/2,-m_scaledHeight/2, m_scaledWidth, m_scaledHeight );
 
     if( !m_dispOn ) p->fillRect( imgRect, Qt::black ); // Display Off
     else{

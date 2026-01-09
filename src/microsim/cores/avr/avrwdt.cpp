@@ -143,11 +143,13 @@ void AvrWdt00::configureA( uint8_t newWDTCSR ) // WDTCSR Written
 
     AvrWdt::configureA( newWDTCSR );
 
-    // WDP & WDE changes not allowed, keep old values
-    newWDTCSR = overrideBits( newWDTCSR, m_WDE );   // Keep old WDE
-    newWDTCSR = overrideBits( newWDTCSR, m_WDP02 ); // Keep old WDP
-    newWDTCSR = overrideBits( newWDTCSR, m_WDP3 );  // Keep old WDP
-    m_mcu->m_regOverride = newWDTCSR;
+    if( !m_allowChanges ) // WDP & WDE changes not allowed, keep old values
+    {
+        newWDTCSR = overrideBits( newWDTCSR, m_WDE );   // Keep old WDE
+        newWDTCSR = overrideBits( newWDTCSR, m_WDP02 ); // Keep old WDP
+        newWDTCSR = overrideBits( newWDTCSR, m_WDP3 );  // Keep old WDP
+        m_mcu->m_regOverride = newWDTCSR;
+    }
 }
 
 void AvrWdt00::updtPrescaler( uint8_t newWDTCSR )
@@ -170,10 +172,12 @@ void AvrWdt01::configureA( uint8_t newWDTCSR ) // WDTCSR Written
 {
     AvrWdt::configureA( newWDTCSR );
 
-    // WDP & WDE changes not allowed, keep old values
-    newWDTCSR = overrideBits( newWDTCSR, m_WDE );   // Keep old WDE
-    newWDTCSR = overrideBits( newWDTCSR, m_WDP02 ); // Keep old WDP
-    m_mcu->m_regOverride = newWDTCSR;
+    if( !m_allowChanges ) // WDP & WDE changes not allowed, keep old values
+    {
+        newWDTCSR = overrideBits( newWDTCSR, m_WDE );   // Keep old WDE
+        newWDTCSR = overrideBits( newWDTCSR, m_WDP02 ); // Keep old WDP
+        m_mcu->m_regOverride = newWDTCSR;
+    }
 }
 
 void AvrWdt01::updtPrescaler( uint8_t newWDTCSR )

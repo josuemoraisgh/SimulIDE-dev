@@ -18,7 +18,7 @@ TreeItem::TreeItem( TreeItem* parent, QString name, QString nameTr, QString comp
 
     m_shortcut = "";
     m_expanded = false;
-    m_hidden   = false;
+    //m_hidden   = false;
 
     setIcon( 0, icon );
     setItemType( itemType );
@@ -86,11 +86,11 @@ void TreeItem::setItemExpanded( bool e )
     setExpanded( e );
 }
 
-void TreeItem::setItemHidden( bool h )
-{
-    m_hidden = h;
-    setHidden( h );
-}
+//void TreeItem::setItemHidden( bool h )
+//{
+//    m_hidden = h;
+//    setHidden( h );
+//}
 
 QString TreeItem::toString( QString indent )
 {

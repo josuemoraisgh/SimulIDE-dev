@@ -3,6 +3,8 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+//#include <QDebug>
+
 #include "scripttwi.h"
 #include "scriptcpu.h"
 #include "angelscript.h"
@@ -77,6 +79,7 @@ void ScriptTwi::readByte()
 
 void ScriptTwi::writeByte() // Master is reading, we send byte m_txReg
 {
+    TwiModule::writeByte();
     if( !m_writeByte ) { m_txReg = 0; return; }
 
     m_scriptCpu->prepare( m_writeByte );

@@ -19,6 +19,8 @@ class UartTx : public UartTR
         void processData( uint8_t data );
         void startTransmission();
 
+        uint64_t getFrameTime() { return m_framesize*m_period; }
+
     protected:
         void sendBit();
 };

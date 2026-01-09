@@ -10,6 +10,7 @@
 #include "simulator.h"
 #include "circuit.h"
 #include "circuitwidget.h"
+#include "componentlist.h"
 #include "analogclock.h"
 
 AppDialog::AppDialog( QWidget* parent )
@@ -98,7 +99,7 @@ void AppDialog::on_tabList_currentChanged( int tab )
 
     switch( tab ) {
         case 0: setMinimumHeight( 250*m_scale ); setMaximumHeight( 350*m_scale ); break;
-        case 1: setMinimumHeight( 300*m_scale ); setMaximumHeight( 400*m_scale ); break;
+        case 1: setMinimumHeight( 300*m_scale ); setMaximumHeight( 500*m_scale ); break;
         case 2: setMinimumHeight( 350*m_scale ); setMaximumHeight( 450*m_scale ); break;
     }
     adjustSize();
@@ -195,6 +196,11 @@ void AppDialog::on_canvasHeight_editingFinished()
 void AppDialog::on_fps_valueChanged( int fps )
 {
     Simulator::self()->setFps( fps );
+}
+
+void AppDialog::on_shortcutButton_released()
+{
+    ComponentList::self()->slotManageComponents();
 }
 
 void AppDialog::on_backup_valueChanged( int secs )
