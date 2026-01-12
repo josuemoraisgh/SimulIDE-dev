@@ -344,7 +344,10 @@ int BaseDebugger::getValidLine( codeLine_t line )
 
 bool BaseDebugger::isMappedLine( codeLine_t line )
 {
-    return m_flashToSource.values().contains(line);
+    for( codeLine_t codeLine : m_flashToSource.values() )
+        if( codeLine == line ) return true;
+
+    return false;
 }
 
 QString BaseDebugger::getVarType( QString var )

@@ -178,7 +178,7 @@ QString fileToString( QString fileName, QString caller )
         return "";
     }
     QTextStream in(&file);
-    in.setCodec("UTF-8");
+    in.setEncoding( QStringConverter::Utf8 );
     QString text = in.readAll();
     file.close();
 
