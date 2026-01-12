@@ -220,7 +220,7 @@ void RamTable::saveVarSet()
 {
     const QString dir = Circuit::self()->getFilePath();
 
-    QString fileName = QFileDialog::getSaveFileName( this, tr("Save VarSet"), dir,
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save VarSet"), dir,
                                                  tr("VarSets (*.vst);;All files (*.*)"));
     if( !fileName.isEmpty() )
     {
