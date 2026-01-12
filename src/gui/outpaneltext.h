@@ -7,6 +7,7 @@
 
 #include <QPlainTextEdit>
 #include <QSyntaxHighlighter>
+#include <QRegularExpression>
 #include <QObject>
 
 #include "updatable.h"
@@ -47,7 +48,7 @@ class OutHighlighter : public QSyntaxHighlighter
     private:
         struct HighlightingRule
         {
-            QRegExp pattern;
+            QRegularExpression pattern;
             QTextCharFormat format;
         };
         QVector<HighlightingRule> highlightingRules;

@@ -16,7 +16,7 @@ class Interrupt;
 class McuTwi;
 class McuSpi;
 class ScriptPerif;
-class Display;
+class DisplayArea;
 
 class McuCreator
 {
@@ -73,7 +73,7 @@ class McuCreator
 
         static McuTwi* m_twi;
         static McuSpi* m_spi;
-        static QList<Display*> m_displays;
+        static QList<DisplayArea*> m_displays;
 
         static bool m_console;
 

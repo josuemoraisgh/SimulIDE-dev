@@ -182,7 +182,7 @@ void Esp01::byteReceived( uint8_t byte )
             m_dataLenght = 0;
     }   }
     else{
-        m_buffer.append( byte ); //qDebug() << m_buffer;
+        m_buffer.append( QChar(byte) ); //qDebug() << m_buffer;
         if( m_buffer.right(2)  == "\r\n")
         { command(); runEvent(); }
     }

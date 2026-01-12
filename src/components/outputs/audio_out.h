@@ -44,7 +44,7 @@ class AudioOut : public Component, public eResistor
 
     private:
         QAudioDeviceInfo m_deviceinfo;
-        QAudioFormat     m_format;  
+        QAudioFormat     m_format;
         
         QAudioOutput* m_audioOutput;
         QIODevice*    m_audioBuffer;

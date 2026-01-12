@@ -178,6 +178,8 @@ void Csource::setVoltage( double v )
     if( m_currControl  ) curr *= m_admit;   // Current controlled
 
     curr *= m_gain;
+
+
     m_pin[2]->stampCurrent( curr );
     m_pin[3]->stampCurrent(-curr );
 }

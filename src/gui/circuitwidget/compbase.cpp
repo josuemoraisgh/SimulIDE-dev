@@ -29,7 +29,7 @@ CompBase::~CompBase()
 void CompBase::loadProperties( QVector<propStr_t> properties ) // Set properties in correct order
 {
     for( propStr_t prop : properties ) // Set properties
-        setPropStr( prop.name.toString(), prop.value.toString() );
+        setPropStr( prop.name, prop.value );
 }
 
 void CompBase::remPropGroup( QString name )

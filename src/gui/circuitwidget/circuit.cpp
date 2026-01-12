@@ -77,8 +77,8 @@ Circuit::Circuit( int width, int height, CircuitView* parent )
     connect( &m_bckpTimer, &QTimer::timeout,
                      this, &Circuit::saveBackup );
 
-    qDebug() << endl << "-------------------------------------------------";
-    qDebug() << "                   NEW CIRCUIT                   "<<endl;
+    qDebug() << Qt::endl << "-------------------------------------------------";
+    qDebug() << "                   NEW CIRCUIT                   "<<Qt::endl;
 }
 
 Circuit::~Circuit()
@@ -202,8 +202,8 @@ void Circuit::loadStrDoc( QString &doc )
     m_busy  = true;
     if( !m_undo && !m_redo ) m_LdPinMap.clear();
 
-    QVector<QStringRef> docLines = doc.splitRef("\n");
-    for( QStringRef line : docLines )
+    QStringList docLines = doc.split("\n");
+    for( QString line : docLines )
     {
         QVector<propStr_t> properties = parseXmlProps( line );
 
@@ -211,7 +211,7 @@ void Circuit::loadStrDoc( QString &doc )
         {
             propStr_t itemType = properties.takeFirst();
             if( itemType.name != "itemtype") continue;
-            QString type = itemType.value.toString();
+            QString type = itemType.value;
 
             if( type == "Connector" )
             {
@@ -223,10 +223,10 @@ void Circuit::loadStrDoc( QString &doc )
                 QString uid;
                 for( propStr_t prop : properties )
                 {
-                    if     ( prop.name == "startpinid") startpinid = prop.value.toString();
-                    else if( prop.name == "endpinid"  ) endpinid   = prop.value.toString();
-                    else if( prop.name == "pointList" ) pointList  = prop.value.toString().split(",");
-                    else if( prop.name == "uid"       ) uid        = prop.value.toString();
+                    if     ( prop.name == "startpinid") startpinid = prop.value;
+                    else if( prop.name == "endpinid"  ) endpinid   = prop.value;
+                    else if( prop.name == "pointList" ) pointList  = prop.value.split(",");
+                    else if( prop.name == "uid"       ) uid        = prop.value;
                 }
                 if( m_pasting )
                 {
@@ -279,7 +279,7 @@ void Circuit::loadStrDoc( QString &doc )
             {
                 propStr_t circId = properties.takeFirst();
                 if( circId.name != "CircId") continue; /// ERROR
-                QString uid = circId.value.toString();
+                QString uid = circId.value;
                 QString newUid;
 
                 if( m_pasting ) // Create new id
@@ -299,7 +299,7 @@ void Circuit::loadStrDoc( QString &doc )
 
                     for( propStr_t prop : properties )
                     {
-                        if     ( prop.name == "Pos") joint->setPropStr( "Pos", prop.value.toString() );
+                        if     ( prop.name == "Pos") joint->setPropStr( "Pos", prop.value );
                         else if( prop.name == "x"  ) joint->setX( prop.value.toInt() );
                         else if( prop.name == "y"  ) joint->setY( prop.value.toInt() );
                     }
@@ -356,11 +356,11 @@ void Circuit::loadStrDoc( QString &doc )
             {
                 if( prop.name == "MainCompId")  // If more than 1 mainComp then get Component
                 {
-                    QString compName = prop.value.toString();
+                    QString compName = prop.value;
                     mComp = m_subCircuit->getMainComp( compName );
                     if( !mComp ) qDebug() << "ERROR: Could not get Main Component:"<< compName;
                 }
-                else mComp->setPropStr( prop.name.toString(), prop.value.toString() );
+                else mComp->setPropStr( prop.name, prop.value );
             }
         }
         else if( line.startsWith("<circuit") )

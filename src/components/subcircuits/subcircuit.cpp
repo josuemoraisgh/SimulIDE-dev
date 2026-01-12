@@ -100,7 +100,7 @@ Component* SubCircuit::construct( QString type, QString id )
     }
 
     if( packageList.isEmpty() ){
-        qDebug() << "SubCircuit::construct: No Packages found for"<<device<<endl;
+        qDebug() << "SubCircuit::construct: No Packages found for"<<device<<Qt::endl;
         return nullptr;
     }
 
@@ -176,8 +176,8 @@ void SubCircuit::loadSubCircuit( QString doc )
 
     QList<Linker*> linkList;   // Linked  Component list
 
-    QVector<QStringRef> docLines = doc.splitRef("\n");
-    for( QStringRef line : docLines )
+    QStringList docLines = doc.split("\n");
+    for( QString line : docLines )
     {
         if( !line.startsWith("<item") ) continue;
 
@@ -185,7 +185,7 @@ void SubCircuit::loadSubCircuit( QString doc )
 
         propStr_t itemType = properties.takeFirst();
         if( itemType.name != "itemtype") continue;
-        QString type = itemType.value.toString();
+        QString type = itemType.value;
 
         if( type == "Package" ) continue;
 
@@ -196,9 +196,9 @@ void SubCircuit::loadSubCircuit( QString doc )
 
             for( propStr_t prop : properties )
             {
-                if     ( prop.name == "startpinid") startPinId = numId+"@"+prop.value.toString();
-                else if( prop.name == "endpinid"  ) endPinId   = numId+"@"+prop.value.toString();
-                else if( prop.name == "pointList" ) pointList  = prop.value.toString().split(",");
+                if     ( prop.name == "startpinid") startPinId = numId+"@"+prop.value;
+                else if( prop.name == "endpinid"  ) endPinId   = numId+"@"+prop.value;
+                else if( prop.name == "pointList" ) pointList  = prop.value.split(",");
             }
 
             Pin* startPin = circ->m_LdPinMap.value( startPinId );
@@ -224,7 +224,7 @@ void SubCircuit::loadSubCircuit( QString doc )
 
             propStr_t circId = properties.takeFirst();
             if( circId.name != "CircId") continue; /// ERROR
-            QString uid = circId.value.toString();
+            QString uid = circId.value;
             QString newUid = numId+"@"+uid;
 
             if( type == "Node" ) comp = new Node( type, newUid );
@@ -246,8 +246,8 @@ void SubCircuit::loadSubCircuit( QString doc )
 
             for( propStr_t prop : properties )
             {
-                QString propName = prop.name.toString();
-                if( !s_graphProps.contains( propName ) ) comp->setPropStr( propName, prop.value.toString() );
+                QString propName = prop.name;
+                if( !s_graphProps.contains( propName ) ) comp->setPropStr( propName, prop.value );
             }
             if( mcu ) mcu->m_subcFolder = "";
 

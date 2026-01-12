@@ -228,14 +228,14 @@ void MCUMonitor::createStatusPC()
     it = new QTableWidgetItem(0);
     it->setFlags( Qt::ItemIsEnabled );
     it->setFont( font );
-    it->setTextColor( QColor( numberColor ) );
+    it->setForeground( QColor( numberColor ) );
     m_pc.setItem( 0, 0, it );
     m_pc.setColumnWidth( 0, round(45*scale) );
 
     it = new QTableWidgetItem(0);
     it->setFlags( Qt::ItemIsEnabled );
     it->setFont( font );
-    it->setTextColor( QColor( 0x3030B8 ) );
+    it->setForeground( QColor( 0x3030B8 ) );
     m_pc.setItem( 0, 1, it );
     m_pc.setColumnWidth( 1, round(60*scale) );
     wi = round(135*scale);

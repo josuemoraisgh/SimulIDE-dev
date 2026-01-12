@@ -21,15 +21,15 @@ QString getStrPointF( QPointF p )
 
 //---------------------------------------------------
 
-QVector<propStr_t> parseXmlProps( QStringRef line )
+QVector<propStr_t> parseXmlProps( QString line )
 {
     QVector<propStr_t> properties;
 
-    QStringRef name;
-    QVector<QStringRef> tokens = line.split("\"");
+    QString name;
+    QStringList tokens = line.split("\"");
     tokens.removeLast();
 
-    for( QStringRef token : tokens )
+    for( QString token : tokens )
     {
         if( name.isEmpty() ){
             int start = token.lastIndexOf(" ")+1;
@@ -42,13 +42,13 @@ QVector<propStr_t> parseXmlProps( QStringRef line )
     return properties;
 }
 
-QVector<propStr_t> parseProps( QStringRef line )
+QVector<propStr_t> parseProps( QString line )
 {
     QVector<propStr_t> properties;
 
-    QVector<QStringRef> tokens = line.split(";");
+    QList<QString> tokens = line.split(';');
 
-    for( QStringRef token : tokens )
+    for( QString token : tokens )
     {
         propStr_t property = parseProp( token );
         if( property.name.size() ) properties.append( property );
@@ -56,10 +56,10 @@ QVector<propStr_t> parseProps( QStringRef line )
     return properties;
 }
 
-propStr_t parseProp( QStringRef token )
+propStr_t parseProp( QString token )
 {
-    QStringRef name;       // Property_name
-    QStringRef value;      // Property value
+    QString name;       // Property_name
+    QString value;      // Property value
     int index = token.indexOf("="); // First occurrence of "="
 
     if( index == -1 ) name = token;

@@ -26,11 +26,11 @@ class McuTimer : public McuPrescaled, public eElement
             clkEXT
         };
 
-        virtual void initialize() override;
-        virtual void runEvent() override;
-        virtual void voltChanged() override;
+        void initialize() override;
+        void runEvent() override;
+        void voltChanged() override;
 
-        virtual void sleep( int mode ) override;
+        void sleep( int mode ) override;
 
         virtual void resetTimer();
 

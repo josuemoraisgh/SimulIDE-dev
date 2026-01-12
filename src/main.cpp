@@ -59,7 +59,7 @@ int main( int argc, char *argv[] )
 
     QApplication app( argc, argv );
 
-    QSettings settings( QStandardPaths::standardLocations( QStandardPaths::DataLocation).first()+"/simulide.ini",  QSettings::IniFormat, 0l );
+    QSettings settings( QStandardPaths::standardLocations( QStandardPaths::AppDataLocation).first()+"/simulide.ini",  QSettings::IniFormat, 0l );
 
     QString locale = QLocale::system().name();
     if( settings.contains( "language" ) ) locale = settings.value( "language" ).toString();
@@ -73,8 +73,9 @@ int main( int argc, char *argv[] )
     if( langF == "" ) langF = ":/simulide_en.qm";
 
     QTranslator translator;
-    translator.load( langF );
-    app.installTranslator( &translator );
+    if( translator.load( langF ) )
+        app.installTranslator( &translator );
+
     app.setApplicationVersion( APP_VERSION );
 
     MainWindow window;

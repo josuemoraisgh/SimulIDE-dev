@@ -54,19 +54,19 @@ Chip::Chip( QString type, QString id, QString device )
 
     QFont f;
     f.setFamily("Ubuntu Mono");
-    f.setWeight( 65 );
+    f.setWeight( QFont::Medium );
 #ifdef Q_OS_UNIX
     f.setLetterSpacing( QFont::PercentageSpacing, 120 );
 #else
     //f.setLetterSpacing( QFont::AbsoluteSpacing, -1 );
-    f.setWeight( 100 );
+    //f.setWeight( 100 );
     //f.setStretch( 99 );
 #endif
     f.setPixelSize(5);
 
     m_label.setFont( f );
     m_label.setDefaultTextColor( QColor( 135, 135, 120 ) );
-    m_label.setAcceptedMouseButtons( 0 );
+    m_label.setAcceptedMouseButtons( Qt::NoButton );
     m_label.setRotation(-90 );
     m_label.setVisible( true );
     
@@ -108,9 +108,9 @@ QMap<QString, QString> Chip::getPackages( QString compFile ) // Static
 
     QString doc = fileToString( compFile, "Chip::getPackages");
 
-    QVector<QStringRef> docLines = doc.splitRef("\n");
+    QStringList docLines = doc.split("\n");
 
-    for( QStringRef line : docLines )
+    for( QString line : docLines )
     {
         if( !line.startsWith("<item") ) continue;
 
@@ -125,8 +125,8 @@ QMap<QString, QString> Chip::getPackages( QString compFile ) // Static
 
         for( propStr_t prop : properties )
         {
-            QString propName  = prop.name.toString();
-            QString propValue = prop.value.toString();
+            QString propName  = prop.name;
+            QString propValue = prop.value;
 
             if     ( propName == "SubcType" ) { if( propValue != "None" ) s_subcType = propValue; } // Only for Subcircuits
             else if( propName == "label"    ) pkgName = propValue;
@@ -148,8 +148,8 @@ QMap<QString, QString> Chip::getPackages( QString compFile ) // Static
 QString Chip::convertPackage( QString pkgText ) // Static, converts xml to new format
 {
     QString pkgStr;
-    QVector<QStringRef> docLines = pkgText.splitRef("\n");
-    for( QStringRef line : docLines )
+    QStringList docLines = pkgText.split("\n");
+    for( QString line : docLines )
     {
         if( line.startsWith("<!") ) continue;
         if( line.startsWith("</") ) continue;
@@ -163,8 +163,8 @@ QString Chip::convertPackage( QString pkgText ) // Static, converts xml to new f
 
             for( propStr_t prop : properties )
             {
-                QString propName  = prop.name.toString();
-                QString propValue = prop.value.toString();
+                QString propName  = prop.name;
+                QString propValue = prop.value;
                 if( propName == "type" ) s_subcType = propValue.remove("subc");
                 pkgStr += propName+"="+propValue+"; ";
             }
@@ -173,9 +173,9 @@ QString Chip::convertPackage( QString pkgText ) // Static, converts xml to new f
             pkgStr += "Pin; ";
             for( propStr_t prop : properties )
             {
-                QString value = prop.value.toString();
+                QString value = prop.value;
                 if( value.contains("&") ) value = cleanPinName( value );
-                pkgStr += prop.name.toString()+"="+value+"; ";
+                pkgStr += prop.name+"="+value+"; ";
             }
         }
         pkgStr += "\n";
@@ -232,15 +232,15 @@ void Chip::initPackage( QString pkgStr )
 
     QString embedName;
 
-    QVector<QStringRef> docLines = pkgStr.splitRef("\n");
-    for( QStringRef line : docLines )
+    QStringList docLines = pkgStr.split("\n");
+    for( QString line : docLines )
     {
         if( line.isEmpty() ) continue;
 
         QVector<propStr_t> properties = parseProps( line );
         if( properties.isEmpty() ) break;
 
-        QStringRef item = properties.takeFirst().name;
+        QString item = properties.takeFirst().name;
         if( item == "Package" )
         {
             QString background;
@@ -248,17 +248,17 @@ void Chip::initPackage( QString pkgStr )
 
             for( propStr_t property : properties )
             {
-                QString   name = property.name.toString().toLower();  // Property name
-                QStringRef val = property.value;                      // Property value
+                QString   name = property.name.toLower();  // Property name
+                QString val = property.value;                      // Property value
 
                 if     ( name == "width"       ) m_width    = val.split(" ").first().toInt();
                 else if( name == "height"      ) m_height   = val.split(" ").first().toInt();
-                else if( name == "name"        ) embedName  = val.toString();
+                else if( name == "name"        ) embedName  = val;
                 else if( name == "border"      ) m_border = ( val == "true" );
                 else if( name == "custom_color") m_customColor = ( val == "true" );
-                else if( name == "background"  ) background = val.toString();
-                else if( name == "bckgnddata"  ) bckgndData = val.toString();
-                else if( name == "bckgndcolor" ) setPkgColorStr( val.toString() );
+                else if( name == "background"  ) background = val;
+                else if( name == "bckgnddata"  ) bckgndData = val;
+                else if( name == "bckgndcolor" ) setPkgColorStr( val );
                 else if( name == "logic_symbol") m_isLS = ( val == "true" );
             }
             setBckGndData( bckgndData );
@@ -320,17 +320,17 @@ void Chip::setPinStr( QVector<propStr_t> properties )
 
     for( propStr_t property : properties )
     {
-        QStringRef name = property.name;  // Property_name
-        QStringRef val  = property.value; // Property_value
+        QString name = property.name;  // Property_name
+        QString val  = property.value; // Property_value
 
         if     ( name == "xpos"  ) xpos   = val.toInt();
         else if( name == "ypos"  ) ypos   = val.toInt();
         else if( name == "angle" ) angle  = val.toInt();
         else if( name == "length") length = val.toInt();
         else if( name == "space" ) space  = val.toInt();
-        else if( name == "id"    ) id     = val.toString();
-        else if( name == "label" ) label  = val.toString();
-        else if( name == "type"  ) type   = val.toString();
+        else if( name == "id"    ) id     = val;
+        else if( name == "label" ) label  = val;
+        else if( name == "type"  ) type   = val;
     }
     addNewPin( id, type, label, 0, xpos, ypos, angle, length, space );
 }
@@ -400,12 +400,12 @@ void Chip::setBckGndData( QString data )
     m_hasBckGndData = true;
     m_backPixmap = new QPixmap();
 
-    QStringRef dataRef( &data );
+    QStringView dataRef{data};
     QByteArray ba;
     bool ok;
     for( int i=0; i<dataRef.size(); i+=2 )
     {
-        QStringRef ch = dataRef.mid( i, 2 );
+        QStringView ch = dataRef.mid( i, 2 );
         ba.append( ch.toInt( &ok, 16 ) );
     }
     m_backPixmap->loadFromData( ba );

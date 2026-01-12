@@ -61,8 +61,8 @@ AudioOut::AudioOut( QString type, QString id )
     m_buzzer = false;
     m_audioOutput = nullptr;
 
-    m_deviceinfo = QAudioDeviceInfo::defaultOutputDevice(); 
-    if( m_deviceinfo.isNull() ) 
+    m_deviceinfo = QAudioDeviceInfo::defaultOutputDevice();
+    if( m_deviceinfo.isNull() )
     {
         const auto deviceInfos = QAudioDeviceInfo::availableDevices( QAudio::AudioOutput );
         if( deviceInfos.isEmpty() )
@@ -84,14 +84,14 @@ AudioOut::AudioOut( QString type, QString id )
     m_format.setChannelCount( 1 );
     m_format.setSampleSize( 8 );
     m_format.setSampleType( QAudioFormat::UnSignedInt );
-    m_format.setByteOrder( QAudioFormat::LittleEndian );  
+    m_format.setByteOrder( QAudioFormat::LittleEndian );
 
-    if( !m_deviceinfo.isFormatSupported( m_format )) 
-    {  
+    if( !m_deviceinfo.isFormatSupported( m_format ))
+    {
         qDebug() << "Warning: Default format not supported - trying to use nearest";
-        m_format = m_deviceinfo.nearestFormat( m_format );  
+        m_format = m_deviceinfo.nearestFormat( m_format );
         qDebug() << m_format.sampleRate() << m_format.channelCount()<<m_format.sampleSize();
-    }  
+    }
     m_audioOutput = new QAudioOutput( m_deviceinfo, m_format );
 
     addPropGroup( { tr("Main"), {
@@ -183,6 +183,7 @@ void AudioOut::runEvent()
         realSpeed /= 1e8;
     }
     realSpeed *= (1e12/10000);
+
     uint64_t nextEvent = realSpeed/m_format.sampleRate();
     Simulator::self()->addEvent( nextEvent, this ); // 25 us
 }

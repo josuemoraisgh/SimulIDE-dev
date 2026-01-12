@@ -82,7 +82,7 @@ class PlotBase : public Component, public ScriptBase
         void setAutoExport( bool a ) { m_autoExport = a; }
         QString getExportFile() { return m_exportFile; }
         void dump() { dumpData( m_exportFile ); }
-        virtual void dumpData( const QString& ){;}
+        virtual void dumpData( QString ){;}
 
         virtual void channelChanged( int ch, QString name ) { m_channel[ch]->m_chTunnel = name; }
 

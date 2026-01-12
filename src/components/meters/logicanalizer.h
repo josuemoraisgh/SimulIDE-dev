@@ -62,7 +62,7 @@ class LAnalizer : public PlotBase
 
         void expand( bool e ) override;
 
-        void dumpData( const QString& fn ) override;
+        void dumpData( QString fn ) override;
 
     private:
         uint64_t getGcd( uint64_t a, uint64_t b ); // greatest Common Denominator

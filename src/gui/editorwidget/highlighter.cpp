@@ -121,7 +121,7 @@ void Highlighter::addObjects( QStringList patterns )
     f.setFontWeight( QFont::Bold );
     f.setForeground( QColor( 0, 120, 70 ) );
     
-    for( QString exp : patterns ) m_objectRules.append( HighlightRule{ QRegExp( "\\b"+exp+"\\b"), f } );
+    for( QString exp : patterns ) m_objectRules.append( HighlightRule{ QRegularExpression( "\\b"+exp+"\\b"), f } );
 
     this->rehighlight();
 }
@@ -138,7 +138,7 @@ void Highlighter::addMembers( QStringList patterns )
     f.setFontWeight( QFont::Bold );
     f.setForeground( QColor( 0, 95, 160 ) );
 
-    for( QString exp : patterns ) m_memberRules.append( HighlightRule{ QRegExp( "\\b"+exp+"\\b"), f } );
+    for( QString exp : patterns ) m_memberRules.append( HighlightRule{ QRegularExpression( "\\b"+exp+"\\b"), f } );
 
     this->rehighlight();
 }
@@ -150,7 +150,7 @@ void Highlighter::setExtraTypes( QStringList patterns )
     f.setFontWeight( QFont::Bold );
     f.setForeground( QColor( 0x904020 ) );
 
-    for( QString exp : patterns ) m_extraRules.append( HighlightRule{ QRegExp( "\\b"+exp+"\\b"), f } );
+    for( QString exp : patterns ) m_extraRules.append( HighlightRule{ QRegularExpression( "\\b"+exp+"\\b"), f } );
 
     this->rehighlight();
 }
@@ -169,40 +169,55 @@ void Highlighter::highlightBlock( const QString &text )
     {
         setCurrentBlockState( 0 );
         int startIndex = 0;
-        if( previousBlockState() != -10 )
-            startIndex = m_multiStart.indexIn( text );
+
+        if( previousBlockState() != -10 ) {
+            QRegularExpressionMatch match = m_multiStart.match( text );
+            startIndex = match.hasMatch() ? match.capturedStart() : -1;
+        }
 
         while( startIndex >= 0 )
         {
-            int endIndex = m_multiEnd.indexIn( text, startIndex );
+            QRegularExpressionMatch endMatch = m_multiEnd.match(text, startIndex);
+            int endIndex = endMatch.hasMatch() ? endMatch.capturedStart() : -1;
             int commentLength;
             if( endIndex == -1 )
             {
                 setCurrentBlockState( -10 );
                 commentLength = text.length()- startIndex;
             }else{
-                commentLength = endIndex - startIndex + m_multiEnd.matchedLength();
+                commentLength = endIndex - startIndex + endMatch.capturedLength();
             }
             setFormat( startIndex, commentLength, m_multiFormat );
-            startIndex = m_multiStart.indexIn( text, startIndex + commentLength );
+            //startIndex = m_multiStart.indexIn( text, startIndex + commentLength );
+            QRegularExpressionMatch nextMatch = m_multiStart.match(text, startIndex + commentLength);
+            startIndex = nextMatch.hasMatch() ? nextMatch.capturedStart() : -1;
 }   }   }
 
 void Highlighter::processRule( HighlightRule rule, QString lcText )
 {
-    QRegExp expression( rule.pattern );
-    int index = expression.indexIn( lcText );
-    while( index >= 0 )
+    //QRegularExpression expression( rule.pattern );
+    //int index = expression.indexIn( lcText );
+    //while( index >= 0 )
+    //{
+    //    int length = expression.matchedLength();
+    //    setFormat( index, length, rule.format );
+    //    index = expression.indexIn( lcText, index + length );
+    //}
+
+    QRegularExpressionMatchIterator it = rule.pattern.globalMatch( lcText );
+
+    while( it.hasNext() )
     {
-        int length = expression.matchedLength();
-        setFormat( index, length, rule.format );
-        index = expression.indexIn( lcText, index + length );
-}   }
+        QRegularExpressionMatch match = it.next();
+        setFormat( match.capturedStart(), match.capturedLength(), rule.format );
+    }
+}
 
 void Highlighter::addRule( QTextCharFormat format, QString exp )
 {
     HighlightRule rule;
 
-    rule.pattern = QRegExp( exp );
+    rule.pattern = QRegularExpression( exp );
     rule.format = format;
     m_rules.append( rule );
 }

@@ -174,7 +174,7 @@ QString fileToString( QString fileName, QString caller )
     QFile file( fileName );
     if (!file.open( QFile::ReadOnly | QFile::Text) )
     {
-        qDebug() << caller << "Error: Cannot read file"<<endl<<fileName<<endl<<file.errorString();
+        qDebug() << caller << "Error: Cannot read file"<<Qt::endl<<fileName<<Qt::endl<<file.errorString();
         return "";
     }
     QTextStream in(&file);
@@ -197,7 +197,7 @@ QByteArray fileToByteArray( QString fileName, QString caller )
     QFile file(fileName);
     if( !file.open( QFile::ReadOnly ) )
     {
-        qDebug() << caller << "Error: Cannot read file"<<endl<<fileName<<endl<<file.errorString();
+        qDebug() << caller << "Error: Cannot read file"<<Qt::endl<<fileName<<Qt::endl<<file.errorString();
         return ba;
     }
     ba = file.readAll();

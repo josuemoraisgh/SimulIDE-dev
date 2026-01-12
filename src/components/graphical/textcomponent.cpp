@@ -48,14 +48,14 @@ TextComponent::TextComponent( QString type, QString id )
     #if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     sansFont.setWeight( QFont::Medium );
     #else
-    sansFont.setWeight( QFont::Normal);
+    sansFont.setWeight( QFont::Normal );
     #endif
     sansFont.setFixedPitch(true);
 
     QColor color = Qt::darkBlue;
     m_fontColor = color.name();
     m_text = new QGraphicsTextItem( this );
-    m_text->setTextInteractionFlags( 0 );
+    m_text->setTextInteractionFlags( Qt::NoTextInteraction );
     m_text->setTextWidth( 90 );
     m_text->setFont( sansFont );
     m_textString = "... TEXT ...";

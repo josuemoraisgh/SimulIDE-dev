@@ -73,8 +73,8 @@ RamTable::RamTable( QWidget* parent, eMcu* processor ,bool cpuMonitor )
             if( col != 1 ){
                 it->setFlags( Qt::ItemIsEnabled );
                 it->setText("---");
-                if( col == 3 ) it->setTextColor( QColor( 0x904020 ) );
-                else           it->setTextColor( QColor( numberColor ) );
+                if( col == 3 ) it->setForeground( QColor( 0x904020 ) );
+                else           it->setForeground( QColor( numberColor ) );
             }
             if( col == 0  || col == 3 ) it->setFont( fontS );
             else           it->setFont( font );
@@ -416,7 +416,7 @@ void RamTable::updateValues()
                     for( int i=address; i<=address+value; i++ )
                     {
                         QString str = "";
-                        const QChar cha = m_processor->getRamValue( i );
+                        const QChar cha = QChar(m_processor->getRamValue( i ) );
                         str.setRawData( &cha, 1 );
                         strVal += str; //QByteArray::fromHex( getRamValue( i ) );
                     }
