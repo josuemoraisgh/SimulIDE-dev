@@ -15,13 +15,13 @@ struct funcPin
     QString label;
 };
 
-class esp32Pin : public IoPin//, public QemuModule
+class Esp32Pin : public IoPin//, public QemuModule
 {
     friend class Esp32;
 
     public:
-        esp32Pin( int i, QString id, QemuDevice* mcu, IoPin* dummyPin );
-        ~esp32Pin();
+        Esp32Pin( int i, QString id, QemuDevice* mcu, IoPin* dummyPin );
+        ~Esp32Pin();
 
         void initialize() override;
         void stamp() override;
@@ -39,11 +39,13 @@ class esp32Pin : public IoPin//, public QemuModule
         //bool setAlternate( bool a );
         //void setAnalog( bool a );
 
-        void setIoMuxFunc( uint64_t func );
+        void writeIoMuxReg( uint16_t value );
 
         void setMatrixFunc( uint16_t val, funcPin func );
 
-        void setIoMuxPins( QList<funcPin> iomuxPin );
+        void setIoMuxFuncs( QList<funcPin> functions );
+
+        void writePinReg( uint32_t value );
 
     protected:
         void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
@@ -66,5 +68,5 @@ class esp32Pin : public IoPin//, public QemuModule
         uint8_t m_iomuxIndex;
 
         IoPin* m_dummyPin;
-        funcPin m_iomuxPin[6];
+        funcPin m_iomuxFuncs[6];
 };

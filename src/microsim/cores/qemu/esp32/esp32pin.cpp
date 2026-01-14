@@ -10,7 +10,7 @@
 #include "qemumodule.h"
 #include "simulator.h"
 
-esp32Pin::esp32Pin( int i, QString id, QemuDevice* mcu, IoPin* dummyPin )
+Esp32Pin::Esp32Pin( int i, QString id, QemuDevice* mcu, IoPin* dummyPin )
         : IoPin( 0, QPoint(0,0), mcu->getId()+"-"+id, i, mcu, input )
         //, QemuModule( mcu, i )
 {
@@ -32,11 +32,11 @@ esp32Pin::esp32Pin( int i, QString id, QemuDevice* mcu, IoPin* dummyPin )
 
     m_pinLabel = id;
 
-    for( int i=0; i<6; ++i ) m_iomuxPin[i] = { nullptr, nullptr, "- -" };
+    for( int i=0; i<6; ++i ) m_iomuxFuncs[i] = { nullptr, nullptr, "- -" };
 }
-esp32Pin::~esp32Pin() {}
+Esp32Pin::~Esp32Pin() {}
 
-void esp32Pin::initialize()
+void Esp32Pin::initialize()
 {
     //Pin::setLabelText( m_pinLabel );
     //Pin::setLabelColor( QColor( 250, 250, 200 ) );
@@ -49,16 +49,17 @@ void esp32Pin::initialize()
     //m_inpHighV = vdd/2;
     //m_inpLowV  = vdd/2;
     //
+
     IoPin::initialize();
 }
 
-void esp32Pin::updateStep()
+void Esp32Pin::updateStep()
 {
-    Pin::setLabelText( m_iomuxPin[m_iomuxIndex].label );
+    Pin::setLabelText( m_iomuxFuncs[m_iomuxIndex].label );
     Simulator::self()->remFromUpdateList( this );
 }
 
-void esp32Pin::stamp()
+void Esp32Pin::stamp()
 {
     //m_alternate = false;
     //m_analog = false;
@@ -70,7 +71,7 @@ void esp32Pin::stamp()
     setPinMode( input );
 
     m_iomuxIndex = -1;
-    setIoMuxFunc( 0 );
+    selectIoMuxFunc( 0 );
 
     //setPull( true );
     //updateStep();
@@ -80,7 +81,7 @@ void esp32Pin::stamp()
     IoPin::stamp();
 }
 
-void esp32Pin::voltChanged()
+void Esp32Pin::voltChanged()
 {
     bool oldState = m_inpState;
     bool newState = IoPin::getInpState();
@@ -97,52 +98,52 @@ void esp32Pin::voltChanged()
     // m_arena->qemuAction = SIM_GPIO_IN;
 }
 
-void esp32Pin::setPinMode( pinMode_t mode )
+void Esp32Pin::setPinMode( pinMode_t mode )
 {
     IoPin::setPinMode( mode );
     changeCallBack( this, mode == input );
 }
 
-//void esp32Pin::setPull( bool p )
+//void Esp32Pin::setPull( bool p )
 //{
 //    if( m_pull == p ) return;
 //    m_pull = p;
 //    setOutState( m_outState );
 //}
 //
-//bool esp32Pin::setAlternate( bool a ) // If changing to Not Alternate, return false
+//bool Esp32Pin::setAlternate( bool a ) // If changing to Not Alternate, return false
 //{
 //    if( m_alternate == a ) return true;
 //    m_alternate = a;
-//    if( a ) qDebug() << "esp32Pin::setAlternate" << this->m_id;
+//    if( a ) qDebug() << "Esp32Pin::setAlternate" << this->m_id;
 //    return a;
 //}
 //
-//void esp32Pin::setAnalog( bool a ) /// TODO: if changing to Not Analog, return false
+//void Esp32Pin::setAnalog( bool a ) /// TODO: if changing to Not Analog, return false
 //{
 //    if( m_analog == a ) return;
 //    m_analog = a;
 //}
 
-void esp32Pin::setPortState(  bool high ) // Set output from Port register
+void Esp32Pin::setPortState(  bool high ) // Set output from Port register
 {
     //if( m_alternate ) return;
     setPinState( high );
 }
 
-void esp32Pin::setOutState( bool high ) // Set output from Alternate (peripheral)
+void Esp32Pin::setOutState( bool high ) // Set output from Alternate (peripheral)
 {
     //if( m_alternate )
         setPinState( high );
 }
 
-void esp32Pin::scheduleState( bool high, uint64_t time )
+void Esp32Pin::scheduleState( bool high, uint64_t time )
 {
     //if( m_alternate )
         IoPin::scheduleState( high, time );
 }
 
-void esp32Pin::setPinState( bool high ) // Set Output to Hight or Low
+void Esp32Pin::setPinState( bool high ) // Set Output to Hight or Low
 {
     m_outState = m_nextState = high;
     //if( m_pinMode < openCo  || m_stateZ ) return;
@@ -170,20 +171,72 @@ void esp32Pin::setPinState( bool high ) // Set Output to Hight or Low
     }
 }
 
-void esp32Pin::setIoMuxPins( QList<funcPin> funcPins )
+void Esp32Pin::setIoMuxFuncs( QList<funcPin> functions ) // Set IO_MUX functions for this pad
 {
     for( int i=0; i<6; ++i )
     {
-        funcPin fp = funcPins.at(i);
+        funcPin fp = functions.at(i);
         if( fp.label.isEmpty() ) fp.label = m_pinLabel;
 
-        m_iomuxPin[i] = fp;
+        m_iomuxFuncs[i] = fp;
     }
 }
 
-void esp32Pin::setIoMuxFunc( uint64_t value )
+void Esp32Pin::selectIoMuxFunc( uint8_t func ) // Select IO_MUX function
+{
+    if( func > 5 ){
+        qDebug() << this->pinId() << "Selected func ERROR"<< func;
+        return;
+    }
+    if( m_iomuxIndex < 6 ){
+        if( m_iomuxFuncs[m_iomuxIndex].pinPointer )
+            *m_iomuxFuncs[m_iomuxIndex].pinPointer = m_dummyPin;
+
+        QemuModule* mod = m_iomuxFuncs[m_iomuxIndex].module;
+        if( mod ) mod->connected( false );
+    }
+    if( m_iomuxFuncs[func].label.isEmpty() ) m_iomuxFuncs[func].label = m_pinLabel;
+    Simulator::self()->addToUpdateList( this );
+
+    if( m_iomuxFuncs[func].pinPointer )
+    {
+        //qDebug() << this->pinId() << "Selected func"<< func << m_iomuxPin[func].label;
+        *m_iomuxFuncs[func].pinPointer = this;
+
+        QemuModule* mod = m_iomuxFuncs[func].module;
+        if( mod ) mod->connected( true );
+
+        Pin::setLabelColor( QColor( 255, 255, 100 ) );
+    }else{
+        Pin::setLabelColor( QColor( 100, 100, 100 ) );
+    }
+    m_iomuxIndex = func;
+    //qDebug() << this->pinId() << "Selected func"<< func << m_iomuxPin[func].label;
+    //update();
+}
+
+void Esp32Pin::setMatrixFunc( uint16_t val, funcPin func ) // Set Function for GPIO Matrix: index=2
+{
+    // val & 1<<11: OEN_INV_SEL 1: Invert the output enable signal
+    // val & 1<<10: 1: use output enable from bit n of GPIO_ENABLE_REG;
+    //              0: use output enable from peripheral. (R/W)
+    // val & 1<< 9: 1. Invert the output value
+
+    //qDebug() << this->pinId() << "Matrix function"<< func.label<< (val & 0b111000000000);
+    m_iomuxFuncs[2] = func;
+    if( m_iomuxIndex == 2 ) selectIoMuxFunc( 2 );
+}
+
+void Esp32Pin::writeIoMuxReg( uint16_t value )
 {
     uint64_t puld = (value >> 7) & 1;
+
+    // Sleep bits 0-6
+    // PD bit 7
+    // PU bit 8
+    // IE bit 9
+    // Drive bits 10-11
+    // function bits 12-14
 
     if( m_pullDown != puld ){
         m_pullDown = puld;
@@ -204,52 +257,12 @@ void esp32Pin::setIoMuxFunc( uint64_t value )
     selectIoMuxFunc( func );
 }
 
-void esp32Pin::selectIoMuxFunc( uint8_t func )
+void Esp32Pin::writePinReg( uint32_t value )
 {
-    if( func > 5 ){
-        qDebug() << this->pinId() << "Selected func ERROR"<< func;
-        return;
-    }
-    if( m_iomuxIndex < 6 ){
-        if( m_iomuxPin[m_iomuxIndex].pinPointer )
-            *m_iomuxPin[m_iomuxIndex].pinPointer = m_dummyPin;
 
-        QemuModule* mod = m_iomuxPin[m_iomuxIndex].module;
-        if( mod ) mod->connected( false );
-    }
-    if( m_iomuxPin[func].label.isEmpty() ) m_iomuxPin[func].label = m_pinLabel;
-    Simulator::self()->addToUpdateList( this );
-
-    if( m_iomuxPin[func].pinPointer )
-    {
-        //qDebug() << this->pinId() << "Selected func"<< func << m_iomuxPin[func].label;
-        *m_iomuxPin[func].pinPointer = this;
-
-        QemuModule* mod = m_iomuxPin[func].module;
-        if( mod ) mod->connected( true );
-
-        Pin::setLabelColor( QColor( 255, 255, 100 ) );
-    }else{
-        Pin::setLabelColor( QColor( 100, 100, 100 ) );
-    }
-    m_iomuxIndex = func;
-    //qDebug() << this->pinId() << "Selected func"<< func << m_iomuxPin[func].label;
-    //update();
 }
 
-void esp32Pin::setMatrixFunc( uint16_t val, funcPin func )
-{
-    // val & 1<<11: OEN_INV_SEL 1: Invert the output enable signal
-    // val & 1<<10: 1: use output enable from bit n of GPIO_ENABLE_REG;
-    //              0: use output enable from peripheral. (R/W)
-    // val & 1<< 9: 1. Invert the output value
-
-    //qDebug() << this->pinId() << "Matrix function"<< func.label<< (val & 0b111000000000);
-    m_iomuxPin[2] = func;
-    if( m_iomuxIndex == 2 ) selectIoMuxFunc( 2 );
-}
-
-void esp32Pin::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
+void Esp32Pin::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     if( !isVisible() ) return;
     Pin::paint( p, o, w );

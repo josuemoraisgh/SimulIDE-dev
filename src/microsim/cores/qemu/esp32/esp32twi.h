@@ -17,7 +17,7 @@ class Esp32Twi : public QemuTwi
     friend class I2cRunner;
 
     public:
-        Esp32Twi( QemuDevice* mcu, QString name, int number );
+        Esp32Twi( QemuDevice* mcu, QString n, int number, uint32_t* clk, uint64_t memStart, uint64_t memEnd );
         ~Esp32Twi();
 
         enum esp32TwiAction_t {
@@ -28,9 +28,13 @@ class Esp32Twi : public QemuTwi
 
         void reset();
 
-        void doAction() override;
+        //void doAction() override;
 
     protected:
+
+        void writeRegister() override;
+        void readRegister()  override;
+
         void writeCTR( uint16_t data );
 
         void setTwiState( twiState_t state ) override;

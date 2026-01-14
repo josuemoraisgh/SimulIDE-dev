@@ -11,20 +11,13 @@
 class Esp32Spi : public QemuSpi
 {
     public:
-        Esp32Spi( QemuDevice* mcu, QString name, int number );
+        Esp32Spi( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd );
         ~Esp32Spi();
-
-        enum stm32_spi_action_t {
-            STM32_SPI_CR1=1,
-            STM32_SPI_CR2,
-            STM32_SPI_READ,
-            STM32_SPI_WRITE
-        };
-
-        void doAction() override;
 
         void endTransaction() override;
 
     private:
+        void writeRegister() override;
+        void readRegister()  override;
 };
 
