@@ -6,7 +6,7 @@
 #pragma once
 
 #include <QPointF>
-#include <QStringRef>
+#include <QStringView>
 
 QPointF getPointF( QString p );
 
@@ -16,11 +16,11 @@ QString getStrPointF( QPointF p );
 //---------------------------------------------------
 
 struct propStr_t{
-    QStringRef name;
-    QStringRef value;
+    QString name;
+    QString value;
 };
 
-QVector<propStr_t> parseXmlProps( QStringRef line );
-QVector<propStr_t> parseProps( QStringRef line );
-propStr_t parseProp( QStringRef token );
+QVector<propStr_t> parseXmlProps( QString line );
+QVector<propStr_t> parseProps( QString line );
+propStr_t parseProp( QString token );
 

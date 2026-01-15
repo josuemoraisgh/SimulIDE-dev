@@ -30,7 +30,7 @@ void NumVal::setup( bool isComp )
 
     //QFont font = valueBox->font();
     QFontMetrics fm( valLabel->font() );
-    float scale = fm.width(" ")/2;
+    float scale = fm.horizontalAdvance(" ")/2;
     //font.setPixelSize( 11.0*scale );
     //unitBox->setFont( font );
     //valueBox->setFont( font );
@@ -59,8 +59,10 @@ void NumVal::setup( bool isComp )
     }else{
         m_useMult = true;
         QString un = unit;
-        QRegExp r = QRegExp("^([pnµumkMGT])");
-        if( r.indexIn( unit ) == 0 ) un.remove( 0, 1 ); // Remove multiplier
+        QRegularExpression r = QRegularExpression("^([pnµumkMGT])");
+
+        QRegularExpressionMatch match = r.match(unit);
+        if( match.hasMatch() && match.capturedStart() == 0 ) un.remove(0, 1); // Remove multiplier
 
         if( m_type == "double") addDividers( unitBox, un );
         addMultipliers( unitBox, un );

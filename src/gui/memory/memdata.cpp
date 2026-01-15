@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include "mainwindow.h"
 #include "memdata.h"
 #include "memtable.h"
 #include "simulator.h"
@@ -205,7 +206,7 @@ bool MemData::loadHex( QVector<int>* toData, QString file, bool resize, int bits
         }
         checksum += line.mid( i, 2 ).toInt( &ok, 16 );
         if( checksum & 0xFF ){
-            qDebug() << "    Error: CheckSum Error at line "+QString::number(nLine)+1;
+            qDebug() << "    Error: CheckSum Error at line "+QString::number(nLine+1);
             return false;
         }
         nLine++;
@@ -250,7 +251,7 @@ void MemData::saveData( QVector<int>* data, int bits )
 
     QString dir = changeExt( Circuit::self()->getFilePath(), ".data" );
 
-    QString fileName = QFileDialog::getSaveFileName( nullptr,
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(),
                        simulideTr( "MemData", "Save Data" ), dir,
                        simulideTr( "MemData", "All files (*.*);;.data (*.data);;.bin (*.bin)"));
 

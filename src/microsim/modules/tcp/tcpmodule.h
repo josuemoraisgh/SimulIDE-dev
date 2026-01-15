@@ -11,7 +11,6 @@
 #include "updatable.h"
 
 class QTcpSocket;
-class QSignalMapper;
 
 class TcpModule : public eElement, public Updatable
 {
@@ -54,8 +53,4 @@ class TcpModule : public eElement, public Updatable
         bool m_debug;
 
         QMap<int, tcpConnection_t*> m_tcpConnections;
-
-        QSignalMapper* m_connectSM;
-        QSignalMapper* m_discontSM;
-        QSignalMapper* m_readyReSM;
 };

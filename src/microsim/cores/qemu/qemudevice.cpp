@@ -8,7 +8,6 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMessageBox>
-#include <QSignalMapper>
 #include <QDir>
 
 #include <stdlib.h>
@@ -180,12 +179,12 @@ void QemuDevice::stamp()
     m_arena->running = 0;
     m_arena->ps_per_inst = 0;
 
-    for( IoPin* pin : m_ioPin ) // Qemu calls us to read input
-    {
-        if( !pin ) continue;
-        pin->setOutState( false );
-        pin->setPinMode( input );
-    }
+    //for( IoPin* pin : m_ioPin ) // Qemu calls us to read input
+    //{
+    //    if( !pin ) continue;
+    //    pin->setOutState( false );
+    //    pin->setPinMode( input );
+    //}
     if( m_rstPin ) m_rstPin->changeCallBack( this );
 
     if( createArgs() )
@@ -196,7 +195,7 @@ void QemuDevice::stamp()
 #endif
         if( !QFileInfo::exists( executable ) )
         {
-            qDebug() << "Error: QemuDevice::stamp executable does not exist:" << endl << executable;
+            qDebug() << "Error: QemuDevice::stamp executable does not exist:" << Qt::endl << executable;
         }
         m_qemuProcess.start( executable, m_arguments );
 
@@ -496,14 +495,13 @@ void QemuDevice::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu
     {
         QMenu* serMonMenu = menu->addMenu( QIcon(":/serialterm.png"),tr("Open Serial Monitor.") );
 
-        QSignalMapper* sm = new QSignalMapper();
         for( uint i=0; i<m_usarts.size(); ++i )
         {
-            QAction* openSerMonAct = serMonMenu->addAction( "USart"+QString::number(i+1) );
-            QObject::connect( openSerMonAct, &QAction::triggered, sm, QOverload<>::of(&QSignalMapper::map) );
-            sm->setMapping( openSerMonAct, i+1 );
+            const int portNumber = i + 1;
+
+            QAction* act = serMonMenu->addAction( "USART"+QString::number( portNumber ) );
+            QObject::connect( act, &QAction::triggered, [=](){ slotOpenTerm( portNumber ); } );
         }
-        QObject::connect( sm, QOverload<int>::of(&QSignalMapper::mapped), [=](int n){ slotOpenTerm(n);} );
     }
     menu->addSeparator();
     Component::contextMenu( event, menu );

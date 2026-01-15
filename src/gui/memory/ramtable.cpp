@@ -73,8 +73,8 @@ RamTable::RamTable( QWidget* parent, eMcu* processor ,bool cpuMonitor )
             if( col != 1 ){
                 it->setFlags( Qt::ItemIsEnabled );
                 it->setText("---");
-                if( col == 3 ) it->setTextColor( QColor( 0x904020 ) );
-                else           it->setTextColor( QColor( numberColor ) );
+                if( col == 3 ) it->setForeground( QColor( 0x904020 ) );
+                else           it->setForeground( QColor( numberColor ) );
             }
             if( col == 0  || col == 3 ) it->setFont( fontS );
             else           it->setFont( font );
@@ -220,7 +220,7 @@ void RamTable::saveVarSet()
 {
     const QString dir = Circuit::self()->getFilePath();
 
-    QString fileName = QFileDialog::getSaveFileName( this, tr("Save VarSet"), dir,
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save VarSet"), dir,
                                                  tr("VarSets (*.vst);;All files (*.*)"));
     if( !fileName.isEmpty() )
     {
@@ -237,7 +237,7 @@ void RamTable::saveVarSet()
         file.flush();
 
         QTextStream out(&file);
-        out.setCodec( "UTF-8" );
+        out.setEncoding( QStringConverter::Utf8 );
         QApplication::setOverrideCursor(Qt::WaitCursor);
 
         for( int row=0; row<m_numRegs; row++ )
@@ -416,7 +416,7 @@ void RamTable::updateValues()
                     for( int i=address; i<=address+value; i++ )
                     {
                         QString str = "";
-                        const QChar cha = m_processor->getRamValue( i );
+                        const QChar cha = QChar(m_processor->getRamValue( i ) );
                         str.setRawData( &cha, 1 );
                         strVal += str; //QByteArray::fromHex( getRamValue( i ) );
                     }

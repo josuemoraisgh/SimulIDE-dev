@@ -7,7 +7,7 @@
 
 #include <QString>
 
-class Display;
+class DisplayArea;
 class Watcher;
 
 class Watched
@@ -27,7 +27,7 @@ class Watched
 
     protected:
 
-        Display* m_display; // Find a place for this
+        DisplayArea* m_display; // Find a place for this
 
         Watcher* m_watcher;
 };

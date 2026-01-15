@@ -4,6 +4,7 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include <QFileSystemModel>
+#include <QDesktopServices>
 
 #include "filebrowser.h"
 #include "circuitwidget.h"
@@ -53,6 +54,28 @@ void FileBrowser::openInEditor()
 {
     QString path = m_fileSystemModel->filePath( currentIndex() );
     EditorWindow::self()->loadFile( path );
+}
+
+void FileBrowser::openExternally()
+{
+    QString path = m_fileSystemModel->filePath( currentIndex() );
+    bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+
+    if (!success) {
+        qWarning("Failed to open the file externally.");
+    }
+}
+
+void FileBrowser::openParentDirExternally()
+{
+    QString path = m_fileSystemModel->filePath( currentIndex() );
+    QFileInfo fileInfo(path);
+    path = fileInfo.absolutePath();
+    bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+
+    if (!success) {
+        qWarning("Failed to open the parent directory externally.");
+    }
 }
 
 void FileBrowser::open()
@@ -142,6 +165,13 @@ void FileBrowser::contextMenuEvent( QContextMenuEvent* event )
                      
             menu.addSeparator();
         }
+        QAction* openExternally = menu.addAction(QIcon(":/open.png"),tr("Open externally"));
+        connect( openExternally, SIGNAL( triggered()),
+                 this,           SLOT(   openExternally()), Qt::UniqueConnection );
+        QAction* openParentDirExternally = menu.addAction(QIcon(":/open.png"),tr("Open Parent Dir externally"));
+        connect( openParentDirExternally, SIGNAL( triggered()),
+                 this,           SLOT(   openParentDirExternally()), Qt::UniqueConnection );
+        menu.addSeparator();
         QAction* showHidden = menu.addAction( tr("Show Hidden"));
         showHidden->setCheckable( true );
         showHidden->setChecked( m_showHidden );

@@ -6,7 +6,6 @@
 #include <QDomDocument>
 #include <QFileInfo>
 #include <QTranslator>
-#include <QSignalMapper>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
@@ -203,7 +202,7 @@ Mcu::Mcu( QString type, QString id, QString device )
     }
 
     if( m_packageList.isEmpty() ){
-        qDebug() << "Mcu::Mcu: No Packages found for"<<m_device<<endl;
+        qDebug() << "Mcu::Mcu: No Packages found for"<<m_device<<Qt::endl;
         m_error = 1;
         return;
     }
@@ -216,7 +215,7 @@ Mcu::Mcu( QString type, QString id, QString device )
 
     Simulator::self()->addToUpdateList( this );
 
-    qDebug() << "       "<<id<< "Initialized"<<endl;
+    qDebug() << "       "<<id<< "Initialized"<<Qt::endl;
 }
 Mcu::~Mcu()
 {
@@ -582,14 +581,13 @@ void Mcu::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu )
     {
         QMenu* serMonMenu = menu->addMenu( QIcon(":/serialterm.png"),tr("Open Serial Monitor.") );
 
-        QSignalMapper* sm = new QSignalMapper();
         for( uint i=0; i<m_eMcu.m_usarts.size(); ++i )
         {
-            QAction* openSerMonAct = serMonMenu->addAction( "USart"+QString::number(i+1) );
-            QObject::connect( openSerMonAct, &QAction::triggered, sm, QOverload<>::of(&QSignalMapper::map) );
-            sm->setMapping( openSerMonAct, i+1 );
+            const int portNumber = i + 1;
+
+            QAction* act = serMonMenu->addAction( "USART"+QString::number( portNumber ) );
+            QObject::connect( act, &QAction::triggered, [=](){ slotOpenTerm( portNumber ); } );
         }
-        QObject::connect( sm, QOverload<int>::of(&QSignalMapper::mapped), [=](int n){ slotOpenTerm(n);} );
     }
     menu->addSeparator();
     Component::contextMenu( event, menu );

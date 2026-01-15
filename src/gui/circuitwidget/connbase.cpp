@@ -118,20 +118,20 @@ void ConnBase::setHidden( bool hid, bool hidArea, bool hidLabel )
 void ConnBase::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    //p->drawRoundRect( m_area, 4, 4 );
+    //p->drawRoundedRect( m_area, 4, 4 );
 
     updatePixmap();
 
     QPen pen( Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin );
     p->setPen( pen );
-    if( !this->m_hidden ) p->drawRoundRect( m_area, 4, 4 );
+    if( !this->m_hidden ) p->drawRoundedRect( m_area, 4, 4 );
 
     for( int i=0; i<m_size; i++ )
     {
         p->drawPixmap( m_area.x(), m_area.y()+i*8, 8, 8, m_pinPixmap );
         //if( m_connPins[i] ) p->setBrush( QColor( 170, 170, 200 ) );
         //else                p->setBrush( Qt::black );
-        //p->drawRoundRect(-2,-28+2+i*8, 3, 4, 1, 1 );
+        //p->drawRoundedRect(-2,-28+2+i*8, 3, 4, 1, 1 );
     }
     Component::paintSelected( p );
 }

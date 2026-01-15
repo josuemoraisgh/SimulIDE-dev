@@ -53,8 +53,8 @@ void manCompDialog::addItem( TreeItem* treeItem )
     int childCount = treeItem->childCount();
     if( childCount > 0 )
     {
-        listItem->setFlags( 0 );
-        shortItem->setFlags( 0 );
+        listItem->setFlags( Qt::NoItemFlags );
+        shortItem->setFlags( Qt::NoItemFlags );
 
         listItem->setBackground( QColor(240, 235, 245) );
         listItem->setForeground( QBrush( QColor( 110, 95, 50 )));

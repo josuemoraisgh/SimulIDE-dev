@@ -77,7 +77,7 @@ void ComponentList::createList()
     QDir compSetDir = MainWindow::self()->getConfigPath("data");
     if( compSetDir.exists() ) LoadCompSetAt( compSetDir );
 
-    compSetDir = "./data";          // FIXME: provisional, used by QemuDevice
+    compSetDir = QString("./data");          // FIXME: provisional, used by QemuDevice
     LoadCompSetAt( compSetDir );
 
     MainWindow::self()->installer()->loadInstalled(); // Load Installed components
@@ -199,20 +199,20 @@ void ComponentList::loadXml( QString xmlFile )
 
     QFile file( xmlFile );
     if( !file.open( QFile::ReadOnly | QFile::Text ) ){
-          qDebug() << "ComponentList::loadXml Cannot read file"<< endl << xmlFile << endl << file.errorString();
+          qDebug() << "ComponentList::loadXml Cannot read file"<< Qt::endl << xmlFile << Qt::endl << file.errorString();
           return;
     }
     QXmlStreamReader reader( &file );
     if( !reader.readNextStartElement() ) return;
 
-    if( reader.name() != "itemlib" ){
-        qDebug() <<  "ComponentList::loadXml Error parsing file (itemlib):"<< endl << xmlFile;
+    if( reader.name() != QString("itemlib") ){
+        qDebug() <<  "ComponentList::loadXml Error parsing file (itemlib):"<< Qt::endl << xmlFile;
         file.close();
         return;
     }
     while( reader.readNextStartElement() )
     {
-        if( reader.name() != "itemset" ) { reader.skipCurrentElement(); continue;}
+        if( reader.name() != QString("itemset") ) { reader.skipCurrentElement(); continue;}
 
         QString icon = "";
         if( reader.attributes().hasAttribute("icon") )
@@ -250,7 +250,7 @@ void ComponentList::loadXml( QString xmlFile )
         {
             QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
 
-            if( reader.name() != "item") continue;
+            if( reader.name() != QString("item") ) continue;
 
             QString name = reader.attributes().value("name").toString();
 

@@ -12,8 +12,8 @@
 #include "iopin.h"
 #include "simulator.h"
 
-Esp32Usart::Esp32Usart( QemuDevice* mcu, QString name, int number )
-          : QemuUsart( mcu, name, number )
+Esp32Usart::Esp32Usart( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
+          : QemuUsart( mcu, name, n, clk, memStart, memEnd )
 {
     //m_prescList = {2,4,8,16,32,64,128,256};
 
@@ -26,27 +26,14 @@ void Esp32Usart::connected( bool c )
     if( c ) m_sender->getPin()->setPinMode( output );
 }
 
-void Esp32Usart::doAction()
+void Esp32Usart::writeRegister()
 {
-    ////if( !m_enabled ) enable( true );
-    //uint8_t  action = m_arena->data8;
-    //uint32_t  data  = m_arena->data32;
-    ////qDebug() << "Esp32Usart::doAction Uart:"<< m_number << "action:"<< action<< "data:" << data;
-    //switch( action ) {
-    //    case ESP32_USART_CR0:   writeCR0( data ); break;
-    //    case ESP32_USART_CR1:   writeCR1( data ); break;
-    //  //case ESP32_USART_READ:  /*readByte( data );*/ break;
-    //    case ESP32_USART_WRITE:{ //qDebug() << "Esp32Usart::doAction send Byte:"<<m_number<<QChar(data);
-    //        sendByte( data );
-    //        //uint64_t nextTime = Simulator::self()->circTime()+m_sender->getFrameTime();
-    //        //qDebug() << "Esp32Usart::doAction send Byte:"<< nextTime;
-    //        //m_arena->qemuEvent = nextTime;
-    //        //m_device->addEvent( nextTime, this );
-    //    }break;
-    //    case ESP32_USART_BAUD:  setBaudRate( data ); break; //qDebug() << "Esp32 Usart" << m_number <<"Baudrate:"<< data; break;
 
-    //    default: break;
-    //}
+}
+
+void Esp32Usart::readRegister()
+{
+
 }
 
 void Esp32Usart::writeCR0( uint32_t data )

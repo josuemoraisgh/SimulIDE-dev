@@ -11,7 +11,8 @@
 
 class LibraryItem;
 //class esp32Pin;
-//struct funcPin;
+class Esp32Gpio;
+class Esp32IoMux;
 
 class Esp32 : public QemuDevice
 {
@@ -23,26 +24,11 @@ class Esp32 : public QemuDevice
 
     protected:
         Pin* addPin( QString id, QString type, QString label,
-                    int n, int x, int y, int angle , int length=8, int space=0 ) override;
+                    int n, int x, int y, int angle, int length=8, int space=0 ) override;
 
         bool createArgs() override;
-        void doAction() override;
-        void matrixFunc( uint8_t out );
-        void createPins();
         void createMatrix();
-        void createIoMux();
-        void readInputs();
 
-
-        uint64_t m_state;
-        uint64_t m_direc;
-
-       //uint64_t m_pullUps;
-       //uint64_t m_pullDown;
-       //uint64_t m_inputEn;
-
-        IoPin* m_dummyPin;
-        esp32Pin* m_espPad[40];
-        funcPin m_matrixIn[256];
-        funcPin m_matrixOut[256];
+        Esp32Gpio* m_gpio;
+        Esp32IoMux* m_iomux;
 };

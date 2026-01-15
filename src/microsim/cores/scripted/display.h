@@ -12,11 +12,11 @@
 
 #include "scriptarray.h"
 
-class Display : public QWidget, public Updatable, public eElement
+class DisplayArea : public QWidget, public Updatable, public eElement
 {
     public:
-        Display( uint width, uint height, QString name, QWidget* parent );
-        ~Display();
+        DisplayArea( uint width, uint height, QString name, QWidget* parent );
+        ~DisplayArea();
 
         virtual void initialize() override;
         virtual void updateStep() override;

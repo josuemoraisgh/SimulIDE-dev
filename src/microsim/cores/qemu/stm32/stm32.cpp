@@ -208,7 +208,7 @@ void Stm32::createPorts()
 
     for( int p=0; p<m_portN; ++p )
     {
-        QString pId = QString('A'+p);
+        QString pId = QChar('A'+p);
         Stm32Port* port = new Stm32Port( this, "Port"+pId, p, &m_apb2, start, end );
         m_ports[p] = port;
 

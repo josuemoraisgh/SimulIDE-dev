@@ -322,7 +322,7 @@ void CircuitWidget::openRecentFile()
 void CircuitWidget::openCirc()
 {
     QString dir = m_lastCircDir;
-    QString fileName = QFileDialog::getOpenFileName( 0l, tr("Load Circuit"), dir,
+    QString fileName = QFileDialog::getOpenFileName( MainWindow::self(), tr("Load Circuit"), dir,
                                         tr("Circuits (*.sim*);;All files (*.*)"));
     loadCirc( fileName );
 }
@@ -358,7 +358,7 @@ void CircuitWidget::saveCirc()
 void CircuitWidget::saveCircAs()
 {
     const QString dir = m_lastCircDir;
-    QString fileName = QFileDialog::getSaveFileName( this, tr("Save Circuit"), dir,
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Circuit"), dir,
                                                      tr("Circuits (*.sim*);;All files (*.*)") );
     if( fileName.isEmpty() ) return;
 

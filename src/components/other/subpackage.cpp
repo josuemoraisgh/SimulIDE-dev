@@ -529,12 +529,12 @@ void SubPackage::setPackagePins( QString pinsStr )
     if( !m_pkgeFile.isEmpty() ) return;
     if( pinsStr == " " ) return;
 
-    QVector<QStringRef> pins = pinsStr.splitRef("&#xa;");
-    for( QStringRef pin : pins )
+    QStringList pins = pinsStr.split("&#xa;");
+    for( QString pin : pins )
     {
         if( pin.isEmpty() ) continue;
         QVector<propStr_t> properties = parseProps( pin );
-        QStringRef item = properties.takeFirst().name;
+        QString item = properties.takeFirst().name;
         if( item == "Pin" ) setPinStr( properties );
     }
 }
@@ -567,7 +567,7 @@ void SubPackage::slotSave()
     QString pkgeFile = pdir.absoluteFilePath( m_pkgeFile );
 
     const QString dir = pkgeFile;
-    QString fileName = QFileDialog::getSaveFileName( 0l, tr("Save Package"), dir,
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Package"), dir,
                                                      tr("Packages (*.package);;All files (*.*)"));
     if( fileName.isEmpty() ) return;
     savePackage( fileName );
@@ -612,7 +612,7 @@ void SubPackage::savePackage( QString fileName )
           return;
     }
     QTextStream out(&file);
-    out.setCodec("UTF-8");
+    out.setEncoding( QStringConverter::Utf8 );
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -795,7 +795,7 @@ EditDialog::EditDialog( SubPackage* pack, Pin* eventPin, QWidget* parent )
     layout->addWidget( bb );
 
     QFontMetrics fm( m_nameLabel->font() );
-    double scale = fm.width(" ")/2.0;
+    double scale = fm.horizontalAdvance(" ")/2.0;
     m_nameLineEdit->setFixedWidth( 60*scale );
     m_idLineEdit->setFixedWidth( 60*scale );
     m_spaceBox->setFixedWidth( 60*scale );

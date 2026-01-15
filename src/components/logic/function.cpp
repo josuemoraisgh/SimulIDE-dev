@@ -9,6 +9,7 @@
 #include <QGraphicsProxyWidget>
 
 #include "function.h"
+#include "mainwindow.h"
 #include "connector.h"
 #include "circuit.h"
 #include "simulator.h"
@@ -263,7 +264,7 @@ void Function::loadData()
 
 void Function::saveData()
 {
-    QString fileName = QFileDialog::getSaveFileName( 0l, "Function::saveData", m_lastDir, "" );
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), "Function::saveData", m_lastDir, "" );
 
     if( fileName.isEmpty() ) return; // User cancels saving
     m_lastDir = fileName;

@@ -11,28 +11,22 @@
 class Esp32Usart : public QemuUsart
 {
     public:
-        Esp32Usart( QemuDevice* mcu, QString name, int number );
+        Esp32Usart( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd );
         ~Esp32Usart();
-
-        enum stm32UsartAction_t{
-            ESP32_USART_CR0=1,
-            ESP32_USART_CR1,
-//          ESP32_USART_READ,
-            ESP32_USART_WRITE,
-            ESP32_USART_BAUD,
-            ESP32_USART_ENABLE,
-        };
 
         //void enable( bool e ) override;
         void connected( bool c ) override;
 
-        void doAction() override;
+        //void doAction() override;
 
         void frameSent( uint8_t data ) override;
 
         //void endTransaction() override;
 
     private:
+        void writeRegister() override;
+        void readRegister()  override;
+
         void writeCR0( uint32_t data );
         void writeCR1( uint32_t data );
 };

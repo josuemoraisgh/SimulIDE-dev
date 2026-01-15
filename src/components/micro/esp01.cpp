@@ -65,18 +65,6 @@ Esp01::Esp01( QString type, QString id )
 
     setBaudRate( 115200 );
 
-    m_connectSM = new QSignalMapper();
-    QObject::connect( m_connectSM, QOverload<int>::of(&QSignalMapper::mapped),
-                     [=](int i){ tcpConnected(i); } );
-
-    m_discontSM = new QSignalMapper();
-    QObject::connect( m_discontSM, QOverload<int>::of(&QSignalMapper::mapped),
-                     [=](int i){ tcpConnected(i); } );
-
-    m_readyReSM = new QSignalMapper();
-    QObject::connect( m_readyReSM, QOverload<int>::of(&QSignalMapper::mapped),
-                     [=](int i){ tcpConnected(i); } );
-
     Simulator::self()->addToUpdateList( this );
 
     addPropGroup( { tr("Main"), {
@@ -182,7 +170,7 @@ void Esp01::byteReceived( uint8_t byte )
             m_dataLenght = 0;
     }   }
     else{
-        m_buffer.append( byte ); //qDebug() << m_buffer;
+        m_buffer.append( QChar(byte) ); //qDebug() << m_buffer;
         if( m_buffer.right(2)  == "\r\n")
         { command(); runEvent(); }
     }
@@ -362,17 +350,9 @@ void Esp01::connectTcp( int link )
         tcpSocket = new QTcpSocket();
         m_tcpSockets[link] = tcpSocket;
 
-        QObject::connect( tcpSocket, &QTcpSocket::connected ,
-                 m_connectSM, QOverload<>::of(&QSignalMapper::map), Qt::UniqueConnection );
-        m_connectSM->setMapping( tcpSocket, link );
-
-        QObject::connect( tcpSocket, &QTcpSocket::disconnected,
-                 m_discontSM, QOverload<>::of(&QSignalMapper::map), Qt::UniqueConnection );
-        m_discontSM->setMapping( tcpSocket, link );
-
-        QObject::connect( tcpSocket, &QTcpSocket::readyRead,
-                 m_readyReSM, QOverload<>::of(&QSignalMapper::map), Qt::UniqueConnection );
-        m_readyReSM->setMapping( tcpSocket, link );
+        QObject::connect( tcpSocket, &QTcpSocket::connected   , [=](){ tcpConnected(link); });
+        QObject::connect( tcpSocket, &QTcpSocket::disconnected, [=](){ tcpDisconnected(link); });
+        QObject::connect( tcpSocket, &QTcpSocket::readyRead   , [=](){ tcpReadyRead(link); });
     }
     if( tcpSocket->state() == QAbstractSocket::ConnectedState )
     {

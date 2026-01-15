@@ -7,7 +7,8 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QDesktopWidget>
+#include <QScreen>
+#include <QGuiApplication>
 #include <QMessageBox>
 #include <QSplitter>
 #include <QLineEdit>
@@ -41,7 +42,7 @@ MainWindow::MainWindow()
 
     this->setWindowTitle( m_version );
 
-    m_configDir.setPath( QStandardPaths::writableLocation( QStandardPaths::DataLocation ) );
+    m_configDir.setPath( QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) );
 
     m_settings     = new QSettings( getConfigPath("simulide.ini"), QSettings::IniFormat, this );
     m_compSettings = new QSettings( getConfigPath("compList.ini"), QSettings::IniFormat, this );
@@ -66,7 +67,8 @@ MainWindow::MainWindow()
     {
         scale = m_settings->value( "fontScale" ).toFloat();
     }else{
-        float dpiX = qApp->desktop()->logicalDpiX();
+        QScreen* screen = QGuiApplication::primaryScreen();
+        float dpiX = screen->logicalDotsPerInchX();
         scale = dpiX/96.0;
     }
     setFontScale( scale );
@@ -414,4 +416,4 @@ QSettings* MainWindow::settings() { return m_settings; }
 
 QSettings* MainWindow::compSettings() { return m_compSettings; }
 
-#include  "moc_mainwindow.cpp"
+#include "moc_mainwindow.cpp"

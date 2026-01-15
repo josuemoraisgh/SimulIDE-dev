@@ -91,7 +91,7 @@ void EditorWidget::setTabSize( int size )
     m_tabSize = size;
     MainWindow::self()->settings()->setValue( "Editor_tab_size", QString::number(m_tabSize) );
 
-    for( CodeEditor* ce : getCodeEditors() ) ce->setTabStopWidth( calcTabstopWidth() );
+    for( CodeEditor* ce : getCodeEditors() ) ce->setTabStopDistance( calcTabstopWidth() );
 }
 
 void EditorWidget::setShowSpaces( bool show )
@@ -204,7 +204,7 @@ void EditorWidget::addDocument(  QString file, bool main  )
 {
     CodeEditor* ce = new CodeEditor( this, &m_outPane );
     ce->setVerticalScrollBar( new scrollWidget( ce, Qt::Vertical ) );
-    ce->setTabStopWidth( calcTabstopWidth() );
+    ce->setTabStopDistance( calcTabstopWidth() );
     ce->setAutoClose( m_autoClose );
     docShowSpaces( ce );
 
@@ -372,7 +372,7 @@ bool EditorWidget::saveAs()
     if( ext == "" ) extensions = tr("All files")+" (*);;Arduino (*.ino);;Asm (*.asm);;GcBasic (*.gcb)";
     else            extensions = "."+ext+"(*."+ext+");;"+tr("All files")+" (*.*)";
 
-    QString fileName = QFileDialog::getSaveFileName( this, tr("Save Document As"), path, extensions );
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Document As"), path, extensions );
     if( fileName.isEmpty() ) return false;
 
     m_fileList.remove( ce->getFile() );
@@ -395,7 +395,7 @@ bool EditorWidget::saveFile( QString fileName )
     QApplication::setOverrideCursor( Qt::WaitCursor );
 
     QTextStream out( &file );
-    out.setCodec("UTF-8");
+    out.setEncoding( QStringConverter::Utf8 );
 
     CodeEditor* ce = getCodeEditor();
     out << ce->toPlainText();
@@ -553,7 +553,7 @@ void EditorWidget::readSettings()
     m_tabSize = 4;
 
     m_font.setFamily("Ubuntu Mono");
-    m_font.setWeight( 50 );
+    m_font.setWeight( QFont::Normal );
     m_font.setPixelSize( m_fontSize );
 
     if( settings->contains( "Editor_show_spaces" ) )

@@ -18,18 +18,6 @@ TcpModule::TcpModule( QString name )
 {
     m_debug = false;
 
-    m_connectSM = new QSignalMapper();
-    QObject::connect( m_connectSM, QOverload<int>::of(&QSignalMapper::mapped),
-                     [=](int i){ tcpConnected(i); } );
-
-    m_discontSM = new QSignalMapper();
-    QObject::connect( m_discontSM, QOverload<int>::of(&QSignalMapper::mapped),
-                     [=](int i){ tcpDisconnected(i); } );
-
-    m_readyReSM = new QSignalMapper();
-    QObject::connect( m_readyReSM, QOverload<int>::of(&QSignalMapper::mapped),
-                     [=](int i){ tcpReadyRead(i); } );
-
     Simulator::self()->addToUpdateList( this );
 
 }
@@ -127,17 +115,9 @@ void TcpModule::connectTo( int link, QString host, int port )
 
         m_tcpConnections[link] = conn;
 
-        QObject::connect( tcpSocket, &QTcpSocket::connected ,
-                        m_connectSM, QOverload<>::of(&QSignalMapper::map), Qt::UniqueConnection );
-        m_connectSM->setMapping( tcpSocket, link );
-
-        QObject::connect( tcpSocket, &QTcpSocket::disconnected,
-                        m_discontSM, QOverload<>::of(&QSignalMapper::map), Qt::UniqueConnection );
-        m_discontSM->setMapping( tcpSocket, link );
-
-        QObject::connect( tcpSocket, &QTcpSocket::readyRead,
-                       m_readyReSM, QOverload<>::of(&QSignalMapper::map), Qt::UniqueConnection );
-        m_readyReSM->setMapping( tcpSocket, link );
+        QObject::connect( tcpSocket, &QTcpSocket::connected   , [=](){ tcpConnected(link); });
+        QObject::connect( tcpSocket, &QTcpSocket::disconnected, [=](){ tcpDisconnected(link); });
+        QObject::connect( tcpSocket, &QTcpSocket::readyRead   , [=](){ tcpReadyRead(link); });
     }
 }
 

@@ -10,31 +10,21 @@
 #include "iopin.h"
 #include "simulator.h"
 
-Esp32Spi::Esp32Spi( QemuDevice* mcu, QString name, int number )
-        : QemuSpi( mcu, name, number )
+Esp32Spi::Esp32Spi( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
+        : QemuSpi( mcu, name, n, clk, memStart, memEnd )
 {
     //m_prescList = {2,4,8,16,32,64,128,256};
 }
 Esp32Spi::~Esp32Spi(){}
 
-void Esp32Spi::doAction()
+void Esp32Spi::writeRegister()
 {
-    //uint8_t  action = m_arena->data8;
 
-    //qDebug() << "Esp32Spi::doAction" << action;
-    //switch( action )
-    //{
-    //    case  STM32_SPI_READ:
-    //    {
-    //        m_arena->data16 = m_dataReg;
-    //    }break;
-    //    case  STM32_SPI_WRITE:
-    //    {
-    //        uint16_t newDR = m_arena->data32;
-    //        m_srReg = newDR;
-    //        if( m_mode == SPI_MASTER ) StartTransaction();
-    //    }break;
-    //}
+}
+
+void Esp32Spi::readRegister()
+{
+
 }
 
 void Esp32Spi::endTransaction()

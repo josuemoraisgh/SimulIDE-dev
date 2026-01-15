@@ -11,7 +11,6 @@
 
 class LibraryItem;
 class QTcpSocket;
-class QSignalMapper;
 
 class Esp01 : public Component, public UsartModule, public eElement
 {
@@ -88,8 +87,4 @@ class Esp01 : public Component, public UsartModule, public eElement
         espAction_t m_action;
 
         QHash<int, QTcpSocket*> m_tcpSockets;
-
-        QSignalMapper* m_connectSM;
-        QSignalMapper* m_discontSM;
-        QSignalMapper* m_readyReSM;
 };

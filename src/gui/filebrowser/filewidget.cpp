@@ -59,6 +59,7 @@ FileWidget::FileWidget( QWidget* parent )
     //addEntry("Data",       MainWindow::self()->getFilePath("data") );
     addEntry("User Data",  MainWindow::self()->userPath() );
     addEntry("Settings",   settingsDir );
+    addEntry("Last Project", NULL, true );
 
     connect( m_bookmarks, SIGNAL( itemClicked( QListWidgetItem* )), 
              this,        SLOT(   itemClicked( QListWidgetItem* )), Qt::UniqueConnection);
@@ -100,16 +101,16 @@ void FileWidget::writeSettings()
     while( m_bookmarks->count() ) delete m_bookmarks->takeItem( 0 );
 }
 
-void FileWidget::addEntry( QString name, QString path )
+void FileWidget::addEntry( QString name, QString path, bool force )
 {
-    if( !QDir( path ).exists() ) return;
+    if( !force && !QDir( path ).exists() ) return;
 
     QListWidgetItem* item = new QListWidgetItem( name, m_bookmarks, 0 );
     item->setData( 4, path );
     
     QFont font;
     font.setPixelSize( 11*MainWindow::self()->fontScale() );
-    font.setWeight(70);
+    font.setWeight( QFont::DemiBold );
     item->setFont( font );
     item->setIcon( QIcon(":/open.png") );
 }
@@ -135,7 +136,14 @@ void FileWidget::remBookMark()
 
 void FileWidget::itemClicked( QListWidgetItem* item  )
 {
-    QString path = item->data( 4 ).toString();
+    QString path = NULL;
+    if ( item->text().compare("Last Project") == 0 ) {
+        QSettings* settings = MainWindow::self()->settings();
+        QFileInfo fileInfo(settings->value("lastCircDir").toString());
+        path = fileInfo.absolutePath();
+    } else {
+        path = item->data( 4 ).toString();
+    }
     m_fileBrowser->setPath( path );
 }
 

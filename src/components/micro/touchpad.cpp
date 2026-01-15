@@ -108,7 +108,7 @@ TouchPad::TouchPad( QString type, QString id )
 
         new BoolProp<TouchPad>("Transparent",tr("Transparent"),""
                               , this, &TouchPad::transparent, &TouchPad::setTransparent )
-    }, groupNoCopy} );
+    }, 0} );
 
     addPropGroup( { tr("Electric"), {
         new DoubProp<TouchPad>("RxMin", tr("RxMin"),"Ω"
@@ -122,7 +122,7 @@ TouchPad::TouchPad( QString type, QString id )
 
         new DoubProp<TouchPad>("RyMax", tr("RyMax"),"Ω"
                               , this, &TouchPad::RyMax, &TouchPad::setRyMax,0,"uint" ),
-    }, groupNoCopy} );
+    }, 0} );
 }
 TouchPad::~TouchPad(){}
 

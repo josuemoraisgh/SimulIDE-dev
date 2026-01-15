@@ -163,7 +163,7 @@ void LaWidget::on_condEdit_editingFinished()
 
 void LaWidget::on_exportData_clicked()
 {
-    QString fileName = QFileDialog::getSaveFileName( this, tr("Export Data"), m_analizer->getExportFile(),
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Export Data"), m_analizer->getExportFile(),
                                                      tr("VCD files (*.vcd);;All files (*.*)") );
     if( fileName.isEmpty() ) return;
     if( !fileName.endsWith(".vcd") ) fileName += ".vcd";
@@ -186,7 +186,7 @@ void LaWidget::mousePressEvent( QMouseEvent* event )
         m_action = actMove;
         setCursor( Qt::ClosedHandCursor );
     }
-    else if( event->button() == Qt::MidButton )
+    else if( event->button() == Qt::MiddleButton )
     {
         m_action = actTime;
         plotDisplay->setTimeZero( m_mousePos );
