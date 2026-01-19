@@ -131,12 +131,12 @@ void Ssd1306::parameter()
         case 0x20: m_addrMode = m_rxReg & 3; break; // Memory Addressing Mode
         case 0x21:{                                 // Set Column Address (Start-End)
             if( m_addrMode == PAGE_ADDR_MODE ) return;
-            if( m_readIndex == 1 ) m_startX = m_rxReg & 0x7F; // 0b01111111
+            if( m_readIndex == 1 ) m_addrX=m_startX = m_rxReg & 0x7F; // 0b01111111
             else                   m_endX   = m_rxReg & 0x7F; // 0b01111111
         }break;
         case 0x22:{                                 // 22 34 Set Page Address (Start-End)
             if( m_addrMode == PAGE_ADDR_MODE ) return;
-            if( m_readIndex == 1 ) m_startY = m_rxReg & m_rowMask; // 0b00000111
+            if( m_readIndex == 1 ) m_addrY=m_startY = m_rxReg & m_rowMask; // 0b00000111
             else                   m_endY   = m_rxReg & m_rowMask; // 0b00000111
         }break;
         case 0x26:                       // Horizontal Right Scroll Setup
