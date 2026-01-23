@@ -823,7 +823,7 @@ void CodeEditor::saveConfig()
         return;
     }
     QTextStream out( &file );
-    out.setEncoding( QStringConverter::Utf8 );
+    out.setCodec("UTF-8");
     out << config;
     file.close();
 }
