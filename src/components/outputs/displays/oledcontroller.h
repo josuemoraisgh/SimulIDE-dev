@@ -55,6 +55,7 @@ class OledController : public Component, public TwiModule
 
         IoPin* m_pinSda;
 
+        uint8_t m_Co;
         uint8_t m_start;
         uint8_t m_data;
         uint8_t m_lastCommand;

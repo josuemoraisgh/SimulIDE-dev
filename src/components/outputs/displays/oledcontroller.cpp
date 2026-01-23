@@ -151,14 +151,19 @@ void OledController::readByte()
 
     if( m_start )  // Read Control byte
     {
-        if( (m_rxReg & 0b00111111) != 0 ){ qDebug() << "OledController::readByte Control Byte Error"; return; }
-
-        m_start = m_rxReg & 0b10000000;
-        m_data  = m_rxReg & 0b01111111;
+        m_start = 0;
+        if( (m_rxReg & 0b00111111) != 0 ){
+            qDebug() << "OledController::readByte Control Byte Error";
+            //return;
+        }
+        m_Co    = m_rxReg & 0b10000000;
+        m_data  = m_rxReg & 0b01000000;
     }
     else if( m_data )      writeData();
     else if( m_readBytes ) parameter();
     else                   proccessCommand();
+
+    if( !m_readBytes ) m_start = m_Co; // If Co bit then next byte should be Control Byte
 }
 
 void OledController::writeData()

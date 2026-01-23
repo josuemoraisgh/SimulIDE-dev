@@ -230,7 +230,7 @@ void MuxAnalog::remove()
 void MuxAnalog::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
 {
     Component::paint( p, o, w );
-    p->drawRoundedRect( m_area, 4, 4 );
+    p->drawRect( m_area );
 
     Component::paintSelected( p );
 }
