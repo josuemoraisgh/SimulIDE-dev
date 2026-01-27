@@ -56,13 +56,16 @@ void OledController::stamp()
 void OledController::updateStep()
 {
     update();
-    if( !m_scroll ) return;
+    if( !m_scrollSingle && !m_scroll ) return;
     if( Simulator::self()->isPaused() ) return;
 
-    m_scrollCount++;
-    if( m_scrollCount < m_scrollStep ) return;
-
-    m_scrollCount = 0;
+    if( m_scrollSingle ){
+        m_scrollSingle = false;
+    }else{
+        m_scrollCount++;
+        if( m_scrollCount < m_scrollStep ) return;
+        m_scrollCount = 0;
+    }
 
     int maxX = m_width-1;
     bool scrollRight = false;
@@ -129,6 +132,7 @@ void OledController::reset()
     m_scroll   = false;
     m_scrollV  = false;
     m_scrollDir = false;
+    m_scrollSingle = false;
     m_scrollStartY = 0;
     m_scrollEndY   = 7;
     m_scrollStep   = 5;

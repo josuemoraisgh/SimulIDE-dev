@@ -89,6 +89,7 @@ class OledController : public Component, public TwiModule
         uint8_t m_scrollTop;
         uint8_t m_scrollRows;
         uint8_t m_vScrollOffset;
+        uint8_t m_scrollSingle;
         uint16_t m_scrollStep;
         uint16_t m_scrollCount;
 
