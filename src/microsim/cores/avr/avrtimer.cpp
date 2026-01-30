@@ -88,8 +88,8 @@ void AvrTimer::updtPrescaler( uint8_t val )
 
     if( prIndex != m_prIndex )
     {
-        m_prIndex = prIndex;
-        if( prIndex ) configureClock();
+        setPrescIndex( prIndex );
+        if( m_prIndex ) configureClock();
         enable( m_prIndex );
     }
 }
@@ -258,8 +258,8 @@ void AvrTimer801::configureA(uint8_t newTCCRX )
 
     if( prIndex != m_prIndex )
     {
-        m_prIndex = prIndex;
-        if( prIndex ) configureClock();
+        setPrescIndex( prIndex );
+        if( m_prIndex ) configureClock();
         enable( m_prIndex );
     }
 }
