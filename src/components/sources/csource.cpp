@@ -250,10 +250,11 @@ void Csource::updtProperties()
     if( !m_propDialog ) return;
     bool controlled = m_controlPins || m_linkedTo; // Controlled by pins or Linked
 
-    m_propDialog->showProp("Voltage"    , !controlled && !m_currSource );
-    m_propDialog->showProp("Current"    , !controlled &&  m_currSource );
-    m_propDialog->showProp("CurrControl",  controlled );
-    m_propDialog->showProp("Gain"       ,  controlled );
+    m_propDialog->showProp("Control_Pins", !m_linkedTo );
+    m_propDialog->showProp("Voltage"     , !controlled && !m_currSource );
+    m_propDialog->showProp("Current"     , !controlled &&  m_currSource );
+    m_propDialog->showProp("CurrControl" ,  m_controlPins && !m_linkedTo );
+    m_propDialog->showProp("Gain"        ,  controlled );
 
     m_propDialog->adjustWidgets();
 }
