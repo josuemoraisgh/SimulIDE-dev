@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão/Tag (ex.: V2.0.0-RC1)"
+        description: "Versão/Tag (ex.: V2.0.0)"
         required: true
         type: string
       prerelease:
@@ -27,7 +27,7 @@ env:
 
 jobs:
   build-windows-mingw:
-    name: Windows (MSYS2/MinGW64 + Qt5) – Portable
+    name: Windows (MSYS2 / MinGW64 / Qt5) – Portable
     runs-on: windows-latest
 
     steps:
@@ -43,7 +43,7 @@ jobs:
           git config --system core.longpaths true
           git config --global core.longpaths true
 
-      - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
+      - name: Setup MSYS2 + MinGW64 + Qt5
         uses: msys2/setup-msys2@v2
         with:
           release: true
@@ -64,124 +64,76 @@ jobs:
             mingw-w64-x86_64-qt5-serialport
             mingw-w64-x86_64-qt5-script
             mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-qt5-translations
             mingw-w64-x86_64-ntldd-git
-            mingw-w64-x86_64-harfbuzz
-            mingw-w64-x86_64-libpng
-            mingw-w64-x86_64-icu
-            mingw-w64-x86_64-md4c
-            mingw-w64-x86_64-pcre2
-            mingw-w64-x86_64-zstd
-            mingw-w64-x86_64-freetype
-            mingw-w64-x86_64-graphite2
-            mingw-w64-x86_64-brotli
-            mingw-w64-x86_64-glib2
-            mingw-w64-x86_64-bzip2
-            mingw-w64-x86_64-libiconv
-            mingw-w64-x86_64-gettext
 
-      - name: Validar versão
+      - name: Preflight – estrutura esperada
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${VERSION}" || { echo "Versão não informada."; exit 1; }
-          echo "Versão/Tag alvo: ${VERSION}"
+          [ -d build_XX ] || { echo "❌ build_XX não encontrado"; exit 1; }
+          [ -f build_XX/SimulIDE_Build.pro ] || { echo "❌ SimulIDE_Build.pro não encontrado"; exit 1; }
+          [ -f SimulIDE.pri ] || { echo "❌ SimulIDE.pri não encontrado"; exit 1; }
+          echo "✔ Estrutura OK"
 
-      - name: Preflight (estrutura build_XX e .pro)
-        shell: bash
-        run: |
-          set -euo pipefail
-          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
-          [ -f build_XX/SimulIDE_Build.pro ] || { echo "Arquivo build_XX/SimulIDE_Build.pro não encontrado."; exit 1; }
-          [ -f SimulIDE.pri ] || { echo "Arquivo SimulIDE.pri não encontrado na raiz."; exit 1; }
-          echo "OK: build_XX/SimulIDE_Build.pro e SimulIDE.pri encontrados."
-
-      - name: Normalizar arquivos qmake (.pri/.pro) — remover BOM + CRLF
+      - name: Normalizar arquivos qmake (.pri/.pro) – BOM + CRLF
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          export PATH="/mingw64/bin:$PATH"
 
-          fix_file () {
-            f="$1"
-            [ -f "$f" ] || return 0
-            # remove BOM UTF-8 (se existir)
-            sed -i '1s/^\xEF\xBB\xBF//' "$f" || true
-            # converte CRLF -> LF
-            sed -i 's/\r$//' "$f" || true
+          fix() {
+            sed -i '1s/^\xEF\xBB\xBF//' "$1" || true
+            sed -i 's/\r$//' "$1" || true
           }
 
-          fix_file "SimulIDE.pri"
-          fix_file "build_XX/SimulIDE_Build.pro"
+          fix SimulIDE.pri
+          fix build_XX/SimulIDE_Build.pro
 
-          # (opcional) normalize qualquer outro .pri/.pro próximo
           find . -maxdepth 2 -type f \( -name "*.pri" -o -name "*.pro" \) -print | while read f; do
-            fix_file "$f"
+            fix "$f"
           done
 
-          echo "Normalização concluída."
-          # sanity: mostra as primeiras linhas já “limpas”
-          sed -n '1,5p' SimulIDE.pri
-          sed -n '1,5p' build_XX/SimulIDE_Build.pro
+          echo "✔ Arquivos normalizados"
 
-      - name: Detectar Qt (qmake, windeployqt, lrelease) + plugins
-        id: qt
+      - name: Detectar Qt + localizar lrelease.exe (robusto)
         shell: msys2 {0}
         run: |
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          if command -v qmake >/dev/null 2>&1; then QMAKE=qmake;
-          elif command -v qmake-qt5 >/dev/null 2>&1; then QMAKE=qmake-qt5;
-          else echo "qmake (Qt5) não encontrado."; exit 1; fi
+          QMAKE="$(command -v qmake)"
+          WINDEPLOY="$(command -v windeployqt || true)"
 
-          if command -v windeployqt >/dev/null 2>&1; then WINDEPLOY=windeployqt;
-          elif command -v windeployqt-qt5 >/dev/null 2>&1; then WINDEPLOY=windeployqt-qt5;
-          else echo "windeployqt não encontrado."; exit 1; fi
-
-          HOST_BINS="$("$QMAKE" -query QT_HOST_BINS || true)"
-          if [ -n "$HOST_BINS" ] && [ -f "$HOST_BINS/lrelease.exe" ]; then
-            LRELEASE="$HOST_BINS/lrelease.exe"
-          elif [ -f "/mingw64/bin/lrelease.exe" ]; then
-            LRELEASE="/mingw64/bin/lrelease.exe"
-          else
-            echo "lrelease.exe não encontrado. Verifique mingw-w64-x86_64-qt5-tools."
+          if [ -z "$QMAKE" ]; then
+            echo "❌ qmake não encontrado"
             exit 1
           fi
 
-          PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
-          if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
-            for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
-              [ -d "$d" ] && PLUG_DIR="$d" && break
-            done
+          # localizar lrelease.exe (mesmo fora do PATH)
+          if command -v lrelease >/dev/null 2>&1; then
+            LRELEASE="$(command -v lrelease)"
+          elif [ -f /mingw64/bin/lrelease.exe ]; then
+            LRELEASE="/mingw64/bin/lrelease.exe"
+          else
+            echo "🔎 lrelease não encontrado, tentando localizar via pacman -F"
+            pacman -Fy --noconfirm
+            PKG="$(pacman -Fq mingw64/bin/lrelease.exe | head -n 1 || true)"
+            if [ -n "$PKG" ]; then
+              pacman -S --needed --noconfirm "$PKG"
+            fi
+            [ -f /mingw64/bin/lrelease.exe ] || { echo "❌ lrelease.exe não encontrado"; exit 1; }
+            LRELEASE="/mingw64/bin/lrelease.exe"
           fi
 
           echo "QMAKE=$QMAKE" >> $GITHUB_ENV
           echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
           echo "LRELEASE=$LRELEASE" >> $GITHUB_ENV
-          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
 
-          echo "qmake=$QMAKE"
-          echo "windeployqt=$WINDEPLOY"
-          echo "lrelease=$LRELEASE"
-          echo "plugins=$PLUG_DIR"
+          echo "✔ qmake: $QMAKE"
+          echo "✔ lrelease: $LRELEASE"
 
-      # 🔧 HOTFIX: corrige shift de double em mcuocunit.cpp
-      - name: Hotfix GCC (shift de double em mcuocunit.cpp)
-        shell: bash
-        run: |
-          set -euo pipefail
-          F="src/microsim/mcuocunit.cpp"
-          if [ -f "$F" ] && grep -q 'time2ovf *>> *rot' "$F"; then
-            echo "Aplicando hotfix em $F"
-            cp "$F" "$F.bak"
-            sed -E -i 's/(addEvent\()\s*time2ovf\s*>>\s*rot(\s*,\s*this\s*\))/\1 static_cast<unsigned long long>(time2ovf) >> rot\2/' "$F"
-            grep -n 'addEvent' "$F" || true
-          else
-            echo "Hotfix não necessário (arquivo/trecho não encontrado)."
-          fi
-
-      - name: Compilar (qmake SimulIDE_Build.pro + mingw32-make Release)
+      - name: Compilar (qmake + mingw32-make Release)
         shell: msys2 {0}
         run: |
           set -euo pipefail
@@ -189,138 +141,45 @@ jobs:
 
           cd build_XX
 
-          # Limpa lixo do qmake anterior
-          rm -f Makefile* .qmake.stash 2>/dev/null || true
-          rm -rf release build moc 2>/dev/null || true
+          rm -f Makefile* .qmake.stash
+          rm -rf release build moc
 
-          # IMPORTANTÍSSIMO:
-          # 1) apontar para o .pro correto (esse que inclui o .pri)
-          # 2) forçar QMAKE_LRELEASE absoluto (porque o .pri chama "lrelease" no runLrelease)
-          "$QMAKE" "SimulIDE_Build.pro" \
+          "$QMAKE" SimulIDE_Build.pro \
             "CONFIG+=release" \
             "QMAKE_LRELEASE=${LRELEASE}"
 
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
 
-          echo "Build OK. Listando executáveis:"
-          find . -maxdepth 4 -type f -name "*.exe" -print 2>/dev/null || true
+          echo "✔ Build concluído"
+          find . -name "*.exe" -print
 
-      - name: Localizar executável (.exe) – varredura total
-        id: exe
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s globstar nullglob nocaseglob
-          mapfile -t CAND < <(ls -1t build_XX/**/simulide*.exe build_XX/**/SimulIDE*.exe 2>/dev/null || true)
-          if [ ${#CAND[@]} -eq 0 ]; then
-            echo "Nenhum .exe encontrado em build_XX"
-            find build_XX -maxdepth 6 -type f -name "*.exe" -print 2>/dev/null || true
-            exit 1
-          fi
-          EXE="${CAND[0]}"
-          EXE_DIR="$(dirname "$EXE")"
-          echo "Executável escolhido: $EXE"
-          echo "exe_unix=$EXE" >> $GITHUB_OUTPUT
-          echo "exe_dir_unix=$EXE_DIR" >> $GITHUB_OUTPUT
-          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
-          echo "exe_dir_win=$(cygpath -w "$EXE_DIR")" >> $GITHUB_OUTPUT
-
-      - name: windeployqt (gerar pasta portable com fallback)
-        shell: msys2 {0}
-        env:
-          QT_PLUGIN_PATH: ${{ env.QT_PLUGIN_PATH }}
-        run: |
-          set -euo pipefail
-          export PATH="/mingw64/bin:$PATH"
-          EXE_WIN="${{ steps.exe.outputs.exe_win }}"
-          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
-          PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
-
-          [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR"; exit 1; }
-
-          if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
-            echo "windeployqt OK."
-          else
-            echo "windeployqt falhou. Fallback de plugins…"
-            "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
-            mkdir -p "$EXE_DIR/platforms"
-            for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
-              [ -f "$f" ] && cp -f "$f" "$EXE_DIR/platforms/" || true
-            done
-            for sub in imageformats iconengines audio mediaservice printsupport; do
-              [ -d "$PLUG_DIR/$sub" ] || continue
-              mkdir -p "$EXE_DIR/$sub"
-              cp -f "$PLUG_DIR/$sub"/*.dll "$EXE_DIR/$sub/" 2>/dev/null || true
-            done
-          fi
-
-      - name: Copiar runtimes MinGW/3rd-party (ntldd ou objdump)
-        shell: msys2 {0}
-        run: |
-          set -euo pipefail
-          export PATH="/mingw64/bin:$PATH"
-          EXE="${{ steps.exe.outputs.exe_unix }}"
-          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
-          MINGW_BIN="/mingw64/bin"
-          TMPD="$(mktemp -d)"; : > "$TMPD/deps.txt"
-
-          if command -v ntldd >/dev/null 2>&1; then
-            ntldd -R "$EXE" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
-            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print | while read f; do
-              ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
-            done
-          else
-            list_needed () { objdump -p "$1" 2>/dev/null | awk '/DLL Name:/ {print $3}'; }
-            for n in $(list_needed "$EXE"); do
-              find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" || true
-            done
-            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print | while read f; do
-              for n in $(list_needed "$f"); do
-                find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" || true
-              done
-            done
-          fi
-
-          sort -u "$TMPD/deps.txt" | while read src; do
-            [ -f "$src" ] || continue
-            case "$src" in
-              /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*)
-                base="$(basename "$src")"
-                [ -f "$EXE_DIR/$base" ] || cp -f "$src" "$EXE_DIR/" || true
-                ;;
-            esac
-          done
-
-          for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
-            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
-          done
-
-      - name: Empacotar ZIP (portable) em release/
+      - name: Empacotar ZIP (portable)
         shell: pwsh
         run: |
-          $exeDirWin  = "${{ steps.exe.outputs.exe_dir_win }}"
-          $workspace  = "${{ github.workspace }}"
-          $releaseDir = Join-Path $workspace "release"
-          if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
-          $zipPathAbs = Join-Path $releaseDir "${{ env.ZIP_NAME }}"
-          if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
-          Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
-          if (-not (Test-Path $zipPathAbs)) { throw "ZIP não foi gerado em: $zipPathAbs" }
-          Write-Host "ZIP gerado: $zipPathAbs"
+          $exe = Get-ChildItem build_XX -Recurse -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw "❌ Nenhum .exe encontrado" }
 
-      - name: Publicar artefato (CI)
+          $release = Join-Path $env:GITHUB_WORKSPACE "release"
+          New-Item -ItemType Directory -Force -Path $release | Out-Null
+
+          $zip = Join-Path $release "${{ env.ZIP_NAME }}"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+
+          Compress-Archive -Path $exe.Directory.FullName\* -DestinationPath $zip
+          Write-Host "✔ ZIP criado em $zip"
+
+      - name: Upload artefato
         uses: actions/upload-artifact@v4
         with:
           name: SimulIDE-${{ env.VERSION }}-windows-mingw64
           path: ${{ env.ZIP_REL_PATH }}
-          if-no-files-found: error
 
-      - name: Criar Release + Tag (anexando o ZIP)
+      - name: Criar Release no GitHub
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
-          name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
+          name: SimulIDE ${{ env.VERSION }} (Windows portable)
           body: ${{ github.event.inputs.notes }}
           prerelease: ${{ github.event.inputs.prerelease }}
           files: ${{ env.ZIP_REL_PATH }}
