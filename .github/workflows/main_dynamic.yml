@@ -76,28 +76,65 @@ jobs:
           [ -f SimulIDE.pri ] || { echo "❌ SimulIDE.pri não encontrado"; exit 1; }
           echo "✔ Estrutura OK"
 
-      - name: Normalizar arquivos qmake (.pri/.pro) – BOM + CRLF
+      - name: Normalizar/Converter encoding dos arquivos qmake (.pri/.pro)
         shell: msys2 {0}
         run: |
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          fix() {
-            [ -f "$1" ] || return 0
-            sed -i '1s/^\xEF\xBB\xBF//' "$1" || true
-            sed -i 's/\r$//' "$1" || true
+          show_head() {
+            echo "---- HEAD $1 (cat -A) ----"
+            sed -n '1,5p' "$1" | cat -A || true
+            echo "---- HEX $1 (primeiros 64 bytes) ----"
+            xxd -g 1 -l 64 "$1" || true
           }
 
-          fix SimulIDE.pri
-          fix build_XX/SimulIDE_Build.pro
+          to_utf8_if_utf16() {
+            local f="$1"
+            [ -f "$f" ] || return 0
 
+            # Detecta NUL bytes (sinal de UTF-16)
+            if LC_ALL=C grep -q $'\x00' "$f"; then
+              echo "⚠️ Detectado NUL bytes (provável UTF-16) em: $f"
+              # tenta UTF-16LE primeiro, depois UTF-16BE
+              if iconv -f UTF-16LE -t UTF-8 "$f" -o "$f.utf8" 2>/dev/null; then
+                mv -f "$f.utf8" "$f"
+                echo "✔ Convertido UTF-16LE -> UTF-8: $f"
+              elif iconv -f UTF-16BE -t UTF-8 "$f" -o "$f.utf8" 2>/dev/null; then
+                mv -f "$f.utf8" "$f"
+                echo "✔ Convertido UTF-16BE -> UTF-8: $f"
+              else
+                echo "❌ Falha ao converter UTF-16 -> UTF-8: $f"
+                show_head "$f"
+                exit 1
+              fi
+            fi
+          }
+
+          normalize_text() {
+            local f="$1"
+            [ -f "$f" ] || return 0
+            # remove BOM UTF-8 (se houver)
+            sed -i '1s/^\xEF\xBB\xBF//' "$f" || true
+            # remove CRLF -> LF
+            sed -i 's/\r$//' "$f" || true
+          }
+
+          # converte e normaliza os principais
+          to_utf8_if_utf16 "SimulIDE.pri"
+          to_utf8_if_utf16 "build_XX/SimulIDE_Build.pro"
+          normalize_text "SimulIDE.pri"
+          normalize_text "build_XX/SimulIDE_Build.pro"
+
+          # varre demais .pri/.pro na raiz e em build_XX
           find . -maxdepth 2 -type f \( -name "*.pri" -o -name "*.pro" \) -print | while read f; do
-            fix "$f"
+            to_utf8_if_utf16 "$f"
+            normalize_text "$f"
           done
 
-          echo "✔ Normalização OK"
-          sed -n '1,3p' SimulIDE.pri | cat -A
-          sed -n '1,3p' build_XX/SimulIDE_Build.pro | cat -A
+          echo "✔ Normalização/Conversão concluída"
+          show_head "SimulIDE.pri"
+          show_head "build_XX/SimulIDE_Build.pro"
 
       - name: Detectar Qt (qmake-qt5 / windeployqt-qt5 / lrelease-qt5) + plugins
         shell: msys2 {0}
@@ -112,7 +149,7 @@ jobs:
           ls -la /mingw64/bin/lrelease* 2>/dev/null || true
           ls -la /mingw64/bin/windeployqt* 2>/dev/null || true
 
-          # -------- qmake --------
+          # qmake
           if [ -f "/mingw64/bin/qmake.exe" ]; then
             QMAKE="/mingw64/bin/qmake.exe"
           elif [ -f "/mingw64/bin/qmake-qt5.exe" ]; then
@@ -122,11 +159,11 @@ jobs:
           elif command -v qmake >/dev/null 2>&1; then
             QMAKE="$(command -v qmake)"
           else
-            echo "❌ qmake não encontrado (nem qmake-qt5)."
+            echo "❌ qmake não encontrado"
             exit 1
           fi
 
-          # -------- windeployqt --------
+          # windeployqt
           if [ -f "/mingw64/bin/windeployqt.exe" ]; then
             WINDEPLOY="/mingw64/bin/windeployqt.exe"
           elif [ -f "/mingw64/bin/windeployqt-qt5.exe" ]; then
@@ -139,7 +176,7 @@ jobs:
             WINDEPLOY=""
           fi
 
-          # -------- lrelease --------
+          # lrelease (preferir lrelease-qt5.exe; o -pro.exe não serve aqui)
           if [ -f "/mingw64/bin/lrelease.exe" ]; then
             LRELEASE="/mingw64/bin/lrelease.exe"
           elif [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
@@ -149,17 +186,10 @@ jobs:
           elif command -v lrelease >/dev/null 2>&1; then
             LRELEASE="$(command -v lrelease)"
           else
-            echo "⚠️ lrelease não encontrado. Tentando localizar via pacman -F..."
-            pacman -Fy --noconfirm
-            PKG="$(pacman -Fq mingw64/bin/lrelease-qt5.exe 2>/dev/null | head -n 1 || true)"
-            if [ -n "$PKG" ]; then
-              pacman -S --needed --noconfirm "$PKG"
-            fi
-            [ -f "/mingw64/bin/lrelease-qt5.exe" ] || { echo "❌ lrelease ainda não encontrado"; exit 1; }
-            LRELEASE="/mingw64/bin/lrelease-qt5.exe"
+            echo "❌ lrelease não encontrado"
+            exit 1
           fi
 
-          # -------- plugins --------
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
           if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
             for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
@@ -178,7 +208,6 @@ jobs:
           echo "✔ LRELEASE=$LRELEASE"
           echo "✔ QT_PLUGIN_PATH=$PLUG_DIR"
 
-      # 🔧 HOTFIX opcional (mantive o seu)
       - name: Hotfix GCC (shift de double em mcuocunit.cpp)
         shell: bash
         run: |
@@ -198,7 +227,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
-
           cd build_XX
 
           rm -f Makefile* .qmake.stash 2>/dev/null || true
@@ -269,8 +297,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
-
-          EXE="${{ steps.exe.outputs.exe_unix }}"
           EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
           MINGW_BIN="/mingw64/bin"
 
