@@ -98,7 +98,9 @@ jobs:
       - name: Detectar Qt + localizar lrelease.exe (robusto)
         shell: msys2 {0}
         run: |
-          set -euo pipefail
+          set -Eeuxo pipefail
+          trap 'echo "❌ Falhou no step: $GITHUB_STEP_SUMMARY"; echo "❌ Linha: $LINENO"; echo "❌ Comando: $BASH_COMMAND"; env | sort | sed -n "1,120p"' ERR
+
           export PATH="/mingw64/bin:$PATH"
 
           QMAKE="$(command -v qmake)"
@@ -132,6 +134,25 @@ jobs:
 
           echo "✔ qmake: $QMAKE"
           echo "✔ lrelease: $LRELEASE"
+
+      - name: Debug geral (paths e ferramentas)
+        shell: msys2 {0}
+        run: |
+          set -Eeuxo pipefail
+          trap 'echo "❌ Linha: $LINENO"; echo "❌ Comando: $BASH_COMMAND"' ERR
+          export PATH="/mingw64/bin:$PATH"
+          echo "PWD=$(pwd)"
+          echo "PATH=$PATH"
+          uname -a || true
+          which qmake || true
+          which mingw32-make || true
+          which g++ || true
+          pacman -Q | grep -E 'mingw-w64-x86_64-qt5|mingw-w64-x86_64-gcc|mingw-w64-x86_64-make' || true
+          ls -la
+          ls -la build_XX
+          sed -n '1,5p' SimulIDE.pri | cat -A
+          sed -n '1,5p' build_XX/SimulIDE_Build.pro | cat -A
+
 
       - name: Compilar (qmake + mingw32-make Release)
         shell: msys2 {0}
