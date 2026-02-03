@@ -43,7 +43,7 @@ jobs:
           git config --system core.longpaths true
           git config --global core.longpaths true
 
-      - name: Setup MSYS2 + MinGW64 + Qt5
+      - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
         uses: msys2/setup-msys2@v2
         with:
           release: true
@@ -112,7 +112,7 @@ jobs:
           ls -la /mingw64/bin/lrelease* 2>/dev/null || true
           ls -la /mingw64/bin/windeployqt* 2>/dev/null || true
 
-          # qmake
+          # -------- qmake --------
           if [ -f "/mingw64/bin/qmake.exe" ]; then
             QMAKE="/mingw64/bin/qmake.exe"
           elif [ -f "/mingw64/bin/qmake-qt5.exe" ]; then
@@ -126,7 +126,185 @@ jobs:
             exit 1
           fi
 
-          # windeployqt
+          # -------- windeployqt --------
           if [ -f "/mingw64/bin/windeployqt.exe" ]; then
             WINDEPLOY="/mingw64/bin/windeployqt.exe"
-          elif [ -
+          elif [ -f "/mingw64/bin/windeployqt-qt5.exe" ]; then
+            WINDEPLOY="/mingw64/bin/windeployqt-qt5.exe"
+          elif command -v windeployqt-qt5 >/dev/null 2>&1; then
+            WINDEPLOY="$(command -v windeployqt-qt5)"
+          elif command -v windeployqt >/dev/null 2>&1; then
+            WINDEPLOY="$(command -v windeployqt)"
+          else
+            WINDEPLOY=""
+          fi
+
+          # -------- lrelease --------
+          if [ -f "/mingw64/bin/lrelease.exe" ]; then
+            LRELEASE="/mingw64/bin/lrelease.exe"
+          elif [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
+            LRELEASE="/mingw64/bin/lrelease-qt5.exe"
+          elif command -v lrelease-qt5 >/dev/null 2>&1; then
+            LRELEASE="$(command -v lrelease-qt5)"
+          elif command -v lrelease >/dev/null 2>&1; then
+            LRELEASE="$(command -v lrelease)"
+          else
+            echo "⚠️ lrelease não encontrado. Tentando localizar via pacman -F..."
+            pacman -Fy --noconfirm
+            PKG="$(pacman -Fq mingw64/bin/lrelease-qt5.exe 2>/dev/null | head -n 1 || true)"
+            if [ -n "$PKG" ]; then
+              pacman -S --needed --noconfirm "$PKG"
+            fi
+            [ -f "/mingw64/bin/lrelease-qt5.exe" ] || { echo "❌ lrelease ainda não encontrado"; exit 1; }
+            LRELEASE="/mingw64/bin/lrelease-qt5.exe"
+          fi
+
+          # -------- plugins --------
+          PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
+          if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
+            for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
+              [ -d "$d" ] && PLUG_DIR="$d" && break
+            done
+          fi
+
+          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
+          echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
+          echo "LRELEASE=$LRELEASE" >> $GITHUB_ENV
+          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
+          echo "/mingw64/bin" >> $GITHUB_PATH
+
+          echo "✔ QMAKE=$QMAKE"
+          echo "✔ WINDEPLOY=$WINDEPLOY"
+          echo "✔ LRELEASE=$LRELEASE"
+          echo "✔ QT_PLUGIN_PATH=$PLUG_DIR"
+
+      # 🔧 HOTFIX opcional (mantive o seu)
+      - name: Hotfix GCC (shift de double em mcuocunit.cpp)
+        shell: bash
+        run: |
+          set -euo pipefail
+          F="src/microsim/mcuocunit.cpp"
+          if [ -f "$F" ] && grep -q 'time2ovf *>> *rot' "$F"; then
+            echo "Aplicando hotfix em $F"
+            cp "$F" "$F.bak"
+            sed -E -i 's/(addEvent\()\s*time2ovf\s*>>\s*rot(\s*,\s*this\s*\))/\1 static_cast<unsigned long long>(time2ovf) >> rot\2/' "$F"
+            grep -n 'addEvent' "$F" || true
+          else
+            echo "Hotfix não necessário."
+          fi
+
+      - name: Compilar (qmake SimulIDE_Build.pro + mingw32-make Release)
+        shell: msys2 {0}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/mingw64/bin:$PATH"
+
+          cd build_XX
+
+          rm -f Makefile* .qmake.stash 2>/dev/null || true
+          rm -rf release build moc 2>/dev/null || true
+
+          "$QMAKE" SimulIDE_Build.pro \
+            "CONFIG+=release" \
+            "QMAKE_LRELEASE=${LRELEASE}"
+
+          CORES=$(nproc || echo 2)
+          mingw32-make -j"${CORES}" release
+
+          echo "✔ Build concluído"
+          find . -maxdepth 6 -type f -name "*.exe" -print || true
+
+      - name: Localizar executável (.exe) – varredura total
+        id: exe
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob nocaseglob
+          mapfile -t CAND < <(ls -1t build_XX/**/simulide*.exe build_XX/**/SimulIDE*.exe 2>/dev/null || true)
+          if [ ${#CAND[@]} -eq 0 ]; then
+            echo "❌ Nenhum .exe encontrado em build_XX"
+            find build_XX -maxdepth 6 -type f -name "*.exe" -print 2>/dev/null || true
+            exit 1
+          fi
+          EXE="${CAND[0]}"
+          EXE_DIR="$(dirname "$EXE")"
+          echo "Executável escolhido: $EXE"
+          echo "exe_unix=$EXE" >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$EXE_DIR" >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
+          echo "exe_dir_win=$(cygpath -w "$EXE_DIR")" >> $GITHUB_OUTPUT
+
+      - name: windeployqt (portable) com fallback
+        shell: msys2 {0}
+        env:
+          QT_PLUGIN_PATH: ${{ env.QT_PLUGIN_PATH }}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/mingw64/bin:$PATH"
+
+          EXE_WIN="${{ steps.exe.outputs.exe_win }}"
+          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
+          PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
+
+          if [ -z "${WINDEPLOY}" ]; then
+            echo "⚠️ windeployqt não encontrado — pulando."
+            exit 0
+          fi
+
+          [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "❌ Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR"; exit 1; }
+
+          if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
+            echo "✔ windeployqt OK"
+          else
+            echo "⚠️ windeployqt falhou, fallback manual"
+            "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
+            mkdir -p "$EXE_DIR/platforms"
+            for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
+              [ -f "$f" ] && cp -f "$f" "$EXE_DIR/platforms/" || true
+            done
+          fi
+
+      - name: Copiar runtimes MinGW (garantias)
+        shell: msys2 {0}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/mingw64/bin:$PATH"
+
+          EXE="${{ steps.exe.outputs.exe_unix }}"
+          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
+          MINGW_BIN="/mingw64/bin"
+
+          for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
+            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
+          done
+
+      - name: Empacotar ZIP (portable) em release/
+        shell: pwsh
+        run: |
+          $exeDirWin  = "${{ steps.exe.outputs.exe_dir_win }}"
+          $workspace  = "${{ github.workspace }}"
+          $releaseDir = Join-Path $workspace "release"
+          if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
+          $zipPathAbs = Join-Path $releaseDir "${{ env.ZIP_NAME }}"
+          if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
+          Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
+          if (-not (Test-Path $zipPathAbs)) { throw "ZIP não foi gerado em: $zipPathAbs" }
+          Write-Host "✔ ZIP gerado: $zipPathAbs"
+
+      - name: Publicar artefato (CI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulIDE-${{ env.VERSION }}-windows-mingw64
+          path: ${{ env.ZIP_REL_PATH }}
+          if-no-files-found: error
+
+      - name: Criar Release + Tag (anexando o ZIP)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
+          body: ${{ github.event.inputs.notes }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: ${{ env.ZIP_REL_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
