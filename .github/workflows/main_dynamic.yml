@@ -86,12 +86,50 @@ jobs:
           test -n "${VERSION}" || { echo "Versão não informada."; exit 1; }
           echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Detectar Qt (qmake e windeployqt)
+      - name: Preflight (estrutura build_XX e .pro)
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
+          [ -f build_XX/SimulIDE_Build.pro ] || { echo "Arquivo build_XX/SimulIDE_Build.pro não encontrado."; exit 1; }
+          [ -f SimulIDE.pri ] || { echo "Arquivo SimulIDE.pri não encontrado na raiz."; exit 1; }
+          echo "OK: build_XX/SimulIDE_Build.pro e SimulIDE.pri encontrados."
+
+      - name: Normalizar arquivos qmake (.pri/.pro) — remover BOM + CRLF
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
+
+          fix_file () {
+            f="$1"
+            [ -f "$f" ] || return 0
+            # remove BOM UTF-8 (se existir)
+            sed -i '1s/^\xEF\xBB\xBF//' "$f" || true
+            # converte CRLF -> LF
+            sed -i 's/\r$//' "$f" || true
+          }
+
+          fix_file "SimulIDE.pri"
+          fix_file "build_XX/SimulIDE_Build.pro"
+
+          # (opcional) normalize qualquer outro .pri/.pro próximo
+          find . -maxdepth 2 -type f \( -name "*.pri" -o -name "*.pro" \) -print | while read f; do
+            fix_file "$f"
+          done
+
+          echo "Normalização concluída."
+          # sanity: mostra as primeiras linhas já “limpas”
+          sed -n '1,5p' SimulIDE.pri
+          sed -n '1,5p' build_XX/SimulIDE_Build.pro
+
+      - name: Detectar Qt (qmake, windeployqt, lrelease) + plugins
         id: qt
         shell: msys2 {0}
         run: |
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
+
           if command -v qmake >/dev/null 2>&1; then QMAKE=qmake;
           elif command -v qmake-qt5 >/dev/null 2>&1; then QMAKE=qmake-qt5;
           else echo "qmake (Qt5) não encontrado."; exit 1; fi
@@ -99,6 +137,16 @@ jobs:
           if command -v windeployqt >/dev/null 2>&1; then WINDEPLOY=windeployqt;
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then WINDEPLOY=windeployqt-qt5;
           else echo "windeployqt não encontrado."; exit 1; fi
+
+          HOST_BINS="$("$QMAKE" -query QT_HOST_BINS || true)"
+          if [ -n "$HOST_BINS" ] && [ -f "$HOST_BINS/lrelease.exe" ]; then
+            LRELEASE="$HOST_BINS/lrelease.exe"
+          elif [ -f "/mingw64/bin/lrelease.exe" ]; then
+            LRELEASE="/mingw64/bin/lrelease.exe"
+          else
+            echo "lrelease.exe não encontrado. Verifique mingw-w64-x86_64-qt5-tools."
+            exit 1
+          fi
 
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
           if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
@@ -109,15 +157,14 @@ jobs:
 
           echo "QMAKE=$QMAKE" >> $GITHUB_ENV
           echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
+          echo "LRELEASE=$LRELEASE" >> $GITHUB_ENV
           echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
 
-      - name: Preflight
-        shell: msys2 {0}
-        run: |
-          set -euo pipefail
-          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
-          find build_XX -maxdepth 1 -print 2>/dev/null || true
+          echo "qmake=$QMAKE"
+          echo "windeployqt=$WINDEPLOY"
+          echo "lrelease=$LRELEASE"
+          echo "plugins=$PLUG_DIR"
 
       # 🔧 HOTFIX: corrige shift de double em mcuocunit.cpp
       - name: Hotfix GCC (shift de double em mcuocunit.cpp)
@@ -134,16 +181,30 @@ jobs:
             echo "Hotfix não necessário (arquivo/trecho não encontrado)."
           fi
 
-      - name: Compilar (qmake + mingw32-make Release)
+      - name: Compilar (qmake SimulIDE_Build.pro + mingw32-make Release)
         shell: msys2 {0}
         run: |
           set -euo pipefail
           export PATH="/mingw64/bin:$PATH"
+
           cd build_XX
-          "$QMAKE" "CONFIG+=release"
+
+          # Limpa lixo do qmake anterior
+          rm -f Makefile* .qmake.stash 2>/dev/null || true
+          rm -rf release build moc 2>/dev/null || true
+
+          # IMPORTANTÍSSIMO:
+          # 1) apontar para o .pro correto (esse que inclui o .pri)
+          # 2) forçar QMAKE_LRELEASE absoluto (porque o .pri chama "lrelease" no runLrelease)
+          "$QMAKE" "SimulIDE_Build.pro" \
+            "CONFIG+=release" \
+            "QMAKE_LRELEASE=${LRELEASE}"
+
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
-          find . -maxdepth 3 -type d -print 2>/dev/null || true
+
+          echo "Build OK. Listando executáveis:"
+          find . -maxdepth 4 -type f -name "*.exe" -print 2>/dev/null || true
 
       - name: Localizar executável (.exe) – varredura total
         id: exe
@@ -175,6 +236,7 @@ jobs:
           EXE_WIN="${{ steps.exe.outputs.exe_win }}"
           EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
           PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
+
           [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR"; exit 1; }
 
           if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
@@ -220,7 +282,6 @@ jobs:
             done
           fi
 
-          # Copia resolvidos
           sort -u "$TMPD/deps.txt" | while read src; do
             [ -f "$src" ] || continue
             case "$src" in
@@ -231,37 +292,9 @@ jobs:
             esac
           done
 
-          # ------ GARANTIAS EXTRAS ------
           for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
             [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
           done
-          for pat in "libpng*.dll" "libharfbuzz-*.dll" "libmd4c*.dll" "libfreetype*.dll" "libgraphite2*.dll" "libbrotli*.dll" "libzstd*.dll"; do
-            for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "$pat" -print 2>/dev/null); do
-              base="$(basename "$f")"
-              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
-            done
-          done
-          for f in $(find "$MINGW_BIN" -maxdepth 1 \( -iname "libicu*.dll" -o -iname "icu*.dll" \) -print 2>/dev/null); do
-            base="$(basename "$f")"
-            case "$base" in
-              libicuin*.dll|libicuuc*.dll|libicudt*.dll|icuin*.dll|icuuc*.dll|icudt*.dll)
-              [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true ;;
-            esac
-          done
-          for f in $(find "$MINGW_BIN" -maxdepth 1 -iname "libpcre2-*.dll" -print 2>/dev/null); do
-            base="$(basename "$f")"
-            [ -f "$EXE_DIR/$base" ] || cp -f "$f" "$EXE_DIR/" || true
-          done
-          for d in zlib1.dll libdouble-conversion.dll; do
-            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
-          done
-          for d in libglib-2.0-0.dll libbz2-1.dll libiconv-2.dll libintl-8.dll; do
-            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
-          done
-          # -------------------------------
-
-          echo "DLLs finais na pasta:"
-          ls -1 "$EXE_DIR"/*.dll 2>/dev/null | wc -l || true
 
       - name: Empacotar ZIP (portable) em release/
         shell: pwsh
