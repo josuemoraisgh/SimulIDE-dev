@@ -82,7 +82,7 @@ jobs:
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          fix() { 
+          fix() {
             [ -f "$1" ] || return 0
             sed -i '1s/^\xEF\xBB\xBF//' "$1" || true
             sed -i 's/\r$//' "$1" || true
@@ -99,7 +99,7 @@ jobs:
           sed -n '1,3p' SimulIDE.pri | cat -A
           sed -n '1,3p' build_XX/SimulIDE_Build.pro | cat -A
 
-      - name: Detectar Qt + localizar qmake/lrelease (com fallback)
+      - name: Detectar Qt (qmake-qt5 / windeployqt-qt5 / lrelease-qt5) + plugins
         shell: msys2 {0}
         run: |
           set -Eeuo pipefail
@@ -107,165 +107,26 @@ jobs:
 
           echo "MSYSTEM=$MSYSTEM"
           echo "PATH=$PATH"
-          echo "Listando bins (qmake/lrelease/windeployqt):"
+          echo "Bins:"
           ls -la /mingw64/bin/qmake* 2>/dev/null || true
           ls -la /mingw64/bin/lrelease* 2>/dev/null || true
           ls -la /mingw64/bin/windeployqt* 2>/dev/null || true
 
-          # ---- qmake: preferir caminho direto (/mingw64/bin/qmake.exe) ----
+          # qmake
           if [ -f "/mingw64/bin/qmake.exe" ]; then
             QMAKE="/mingw64/bin/qmake.exe"
+          elif [ -f "/mingw64/bin/qmake-qt5.exe" ]; then
+            QMAKE="/mingw64/bin/qmake-qt5.exe"
+          elif command -v qmake-qt5 >/dev/null 2>&1; then
+            QMAKE="$(command -v qmake-qt5)"
           elif command -v qmake >/dev/null 2>&1; then
             QMAKE="$(command -v qmake)"
           else
-            echo "⚠️ qmake não encontrado. Tentando instalar qt5-base novamente..."
-            pacman -S --needed --noconfirm mingw-w64-x86_64-qt5-base
-            [ -f "/mingw64/bin/qmake.exe" ] || { 
-              echo "❌ qmake ainda não existe após reinstalar."
-              pacman -Q | grep -E 'mingw-w64-x86_64-qt5' || true
-              exit 1
-            }
-            QMAKE="/mingw64/bin/qmake.exe"
-          fi
-
-          # ---- windeployqt (pode ser opcional, mas vamos setar se existir) ----
-          if [ -f "/mingw64/bin/windeployqt.exe" ]; then
-            WINDEPLOY="/mingw64/bin/windeployqt.exe"
-          elif command -v windeployqt >/dev/null 2>&1; then
-            WINDEPLOY="$(command -v windeployqt)"
-          else
-            WINDEPLOY=""
-          fi
-
-          # ---- lrelease: localizar e/ou instalar via pacman -F ----
-          if [ -f "/mingw64/bin/lrelease.exe" ]; then
-            LRELEASE="/mingw64/bin/lrelease.exe"
-          elif command -v lrelease >/dev/null 2>&1; then
-            LRELEASE="$(command -v lrelease)"
-          else
-            echo "⚠️ lrelease não encontrado. Tentando localizar via pacman -F..."
-            pacman -Fy --noconfirm
-            PKG="$(pacman -Fq mingw64/bin/lrelease.exe 2>/dev/null | head -n 1 || true)"
-            if [ -n "$PKG" ]; then
-              echo "Instalando pacote que contém lrelease: $PKG"
-              pacman -S --needed --noconfirm "$PKG"
-            else
-              echo "Não achei pacote via pacman -F."
-            fi
-            [ -f "/mingw64/bin/lrelease.exe" ] || {
-              echo "❌ lrelease.exe ainda não encontrado."
-              pacman -Q | grep -E 'mingw-w64-x86_64-qt5' || true
-              exit 1
-            }
-            LRELEASE="/mingw64/bin/lrelease.exe"
-          fi
-
-          # plugins
-          PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
-          if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
-            for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
-              [ -d "$d" ] && PLUG_DIR="$d" && break
-            done
-          fi
-
-          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
-          echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
-          echo "LRELEASE=$LRELEASE" >> $GITHUB_ENV
-          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
-          echo "/mingw64/bin" >> $GITHUB_PATH
-
-          echo "✔ QMAKE=$QMAKE"
-          echo "✔ LRELEASE=$LRELEASE"
-          echo "✔ WINDEPLOY=$WINDEPLOY"
-          echo "✔ QT_PLUGIN_PATH=$PLUG_DIR"
-
-      - name: Compilar (qmake SimulIDE_Build.pro + mingw32-make Release)
-        shell: msys2 {0}
-        run: |
-          set -Eeuo pipefail
-          export PATH="/mingw64/bin:$PATH"
-
-          cd build_XX
-
-          rm -f Makefile* .qmake.stash 2>/dev/null || true
-          rm -rf release build moc 2>/dev/null || true
-
-          "$QMAKE" SimulIDE_Build.pro \
-            "CONFIG+=release" \
-            "QMAKE_LRELEASE=${LRELEASE}"
-
-          CORES=$(nproc || echo 2)
-          mingw32-make -j"${CORES}" release
-
-          echo "✔ Build concluído"
-          find . -maxdepth 5 -type f -name "*.exe" -print || true
-
-      - name: Localizar executável (.exe)
-        id: exe
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s globstar nullglob nocaseglob
-          mapfile -t CAND < <(ls -1t build_XX/**/simulide*.exe build_XX/**/SimulIDE*.exe 2>/dev/null || true)
-          if [ ${#CAND[@]} -eq 0 ]; then
-            echo "❌ Nenhum .exe encontrado em build_XX"
-            find build_XX -maxdepth 6 -type f -name "*.exe" -print 2>/dev/null || true
+            echo "❌ qmake não encontrado (nem qmake-qt5)."
             exit 1
           fi
-          EXE="${CAND[0]}"
-          EXE_DIR="$(dirname "$EXE")"
-          echo "Executável escolhido: $EXE"
-          echo "exe_unix=$EXE" >> $GITHUB_OUTPUT
-          echo "exe_dir_unix=$EXE_DIR" >> $GITHUB_OUTPUT
-          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
-          echo "exe_dir_win=$(cygpath -w "$EXE_DIR")" >> $GITHUB_OUTPUT
 
-      - name: windeployqt (portable) – se disponível
-        shell: msys2 {0}
-        env:
-          QT_PLUGIN_PATH: ${{ env.QT_PLUGIN_PATH }}
-        run: |
-          set -Eeuo pipefail
-          export PATH="/mingw64/bin:$PATH"
-          EXE_WIN="${{ steps.exe.outputs.exe_win }}"
-          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
-
-          if [ -z "${WINDEPLOY}" ]; then
-            echo "⚠️ windeployqt não encontrado — pulando."
-            exit 0
-          fi
-
-          [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "❌ Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR"; exit 1; }
-
-          "$WINDEPLOY" --compiler-runtime "$EXE_WIN" || true
-
-      - name: Empacotar ZIP (portable) em release/
-        shell: pwsh
-        run: |
-          $exeDirWin  = "${{ steps.exe.outputs.exe_dir_win }}"
-          $workspace  = "${{ github.workspace }}"
-          $releaseDir = Join-Path $workspace "release"
-          if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
-          $zipPathAbs = Join-Path $releaseDir "${{ env.ZIP_NAME }}"
-          if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
-          Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
-          if (-not (Test-Path $zipPathAbs)) { throw "ZIP não foi gerado em: $zipPathAbs" }
-          Write-Host "✔ ZIP gerado: $zipPathAbs"
-
-      - name: Publicar artefato (CI)
-        uses: actions/upload-artifact@v4
-        with:
-          name: SimulIDE-${{ env.VERSION }}-windows-mingw64
-          path: ${{ env.ZIP_REL_PATH }}
-          if-no-files-found: error
-
-      - name: Criar Release + Tag (anexando o ZIP)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION }}
-          name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
-          body: ${{ github.event.inputs.notes }}
-          prerelease: ${{ github.event.inputs.prerelease }}
-          files: ${{ env.ZIP_REL_PATH }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # windeployqt
+          if [ -f "/mingw64/bin/windeployqt.exe" ]; then
+            WINDEPLOY="/mingw64/bin/windeployqt.exe"
+          elif [ -
