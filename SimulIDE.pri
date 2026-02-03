@@ -1,172 +1,306 @@
+name: Build & Release (Windows MinGW, portable)
 
-VERSION = "2.0.0"
-RELEASE = ""
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão/Tag (ex.: V2.0.0-RC1)"
+        required: true
+        type: string
+      prerelease:
+        description: "Marcar como pré-release?"
+        required: false
+        default: false
+        type: boolean
+      notes:
+        description: "Notas da release (opcional)"
+        required: false
+        type: string
 
-TEMPLATE = app
-TARGET = simulide
+permissions:
+  contents: write
 
-QT += svg
-QT += xml
-QT += widgets
-QT += concurrent
-QT += serialport
-QT += multimedia widgets
+env:
+  VERSION: ${{ github.event.inputs.version }}
+  ZIP_NAME: SimulIDE-${{ github.event.inputs.version }}-windows-mingw64.zip
+  ZIP_REL_PATH: release/SimulIDE-${{ github.event.inputs.version }}-windows-mingw64.zip
 
-SOURCES      = $$files( $$PWD/src/*.cpp, true )
-HEADERS      = $$files( $$PWD/src/*.h, true )
-TRANSLATIONS = $$files( $$PWD/resources/translations/*.ts )
-FORMS       += $$files( $$PWD/src/*.ui, true )
-RESOURCES    = $$PWD/src/application.qrc
+jobs:
+  build-windows-mingw:
+    name: Windows (MSYS2/MinGW64 + Qt5) – Portable
+    runs-on: windows-latest
 
-INCLUDEPATH += $$PWD/src \
-    $$PWD/src/components \
-    $$PWD/src/components/active \
-    $$PWD/src/components/connectors \
-    $$PWD/src/components/graphical \
-    $$PWD/src/components/logic \
-    $$PWD/src/components/meters \
-    $$PWD/src/components/micro \
-    $$PWD/src/components/other \
-    $$PWD/src/components/other/truthtable \
-    $$PWD/src/components/outputs \
-    $$PWD/src/components/outputs/displays \
-    $$PWD/src/components/outputs/leds \
-    $$PWD/src/components/outputs/motors \
-    $$PWD/src/components/passive \
-    $$PWD/src/components/passive/reactive \
-    $$PWD/src/components/passive/resistors \
-    $$PWD/src/components/passive/resist_sensors \
-    $$PWD/src/components/sources \
-    $$PWD/src/components/subcircuits \
-    $$PWD/src/components/switches \
-    $$PWD/src/gui \
-    $$PWD/src/gui/appdialogs \
-    $$PWD/src/gui/circuitwidget \
-    $$PWD/src/gui/componentlist \
-    $$PWD/src/gui/dataplotwidget \
-    $$PWD/src/gui/editorwidget \
-    $$PWD/src/gui/editorwidget/debuggers \
-    $$PWD/src/gui/editorwidget/dialogs \
-    $$PWD/src/gui/filebrowser \
-    $$PWD/src/gui/memory \
-    $$PWD/src/gui/properties \
-    $$PWD/src/gui/serial \
-    $$PWD/src/gui/testing \
-    $$PWD/src/simulator \
-    $$PWD/src/simulator/elements \
-    $$PWD/src/simulator/elements/active \
-    $$PWD/src/simulator/elements/outputs \
-    $$PWD/src/simulator/elements/passive \
-    $$PWD/src/microsim \
-    $$PWD/src/microsim/cores \
-    $$PWD/src/microsim/cores/avr \
-    $$PWD/src/microsim/cores/i51 \
-    $$PWD/src/microsim/cores/pic \
-    $$PWD/src/microsim/cores/mcs65 \
-    $$PWD/src/microsim/cores/z80 \
-    $$PWD/src/microsim/cores/scripted \
-    $$PWD/src/microsim/cores/qemu \
-    $$PWD/src/microsim/cores/qemu/esp32 \
-    $$PWD/src/microsim/cores/qemu/stm32 \
-    $$PWD/src/microsim/modules \
-    $$PWD/src/microsim/modules/memory \
-    $$PWD/src/microsim/modules/usart \
-    $$PWD/src/microsim/modules/onewire\
-    $$PWD/src/microsim/modules/twi \
-    $$PWD/src/microsim/modules/tcp\
-    $$PWD/src/microsim/modules/spi\
-    $$PWD/src/microsim/modules/script\
-    $$PWD/src/angel/include \
-    $$PWD/src/angel/JIT \
-    $$PWD/src/angel/src
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
-QMAKE_CXXFLAGS += -Wno-unused-parameter
-QMAKE_CXXFLAGS += -Wno-deprecated-declarations
-QMAKE_CXXFLAGS += -Wno-implicit-fallthrough
-QMAKE_CXXFLAGS += -fno-strict-aliasing      #AngelScript
-QMAKE_CXXFLAGS += -Wno-cast-function-type   #AngelScript
-QMAKE_CXXFLAGS += -Wno-deprecated-copy      #AngelScript
-QMAKE_CXXFLAGS += -Wno-invalid-offsetof     #AngelScript
-QMAKE_CXXFLAGS += -Ofast
-QMAKE_CXXFLAGS_DEBUG += -D_GLIBCXX_ASSERTIONS
-QMAKE_CXXFLAGS_DEBUG -= -O
-QMAKE_CXXFLAGS_DEBUG -= -O1
-QMAKE_CXXFLAGS_DEBUG -= -O2
-QMAKE_CXXFLAGS_DEBUG -= -O3
-QMAKE_CXXFLAGS_DEBUG += -O0
+      - name: Habilitar long paths no Git
+        shell: pwsh
+        run: |
+          git config --system core.longpaths true
+          git config --global core.longpaths true
 
-LIBS += -lz
+      - name: Setup MSYS2 + MinGW64 + Qt5 (+ Tools)
+        uses: msys2/setup-msys2@v2
+        with:
+          release: true
+          update: true
+          msystem: MINGW64
+          path-type: minimal
+          cache: true
+          install: >-
+            base-devel
+            git
+            zip
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-binutils
+            mingw-w64-x86_64-qt5-base
+            mingw-w64-x86_64-qt5-svg
+            mingw-w64-x86_64-qt5-multimedia
+            mingw-w64-x86_64-qt5-serialport
+            mingw-w64-x86_64-qt5-script
+            mingw-w64-x86_64-qt5-tools
+            mingw-w64-x86_64-ntldd-git
+            mingw-w64-x86_64-harfbuzz
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-icu
+            mingw-w64-x86_64-md4c
+            mingw-w64-x86_64-pcre2
+            mingw-w64-x86_64-zstd
+            mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-graphite2
+            mingw-w64-x86_64-brotli
+            mingw-w64-x86_64-glib2
+            mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-libiconv
+            mingw-w64-x86_64-gettext
 
-win32 {
-    OS = Windows
-    QMAKE_LIBS += -lwsock32
-    RC_ICONS += $$PWD/resources/icons/simulide.ico
-}
-linux {
-    OS = Linux
-}
-macx {
-    OS = MacOs
-    ICON = $$PWD/resources/icons/simulide.icns
+      - name: Validar versão
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${VERSION}" || { echo "Versão não informada."; exit 1; }
+          echo "Versão/Tag alvo: ${VERSION}"
 
-    QMAKE_CXXFLAGS -= -stdlib=libc++
-    QMAKE_LFLAGS   -= -stdlib=libc++
+      - name: Detectar Qt (qmake, windeployqt, lrelease) + plugins
+        id: qt
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
 
-# To use gcc in MacOs you must force it.
-# Edit to match your system:
-    QMAKE_CC   = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gcc-7
-    QMAKE_CXX  = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
-    QMAKE_LINK = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
-}
+          if command -v qmake >/dev/null 2>&1; then QMAKE=qmake;
+          elif command -v qmake-qt5 >/dev/null 2>&1; then QMAKE=qmake-qt5;
+          else echo "qmake (Qt5) não encontrado."; exit 1; fi
 
-contains( QMAKE_HOST.arch, arm64|aarch64 ) | contains( QMAKE_CC, .*aarch64.* ){
-    SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_gcc.S
-}
+          if command -v windeployqt >/dev/null 2>&1; then WINDEPLOY=windeployqt;
+          elif command -v windeployqt-qt5 >/dev/null 2>&1; then WINDEPLOY=windeployqt-qt5;
+          else echo "windeployqt não encontrado."; exit 1; fi
 
-contains( QMAKE_HOST.os, Windows ) {
-    REV_NO = $$system("powershell -Command get-date -format yy-MM-dd")     # year-month-day
-    BUILD_DATE = $$system("powershell -Command get-date -format dd-MM-yy") # day-month-year
-}
-else {
-    REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
-    BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
-}
+          # lrelease: usar caminho absoluto (CRÍTICO pro seu .pri)
+          HOST_BINS="$("$QMAKE" -query QT_HOST_BINS || true)"
+          if [ -n "$HOST_BINS" ] && [ -f "$HOST_BINS/lrelease.exe" ]; then
+            LRELEASE="$HOST_BINS/lrelease.exe"
+          elif [ -f "/mingw64/bin/lrelease.exe" ]; then
+            LRELEASE="/mingw64/bin/lrelease.exe"
+          else
+            echo "lrelease.exe não encontrado. Verifique mingw-w64-x86_64-qt5-tools."
+            exit 1
+          fi
 
-CONFIG += qt 
-CONFIG += warn_on
-CONFIG += no_qml_debug
-CONFIG *= c++11
+          PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
+          if [ -z "$PLUG_DIR" ] || [ ! -d "$PLUG_DIR" ]; then
+            for d in /mingw64/share/qt5/plugins /mingw64/plugins /mingw64/lib/qt5/plugins; do
+              [ -d "$d" ] && PLUG_DIR="$d" && break
+            done
+          fi
 
-DEFINES += REVNO=\\\"$$REV_NO\\\"
-DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"
-DEFINES += BUILDDATE=\\\"$$BUILD_DATE\\\"
+          echo "QMAKE=$QMAKE" >> $GITHUB_ENV
+          echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
+          echo "LRELEASE=$LRELEASE" >> $GITHUB_ENV
+          echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
+          echo "/mingw64/bin" >> $GITHUB_PATH
 
-TARGET_NAME   = SimulIDE_$$VERSION-$$RELEASE
-TARGET_PREFIX = $$BUILD_DIR/executables/$$TARGET_NAME
+          echo "qmake=$QMAKE"
+          echo "windeployqt=$WINDEPLOY"
+          echo "lrelease=$LRELEASE"
+          echo "plugins=$PLUG_DIR"
 
-OBJECTS_DIR *= $$OUT_PWD/build/objects
-MOC_DIR     *= $$OUT_PWD/build/moc
-INCLUDEPATH += $$MOC_DIR
+      - name: Preflight
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
+          ls -la build_XX | sed -n '1,200p' || true
 
-DESTDIR = $$TARGET_PREFIX
+      # 🔧 HOTFIX: corrige shift de double em mcuocunit.cpp
+      - name: Hotfix GCC (shift de double em mcuocunit.cpp)
+        shell: bash
+        run: |
+          set -euo pipefail
+          F="src/microsim/mcuocunit.cpp"
+          if [ -f "$F" ] && grep -q 'time2ovf *>> *rot' "$F"; then
+            echo "Aplicando hotfix em $F"
+            cp "$F" "$F.bak"
+            sed -E -i 's/(addEvent\()\s*time2ovf\s*>>\s*rot(\s*,\s*this\s*\))/\1 static_cast<unsigned long long>(time2ovf) >> rot\2/' "$F"
+            grep -n 'addEvent' "$F" || true
+          else
+            echo "Hotfix não necessário (arquivo/trecho não encontrado)."
+          fi
 
-runLrelease.commands = \
-    lrelease $$PWD/resources/translations/*.ts; \
-    lrelease $$PWD/resources/translations/qt/*.ts; \
-    $(MOVE) $$PWD/resources/translations/*.qm $$PWD/resources/qm; \
-    $(MOVE) $$PWD/resources/translations/qt/*.qm $$PWD/resources/qm;
+      - name: Diagnóstico do runLrelease (lrelease absoluto)
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
+          echo "PATH=$PATH"
+          command -v sh || true
+          command -v qmake || true
+          command -v lrelease || true
+          echo "LRELEASE env: ${LRELEASE}"
+          ls -la "${LRELEASE}" || true
+          ls -la /mingw64/bin/lrelease* || true
+          ls -la resources/translations/*.ts 2>/dev/null || true
+          ls -la resources/translations/qt/*.ts 2>/dev/null || true
 
-QMAKE_EXTRA_TARGETS += runLrelease
-PRE_TARGETDEPS      += runLrelease
+      - name: Compilar (qmake + mingw32-make Release) — seguindo o .pri
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
 
-message( "-----------------------------------")
-message( "    "                               )
-message( "    "$$TARGET_NAME for $$OS         )
-message( "    "                               )
-message( "    Host:      "$$QMAKE_HOST.os     )
-message( "    Date:      "$$BUILD_DATE        )
-message( "    Qt version: "$$QT_VERSION       )
-message( "    "                               )
-message( "    Destination Folder:"            )
-message( $$TARGET_PREFIX                      )
-message( "-----------------------------------")
+          cd build_XX
+
+          # CRÍTICO: força QMAKE_LRELEASE absoluto para atender ao runLrelease.commands do .pri
+          "$QMAKE" "CONFIG+=release" "QMAKE_LRELEASE=${LRELEASE}"
+
+          CORES=$(nproc || echo 2)
+          mingw32-make -j"${CORES}" release
+
+      - name: Localizar executável (.exe) – varredura total
+        id: exe
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob nocaseglob
+          mapfile -t CAND < <(ls -1t build_XX/**/simulide*.exe build_XX/**/SimulIDE*.exe 2>/dev/null || true)
+          if [ ${#CAND[@]} -eq 0 ]; then
+            echo "Nenhum .exe encontrado em build_XX"
+            find build_XX -maxdepth 6 -type f -name "*.exe" -print 2>/dev/null || true
+            exit 1
+          fi
+          EXE="${CAND[0]}"
+          EXE_DIR="$(dirname "$EXE")"
+          echo "Executável escolhido: $EXE"
+          echo "exe_unix=$EXE" >> $GITHUB_OUTPUT
+          echo "exe_dir_unix=$EXE_DIR" >> $GITHUB_OUTPUT
+          echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
+          echo "exe_dir_win=$(cygpath -w "$EXE_DIR")" >> $GITHUB_OUTPUT
+
+      - name: windeployqt (gerar pasta portable com fallback)
+        shell: msys2 {0}
+        env:
+          QT_PLUGIN_PATH: ${{ env.QT_PLUGIN_PATH }}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
+          EXE_WIN="${{ steps.exe.outputs.exe_win }}"
+          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
+          PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
+
+          [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR"; exit 1; }
+
+          if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
+            echo "windeployqt OK."
+          else
+            echo "windeployqt falhou. Fallback de plugins…"
+            "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
+            mkdir -p "$EXE_DIR/platforms"
+            for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
+              [ -f "$f" ] && cp -f "$f" "$EXE_DIR/platforms/" || true
+            done
+            for sub in imageformats iconengines audio mediaservice printsupport; do
+              [ -d "$PLUG_DIR/$sub" ] || continue
+              mkdir -p "$EXE_DIR/$sub"
+              cp -f "$PLUG_DIR/$sub"/*.dll "$EXE_DIR/$sub/" 2>/dev/null || true
+            done
+          fi
+
+      - name: Copiar runtimes MinGW/3rd-party (ntldd ou objdump)
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export PATH="/mingw64/bin:$PATH"
+          EXE="${{ steps.exe.outputs.exe_unix }}"
+          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
+          MINGW_BIN="/mingw64/bin"
+          TMPD="$(mktemp -d)"; : > "$TMPD/deps.txt"
+
+          if command -v ntldd >/dev/null 2>&1; then
+            ntldd -R "$EXE" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
+            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print | while read f; do
+              ntldd -R "$f" | awk '/=>/ {print $3}' >> "$TMPD/deps.txt" || true
+            done
+          else
+            list_needed () { objdump -p "$1" 2>/dev/null | awk '/DLL Name:/ {print $3}'; }
+            for n in $(list_needed "$EXE"); do
+              find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" || true
+            done
+            find "$EXE_DIR" -maxdepth 2 -type f -name "*.dll" -print | while read f; do
+              for n in $(list_needed "$f"); do
+                find "$MINGW_BIN" -maxdepth 1 -iname "$n" -print >> "$TMPD/deps.txt" || true
+              done
+            done
+          fi
+
+          sort -u "$TMPD/deps.txt" | while read src; do
+            [ -f "$src" ] || continue
+            case "$src" in
+              /mingw64/bin/*|C:\\msys64\\mingw64\\bin\\*)
+                base="$(basename "$src")"
+                [ -f "$EXE_DIR/$base" ] || cp -f "$src" "$EXE_DIR/" || true
+                ;;
+            esac
+          done
+
+          for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
+            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
+          done
+
+          echo "DLLs finais na pasta:"
+          ls -1 "$EXE_DIR"/*.dll 2>/dev/null | wc -l || true
+
+      - name: Empacotar ZIP (portable) em release/
+        shell: pwsh
+        run: |
+          $exeDirWin  = "${{ steps.exe.outputs.exe_dir_win }}"
+          $workspace  = "${{ github.workspace }}"
+          $releaseDir = Join-Path $workspace "release"
+          if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir | Out-Null }
+          $zipPathAbs = Join-Path $releaseDir "${{ env.ZIP_NAME }}"
+          if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
+          Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
+          if (-not (Test-Path $zipPathAbs)) { throw "ZIP não foi gerado em: $zipPathAbs" }
+          Write-Host "ZIP gerado: $zipPathAbs"
+
+      - name: Publicar artefato (CI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulIDE-${{ env.VERSION }}-windows-mingw64
+          path: ${{ env.ZIP_REL_PATH }}
+          if-no-files-found: error
+
+      - name: Criar Release + Tag (anexando o ZIP)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: SimulIDE ${{ env.VERSION }} (Windows MinGW, portable)
+          body: ${{ github.event.inputs.notes }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: ${{ env.ZIP_REL_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
