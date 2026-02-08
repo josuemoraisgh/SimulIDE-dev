@@ -32,6 +32,9 @@ class OledController : public Component, public TwiModule
         int height() { return m_height; }
         void setHeight( int h );
 
+        bool imgRotated() { return m_rotate; }
+        void setImgRotated( bool r ) { m_rotate = r; }
+
         virtual void initialize() override;
         virtual void stamp() override;
         virtual void updateStep() override;
@@ -54,6 +57,8 @@ class OledController : public Component, public TwiModule
         QColor m_foreground;
 
         IoPin* m_pinSda;
+
+        bool m_rotate;
 
         uint8_t m_Co;
         uint8_t m_start;

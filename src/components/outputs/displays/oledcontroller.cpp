@@ -22,6 +22,8 @@ OledController::OledController( QString type, QString id )
 {
     m_graphical = true;
 
+    m_rotate = false;
+
     m_pin.resize( 2 );
     m_pin[0] = m_clkPin = new IoPin( 270, QPoint(-48, 48), id+"-PinSck", 0, this, openCo );
     m_clkPin->setLabelText("SCL");
@@ -317,9 +319,13 @@ void OledController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidge
                         if( bit < 8 ) pixel = byte0 & 1<<bit;
                         else          pixel = byte1 & 1<<(bit-startBit);
 
-                        if( pixel ){ // By default screen is rotated to fit with most used libraries
-                            int screenY = m_scanInv ? dy  : m_height-1-dy;
-                            int screenX = m_remap   ? col : m_width-1-col;
+                        if( pixel ){
+                            int screenY = m_scanInv ? m_height-1-dy : dy;
+                            int screenX = m_remap   ? m_width-1-col : col;
+                            if( m_rotate ){
+                                screenY = m_height-1-screenY;
+                                screenX = m_width-1-screenX;
+                            }
                             painter.fillRect( screenX*3, screenY*3, 3, 3, m_foreground );
                         }
                         dy++;
