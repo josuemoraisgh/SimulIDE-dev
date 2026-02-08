@@ -44,7 +44,7 @@ class OledController : public Component, public TwiModule
     protected:
         virtual void proccessCommand(){;}
         virtual void parameter(){;}
-        void writeData();
+        virtual void writeData();
         void reset();
         void clearDDRAM();
         void setSize( int w, int h );
