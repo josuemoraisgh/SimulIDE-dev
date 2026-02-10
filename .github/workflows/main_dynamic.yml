@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão/Tag (ex.: V2.0.0)"
+        description: "Versão/Tag (ex.: V2.0.0-RC1)"
         required: true
         type: string
       prerelease:
@@ -27,7 +27,7 @@ env:
 
 jobs:
   build-windows-mingw:
-    name: Windows (MSYS2 / MinGW64 / Qt5) – Portable
+    name: Windows (MSYS2/MinGW64 + Qt5) – Portable
     runs-on: windows-latest
 
     steps:
@@ -67,209 +67,14 @@ jobs:
             mingw-w64-x86_64-qt5-translations
             mingw-w64-x86_64-ntldd-git
 
-      - name: Preflight – estrutura esperada
+      - name: Validar versão
         shell: bash
         run: |
           set -euo pipefail
-          [ -d build_XX ] || { echo "❌ build_XX não encontrado"; exit 1; }
-          echo "✔ Estrutura OK"
+          test -n "${VERSION}" || { echo "Versão não informada."; exit 1; }
+          echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Restaurar SimulIDE.pri e build_XX/SimulIDE_Build.pro (UTF-8)
-        shell: msys2 {0}
-        run: |
-          set -Eeuo pipefail
-          export PATH="/mingw64/bin:$PATH"
-
-          mkdir -p build_XX
-
-          # --- restaura build_XX/SimulIDE_Build.pro ---
-          cat > build_XX/SimulIDE_Build.pro <<'EOF'
-          BUILD_DIR = $$PWD
-          
-          include(../SimulIDE.pri)
-          EOF
-          
-                    # --- restaura SimulIDE.pri (conteúdo que você enviou) ---
-                    cat > SimulIDE.pri <<'EOF'
-          VERSION = "2.0.0"
-          RELEASE = ""
-          
-          TEMPLATE = app
-          TARGET = simulide
-          
-          QT += svg
-          QT += xml
-          QT += widgets
-          QT += concurrent
-          QT += serialport
-          QT += multimedia widgets
-          
-          SOURCES      = $$files( $$PWD/src/*.cpp, true )
-          HEADERS      = $$files( $$PWD/src/*.h, true )
-          TRANSLATIONS = $$files( $$PWD/resources/translations/*.ts )
-          FORMS       += $$files( $$PWD/src/*.ui, true )
-          RESOURCES    = $$PWD/src/application.qrc
-          
-          INCLUDEPATH += $$PWD/src \
-              $$PWD/src/components \
-              $$PWD/src/components/active \
-              $$PWD/src/components/connectors \
-              $$PWD/src/components/graphical \
-              $$PWD/src/components/logic \
-              $$PWD/src/components/meters \
-              $$PWD/src/components/micro \
-              $$PWD/src/components/other \
-              $$PWD/src/components/other/truthtable \
-              $$PWD/src/components/outputs \
-              $$PWD/src/components/outputs/displays \
-              $$PWD/src/components/outputs/leds \
-              $$PWD/src/components/outputs/motors \
-              $$PWD/src/components/passive \
-              $$PWD/src/components/passive/reactive \
-              $$PWD/src/components/passive/resistors \
-              $$PWD/src/components/passive/resist_sensors \
-              $$PWD/src/components/sources \
-              $$PWD/src/components/subcircuits \
-              $$PWD/src/components/switches \
-              $$PWD/src/gui \
-              $$PWD/src/gui/appdialogs \
-              $$PWD/src/gui/circuitwidget \
-              $$PWD/src/gui/componentlist \
-              $$PWD/src/gui/dataplotwidget \
-              $$PWD/src/gui/editorwidget \
-              $$PWD/src/gui/editorwidget/debuggers \
-              $$PWD/src/gui/editorwidget/dialogs \
-              $$PWD/src/gui/filebrowser \
-              $$PWD/src/gui/memory \
-              $$PWD/src/gui/properties \
-              $$PWD/src/gui/serial \
-              $$PWD/src/gui/testing \
-              $$PWD/src/simulator \
-              $$PWD/src/simulator/elements \
-              $$PWD/src/simulator/elements/active \
-              $$PWD/src/simulator/elements/outputs \
-              $$PWD/src/simulator/elements/passive \
-              $$PWD/src/microsim \
-              $$PWD/src/microsim/cores \
-              $$PWD/src/microsim/cores/avr \
-              $$PWD/src/microsim/cores/i51 \
-              $$PWD/src/microsim/cores/pic \
-              $$PWD/src/microsim/cores/mcs65 \
-              $$PWD/src/microsim/cores/z80 \
-              $$PWD/src/microsim/cores/scripted \
-              $$PWD/src/microsim/cores/qemu \
-              $$PWD/src/microsim/cores/qemu/esp32 \
-              $$PWD/src/microsim/cores/qemu/stm32 \
-              $$PWD/src/microsim/modules \
-              $$PWD/src/microsim/modules/memory \
-              $$PWD/src/microsim/modules/usart \
-              $$PWD/src/microsim/modules/onewire\
-              $$PWD/src/microsim/modules/twi \
-              $$PWD/src/microsim/modules/tcp\
-              $$PWD/src/microsim/modules/spi\
-              $$PWD/src/microsim/modules/script\
-              $$PWD/src/angel/include \
-              $$PWD/src/angel/JIT \
-              $$PWD/src/angel/src
-          
-          QMAKE_CXXFLAGS += -Wno-unused-parameter
-          QMAKE_CXXFLAGS += -Wno-deprecated-declarations
-          QMAKE_CXXFLAGS += -Wno-implicit-fallthrough
-          QMAKE_CXXFLAGS += -fno-strict-aliasing      #AngelScript
-          QMAKE_CXXFLAGS += -Wno-cast-function-type   #AngelScript
-          QMAKE_CXXFLAGS += -Wno-deprecated-copy      #AngelScript
-          QMAKE_CXXFLAGS += -Wno-invalid-offsetof     #AngelScript
-          QMAKE_CXXFLAGS += -Ofast
-          QMAKE_CXXFLAGS_DEBUG += -D_GLIBCXX_ASSERTIONS
-          QMAKE_CXXFLAGS_DEBUG -= -O
-          QMAKE_CXXFLAGS_DEBUG -= -O1
-          QMAKE_CXXFLAGS_DEBUG -= -O2
-          QMAKE_CXXFLAGS_DEBUG -= -O3
-          QMAKE_CXXFLAGS_DEBUG += -O0
-          
-          LIBS += -lz
-          
-          win32 {
-              OS = Windows
-              QMAKE_LIBS += -lwsock32
-              RC_ICONS += $$PWD/resources/icons/simulide.ico
-          }
-          linux {
-              OS = Linux
-          }
-          macx {
-              OS = MacOs
-              ICON = $$PWD/resources/icons/simulide.icns
-          
-              QMAKE_CXXFLAGS -= -stdlib=libc++
-              QMAKE_LFLAGS   -= -stdlib=libc++
-          
-              QMAKE_CC   = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gcc-7
-              QMAKE_CXX  = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
-              QMAKE_LINK = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
-          }
-          
-          contains( QMAKE_HOST.arch, arm64|aarch64 ) | contains( QMAKE_CC, .*aarch64.* ){
-              SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_gcc.S
-          }
-          
-          contains( QMAKE_HOST.os, Windows ) {
-              REV_NO = $$system("powershell -Command get-date -format yy-MM-dd")
-              BUILD_DATE = $$system("powershell -Command get-date -format dd-MM-yy")
-          }
-          else {
-              REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
-              BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
-          }
-          
-          CONFIG += qt
-          CONFIG += warn_on
-          CONFIG += no_qml_debug
-          CONFIG *= c++11
-          
-          DEFINES += REVNO=\\\"$$REV_NO\\\"
-          DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"
-          DEFINES += BUILDDATE=\\\"$$BUILD_DATE\\\"
-          
-          TARGET_NAME   = SimulIDE_$$VERSION-$$RELEASE
-          TARGET_PREFIX = $$BUILD_DIR/executables/$$TARGET_NAME
-          
-          OBJECTS_DIR *= $$OUT_PWD/build/objects
-          MOC_DIR     *= $$OUT_PWD/build/moc
-          INCLUDEPATH += $$MOC_DIR
-          
-          DESTDIR = $$TARGET_PREFIX
-          
-          runLrelease.commands = \
-              lrelease $$PWD/resources/translations/*.ts; \
-              lrelease $$PWD/resources/translations/qt/*.ts; \
-              $(MOVE) $$PWD/resources/translations/*.qm $$PWD/resources/qm; \
-              $(MOVE) $$PWD/resources/translations/qt/*.qm $$PWD/resources/qm;
-          
-          QMAKE_EXTRA_TARGETS += runLrelease
-          PRE_TARGETDEPS      += runLrelease
-          
-          message( "-----------------------------------")
-          message( "    "                               )
-          message( "    "$$TARGET_NAME for $$OS         )
-          message( "    "                               )
-          message( "    Host:      "$$QMAKE_HOST.os     )
-          message( "    Date:      "$$BUILD_DATE        )
-          message( "    Qt version: "$$QT_VERSION       )
-          message( "    "                               )
-          message( "    Destination Folder:"            )
-          message( $$TARGET_PREFIX                      )
-          message( "-----------------------------------")
-          EOF
-
-          # remove CRLF (garantia)
-          sed -i 's/\r$//' SimulIDE.pri build_XX/SimulIDE_Build.pro
-
-          echo "✔ Arquivos restaurados. Primeiras linhas:"
-          sed -n '1,5p' SimulIDE.pri
-          sed -n '1,5p' build_XX/SimulIDE_Build.pro
-
-      - name: Detectar Qt (qmake-qt5 / windeployqt-qt5 / lrelease-qt5) + plugins
+      - name: Detectar Qt (qmake-qt5, windeployqt-qt5, lrelease-qt5) + plugins
         shell: msys2 {0}
         run: |
           set -Eeuo pipefail
@@ -280,11 +85,8 @@ jobs:
             QMAKE="/mingw64/bin/qmake-qt5.exe"
           elif command -v qmake-qt5 >/dev/null 2>&1; then
             QMAKE="$(command -v qmake-qt5)"
-          elif command -v qmake >/dev/null 2>&1; then
-            QMAKE="$(command -v qmake)"
           else
-            echo "❌ qmake não encontrado"
-            exit 1
+            echo "qmake-qt5 não encontrado"; exit 1
           fi
 
           # windeployqt
@@ -292,22 +94,17 @@ jobs:
             WINDEPLOY="/mingw64/bin/windeployqt-qt5.exe"
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then
             WINDEPLOY="$(command -v windeployqt-qt5)"
-          elif command -v windeployqt >/dev/null 2>&1; then
-            WINDEPLOY="$(command -v windeployqt)"
           else
             WINDEPLOY=""
           fi
 
-          # lrelease (usar o -qt5.exe)
+          # lrelease (IMPORTANTE: no MSYS2 ele é lrelease-qt5.exe)
           if [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
             LRELEASE="/mingw64/bin/lrelease-qt5.exe"
           elif command -v lrelease-qt5 >/dev/null 2>&1; then
             LRELEASE="$(command -v lrelease-qt5)"
-          elif command -v lrelease >/dev/null 2>&1; then
-            LRELEASE="$(command -v lrelease)"
           else
-            echo "❌ lrelease não encontrado"
-            exit 1
+            echo "lrelease-qt5 não encontrado"; exit 1
           fi
 
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
@@ -323,10 +120,22 @@ jobs:
           echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
 
-          echo "✔ QMAKE=$QMAKE"
-          echo "✔ WINDEPLOY=$WINDEPLOY"
-          echo "✔ LRELEASE=$LRELEASE"
-          echo "✔ QT_PLUGIN_PATH=$PLUG_DIR"
+      - name: Guardião: falha se SimulIDE.pri não for qmake
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -qE '^TEMPLATE *=|^VERSION *=|^QT *\+=' SimulIDE.pri || {
+            echo "❌ SimulIDE.pri não parece arquivo qmake (.pri). Primeiras 20 linhas:";
+            sed -n '1,20p' SimulIDE.pri || true;
+            exit 1;
+          }
+
+      - name: Preflight
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
+          [ -f build_XX/SimulIDE_Build.pro ] || { echo "build_XX/SimulIDE_Build.pro não encontrado."; exit 1; }
 
       - name: Hotfix GCC (shift de double em mcuocunit.cpp)
         shell: bash
@@ -337,7 +146,6 @@ jobs:
             echo "Aplicando hotfix em $F"
             cp "$F" "$F.bak"
             sed -E -i 's/(addEvent\()\s*time2ovf\s*>>\s*rot(\s*,\s*this\s*\))/\1 static_cast<unsigned long long>(time2ovf) >> rot\2/' "$F"
-            grep -n 'addEvent' "$F" || true
           else
             echo "Hotfix não necessário."
           fi
@@ -350,17 +158,11 @@ jobs:
           cd build_XX
 
           rm -f Makefile* .qmake.stash 2>/dev/null || true
-          rm -rf release build moc 2>/dev/null || true
 
-          "$QMAKE" SimulIDE_Build.pro \
-            "CONFIG+=release" \
-            "QMAKE_LRELEASE=${LRELEASE}"
+          "$QMAKE" SimulIDE_Build.pro "CONFIG+=release" "QMAKE_LRELEASE=${LRELEASE}"
 
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
-
-          echo "✔ Build concluído"
-          find . -maxdepth 6 -type f -name "*.exe" -print || true
 
       - name: Localizar executável (.exe)
         id: exe
@@ -388,7 +190,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
-
           EXE_WIN="${{ steps.exe.outputs.exe_win }}"
           if [ -z "${WINDEPLOY}" ]; then
             echo "⚠️ windeployqt não encontrado — pulando."
@@ -407,7 +208,7 @@ jobs:
           if (Test-Path $zipPathAbs) { Remove-Item $zipPathAbs -Force }
           Compress-Archive -Path (Join-Path $exeDirWin '*') -DestinationPath $zipPathAbs
           if (-not (Test-Path $zipPathAbs)) { throw "ZIP não foi gerado em: $zipPathAbs" }
-          Write-Host "✔ ZIP gerado: $zipPathAbs"
+          Write-Host "ZIP gerado: $zipPathAbs"
 
       - name: Publicar artefato (CI)
         uses: actions/upload-artifact@v4
