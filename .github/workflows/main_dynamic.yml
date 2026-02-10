@@ -72,69 +72,202 @@ jobs:
         run: |
           set -euo pipefail
           [ -d build_XX ] || { echo "❌ build_XX não encontrado"; exit 1; }
-          [ -f build_XX/SimulIDE_Build.pro ] || { echo "❌ build_XX/SimulIDE_Build.pro não encontrado"; exit 1; }
-          [ -f SimulIDE.pri ] || { echo "❌ SimulIDE.pri não encontrado"; exit 1; }
           echo "✔ Estrutura OK"
 
-      - name: Normalizar/Converter encoding dos arquivos qmake (.pri/.pro)
+      - name: Restaurar SimulIDE.pri e build_XX/SimulIDE_Build.pro (UTF-8)
         shell: msys2 {0}
         run: |
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          show_head() {
-            echo "---- HEAD $1 (cat -A) ----"
-            sed -n '1,5p' "$1" | cat -A || true
-            echo "---- HEX $1 (primeiros 64 bytes) ----"
-            xxd -g 1 -l 64 "$1" || true
-          }
+          mkdir -p build_XX
 
-          to_utf8_if_utf16() {
-            local f="$1"
-            [ -f "$f" ] || return 0
+          # --- restaura build_XX/SimulIDE_Build.pro ---
+          cat > build_XX/SimulIDE_Build.pro <<'EOF'
+BUILD_DIR = $$PWD
 
-            # Detecta NUL bytes (sinal de UTF-16)
-            if LC_ALL=C grep -q $'\x00' "$f"; then
-              echo "⚠️ Detectado NUL bytes (provável UTF-16) em: $f"
-              # tenta UTF-16LE primeiro, depois UTF-16BE
-              if iconv -f UTF-16LE -t UTF-8 "$f" -o "$f.utf8" 2>/dev/null; then
-                mv -f "$f.utf8" "$f"
-                echo "✔ Convertido UTF-16LE -> UTF-8: $f"
-              elif iconv -f UTF-16BE -t UTF-8 "$f" -o "$f.utf8" 2>/dev/null; then
-                mv -f "$f.utf8" "$f"
-                echo "✔ Convertido UTF-16BE -> UTF-8: $f"
-              else
-                echo "❌ Falha ao converter UTF-16 -> UTF-8: $f"
-                show_head "$f"
-                exit 1
-              fi
-            fi
-          }
+include(../SimulIDE.pri)
+EOF
 
-          normalize_text() {
-            local f="$1"
-            [ -f "$f" ] || return 0
-            # remove BOM UTF-8 (se houver)
-            sed -i '1s/^\xEF\xBB\xBF//' "$f" || true
-            # remove CRLF -> LF
-            sed -i 's/\r$//' "$f" || true
-          }
+          # --- restaura SimulIDE.pri (conteúdo que você enviou) ---
+          cat > SimulIDE.pri <<'EOF'
+VERSION = "2.0.0"
+RELEASE = ""
 
-          # converte e normaliza os principais
-          to_utf8_if_utf16 "SimulIDE.pri"
-          to_utf8_if_utf16 "build_XX/SimulIDE_Build.pro"
-          normalize_text "SimulIDE.pri"
-          normalize_text "build_XX/SimulIDE_Build.pro"
+TEMPLATE = app
+TARGET = simulide
 
-          # varre demais .pri/.pro na raiz e em build_XX
-          find . -maxdepth 2 -type f \( -name "*.pri" -o -name "*.pro" \) -print | while read f; do
-            to_utf8_if_utf16 "$f"
-            normalize_text "$f"
-          done
+QT += svg
+QT += xml
+QT += widgets
+QT += concurrent
+QT += serialport
+QT += multimedia widgets
 
-          echo "✔ Normalização/Conversão concluída"
-          show_head "SimulIDE.pri"
-          show_head "build_XX/SimulIDE_Build.pro"
+SOURCES      = $$files( $$PWD/src/*.cpp, true )
+HEADERS      = $$files( $$PWD/src/*.h, true )
+TRANSLATIONS = $$files( $$PWD/resources/translations/*.ts )
+FORMS       += $$files( $$PWD/src/*.ui, true )
+RESOURCES    = $$PWD/src/application.qrc
+
+INCLUDEPATH += $$PWD/src \
+    $$PWD/src/components \
+    $$PWD/src/components/active \
+    $$PWD/src/components/connectors \
+    $$PWD/src/components/graphical \
+    $$PWD/src/components/logic \
+    $$PWD/src/components/meters \
+    $$PWD/src/components/micro \
+    $$PWD/src/components/other \
+    $$PWD/src/components/other/truthtable \
+    $$PWD/src/components/outputs \
+    $$PWD/src/components/outputs/displays \
+    $$PWD/src/components/outputs/leds \
+    $$PWD/src/components/outputs/motors \
+    $$PWD/src/components/passive \
+    $$PWD/src/components/passive/reactive \
+    $$PWD/src/components/passive/resistors \
+    $$PWD/src/components/passive/resist_sensors \
+    $$PWD/src/components/sources \
+    $$PWD/src/components/subcircuits \
+    $$PWD/src/components/switches \
+    $$PWD/src/gui \
+    $$PWD/src/gui/appdialogs \
+    $$PWD/src/gui/circuitwidget \
+    $$PWD/src/gui/componentlist \
+    $$PWD/src/gui/dataplotwidget \
+    $$PWD/src/gui/editorwidget \
+    $$PWD/src/gui/editorwidget/debuggers \
+    $$PWD/src/gui/editorwidget/dialogs \
+    $$PWD/src/gui/filebrowser \
+    $$PWD/src/gui/memory \
+    $$PWD/src/gui/properties \
+    $$PWD/src/gui/serial \
+    $$PWD/src/gui/testing \
+    $$PWD/src/simulator \
+    $$PWD/src/simulator/elements \
+    $$PWD/src/simulator/elements/active \
+    $$PWD/src/simulator/elements/outputs \
+    $$PWD/src/simulator/elements/passive \
+    $$PWD/src/microsim \
+    $$PWD/src/microsim/cores \
+    $$PWD/src/microsim/cores/avr \
+    $$PWD/src/microsim/cores/i51 \
+    $$PWD/src/microsim/cores/pic \
+    $$PWD/src/microsim/cores/mcs65 \
+    $$PWD/src/microsim/cores/z80 \
+    $$PWD/src/microsim/cores/scripted \
+    $$PWD/src/microsim/cores/qemu \
+    $$PWD/src/microsim/cores/qemu/esp32 \
+    $$PWD/src/microsim/cores/qemu/stm32 \
+    $$PWD/src/microsim/modules \
+    $$PWD/src/microsim/modules/memory \
+    $$PWD/src/microsim/modules/usart \
+    $$PWD/src/microsim/modules/onewire\
+    $$PWD/src/microsim/modules/twi \
+    $$PWD/src/microsim/modules/tcp\
+    $$PWD/src/microsim/modules/spi\
+    $$PWD/src/microsim/modules/script\
+    $$PWD/src/angel/include \
+    $$PWD/src/angel/JIT \
+    $$PWD/src/angel/src
+
+QMAKE_CXXFLAGS += -Wno-unused-parameter
+QMAKE_CXXFLAGS += -Wno-deprecated-declarations
+QMAKE_CXXFLAGS += -Wno-implicit-fallthrough
+QMAKE_CXXFLAGS += -fno-strict-aliasing      #AngelScript
+QMAKE_CXXFLAGS += -Wno-cast-function-type   #AngelScript
+QMAKE_CXXFLAGS += -Wno-deprecated-copy      #AngelScript
+QMAKE_CXXFLAGS += -Wno-invalid-offsetof     #AngelScript
+QMAKE_CXXFLAGS += -Ofast
+QMAKE_CXXFLAGS_DEBUG += -D_GLIBCXX_ASSERTIONS
+QMAKE_CXXFLAGS_DEBUG -= -O
+QMAKE_CXXFLAGS_DEBUG -= -O1
+QMAKE_CXXFLAGS_DEBUG -= -O2
+QMAKE_CXXFLAGS_DEBUG -= -O3
+QMAKE_CXXFLAGS_DEBUG += -O0
+
+LIBS += -lz
+
+win32 {
+    OS = Windows
+    QMAKE_LIBS += -lwsock32
+    RC_ICONS += $$PWD/resources/icons/simulide.ico
+}
+linux {
+    OS = Linux
+}
+macx {
+    OS = MacOs
+    ICON = $$PWD/resources/icons/simulide.icns
+
+    QMAKE_CXXFLAGS -= -stdlib=libc++
+    QMAKE_LFLAGS   -= -stdlib=libc++
+
+    QMAKE_CC   = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gcc-7
+    QMAKE_CXX  = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
+    QMAKE_LINK = /usr/local/Cellar/gcc@7/7.5.0_4/bin/g++-7
+}
+
+contains( QMAKE_HOST.arch, arm64|aarch64 ) | contains( QMAKE_CC, .*aarch64.* ){
+    SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_gcc.S
+}
+
+contains( QMAKE_HOST.os, Windows ) {
+    REV_NO = $$system("powershell -Command get-date -format yy-MM-dd")
+    BUILD_DATE = $$system("powershell -Command get-date -format dd-MM-yy")
+}
+else {
+    REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")
+    BUILD_DATE = $$system($(which date) +\"\\\"%d-%m-%y\\\"\")
+}
+
+CONFIG += qt
+CONFIG += warn_on
+CONFIG += no_qml_debug
+CONFIG *= c++11
+
+DEFINES += REVNO=\\\"$$REV_NO\\\"
+DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"
+DEFINES += BUILDDATE=\\\"$$BUILD_DATE\\\"
+
+TARGET_NAME   = SimulIDE_$$VERSION-$$RELEASE
+TARGET_PREFIX = $$BUILD_DIR/executables/$$TARGET_NAME
+
+OBJECTS_DIR *= $$OUT_PWD/build/objects
+MOC_DIR     *= $$OUT_PWD/build/moc
+INCLUDEPATH += $$MOC_DIR
+
+DESTDIR = $$TARGET_PREFIX
+
+runLrelease.commands = \
+    lrelease $$PWD/resources/translations/*.ts; \
+    lrelease $$PWD/resources/translations/qt/*.ts; \
+    $(MOVE) $$PWD/resources/translations/*.qm $$PWD/resources/qm; \
+    $(MOVE) $$PWD/resources/translations/qt/*.qm $$PWD/resources/qm;
+
+QMAKE_EXTRA_TARGETS += runLrelease
+PRE_TARGETDEPS      += runLrelease
+
+message( "-----------------------------------")
+message( "    "                               )
+message( "    "$$TARGET_NAME for $$OS         )
+message( "    "                               )
+message( "    Host:      "$$QMAKE_HOST.os     )
+message( "    Date:      "$$BUILD_DATE        )
+message( "    Qt version: "$$QT_VERSION       )
+message( "    "                               )
+message( "    Destination Folder:"            )
+message( $$TARGET_PREFIX                      )
+message( "-----------------------------------")
+EOF
+
+          # remove CRLF (garantia)
+          sed -i 's/\r$//' SimulIDE.pri build_XX/SimulIDE_Build.pro
+
+          echo "✔ Arquivos restaurados. Primeiras linhas:"
+          sed -n '1,5p' SimulIDE.pri
+          sed -n '1,5p' build_XX/SimulIDE_Build.pro
 
       - name: Detectar Qt (qmake-qt5 / windeployqt-qt5 / lrelease-qt5) + plugins
         shell: msys2 {0}
@@ -142,17 +275,8 @@ jobs:
           set -Eeuo pipefail
           export PATH="/mingw64/bin:$PATH"
 
-          echo "MSYSTEM=$MSYSTEM"
-          echo "PATH=$PATH"
-          echo "Bins:"
-          ls -la /mingw64/bin/qmake* 2>/dev/null || true
-          ls -la /mingw64/bin/lrelease* 2>/dev/null || true
-          ls -la /mingw64/bin/windeployqt* 2>/dev/null || true
-
           # qmake
-          if [ -f "/mingw64/bin/qmake.exe" ]; then
-            QMAKE="/mingw64/bin/qmake.exe"
-          elif [ -f "/mingw64/bin/qmake-qt5.exe" ]; then
+          if [ -f "/mingw64/bin/qmake-qt5.exe" ]; then
             QMAKE="/mingw64/bin/qmake-qt5.exe"
           elif command -v qmake-qt5 >/dev/null 2>&1; then
             QMAKE="$(command -v qmake-qt5)"
@@ -164,9 +288,7 @@ jobs:
           fi
 
           # windeployqt
-          if [ -f "/mingw64/bin/windeployqt.exe" ]; then
-            WINDEPLOY="/mingw64/bin/windeployqt.exe"
-          elif [ -f "/mingw64/bin/windeployqt-qt5.exe" ]; then
+          if [ -f "/mingw64/bin/windeployqt-qt5.exe" ]; then
             WINDEPLOY="/mingw64/bin/windeployqt-qt5.exe"
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then
             WINDEPLOY="$(command -v windeployqt-qt5)"
@@ -176,10 +298,8 @@ jobs:
             WINDEPLOY=""
           fi
 
-          # lrelease (preferir lrelease-qt5.exe; o -pro.exe não serve aqui)
-          if [ -f "/mingw64/bin/lrelease.exe" ]; then
-            LRELEASE="/mingw64/bin/lrelease.exe"
-          elif [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
+          # lrelease (usar o -qt5.exe)
+          if [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
             LRELEASE="/mingw64/bin/lrelease-qt5.exe"
           elif command -v lrelease-qt5 >/dev/null 2>&1; then
             LRELEASE="$(command -v lrelease-qt5)"
@@ -242,7 +362,7 @@ jobs:
           echo "✔ Build concluído"
           find . -maxdepth 6 -type f -name "*.exe" -print || true
 
-      - name: Localizar executável (.exe) – varredura total
+      - name: Localizar executável (.exe)
         id: exe
         shell: bash
         run: |
@@ -256,13 +376,12 @@ jobs:
           fi
           EXE="${CAND[0]}"
           EXE_DIR="$(dirname "$EXE")"
-          echo "Executável escolhido: $EXE"
           echo "exe_unix=$EXE" >> $GITHUB_OUTPUT
           echo "exe_dir_unix=$EXE_DIR" >> $GITHUB_OUTPUT
           echo "exe_win=$(cygpath -w "$EXE")" >> $GITHUB_OUTPUT
           echo "exe_dir_win=$(cygpath -w "$EXE_DIR")" >> $GITHUB_OUTPUT
 
-      - name: windeployqt (portable) com fallback
+      - name: windeployqt (portable) – se disponível
         shell: msys2 {0}
         env:
           QT_PLUGIN_PATH: ${{ env.QT_PLUGIN_PATH }}
@@ -271,38 +390,11 @@ jobs:
           export PATH="/mingw64/bin:$PATH"
 
           EXE_WIN="${{ steps.exe.outputs.exe_win }}"
-          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
-          PLUG_DIR="${{ env.QT_PLUGIN_PATH }}"
-
           if [ -z "${WINDEPLOY}" ]; then
             echo "⚠️ windeployqt não encontrado — pulando."
             exit 0
           fi
-
-          [ -f "$(cygpath -u "$EXE_WIN")" ] || { echo "❌ Exe não existe: $EXE_WIN"; ls -la "$EXE_DIR"; exit 1; }
-
-          if "$WINDEPLOY" --compiler-runtime "$EXE_WIN"; then
-            echo "✔ windeployqt OK"
-          else
-            echo "⚠️ windeployqt falhou, fallback manual"
-            "$WINDEPLOY" --no-plugins --compiler-runtime "$EXE_WIN" || true
-            mkdir -p "$EXE_DIR/platforms"
-            for f in "$PLUG_DIR/platforms/qwindows.dll" "$PLUG_DIR/platforms/qwindowsd.dll"; do
-              [ -f "$f" ] && cp -f "$f" "$EXE_DIR/platforms/" || true
-            done
-          fi
-
-      - name: Copiar runtimes MinGW (garantias)
-        shell: msys2 {0}
-        run: |
-          set -Eeuo pipefail
-          export PATH="/mingw64/bin:$PATH"
-          EXE_DIR="${{ steps.exe.outputs.exe_dir_unix }}"
-          MINGW_BIN="/mingw64/bin"
-
-          for d in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
-            [ -f "$EXE_DIR/$d" ] || cp -f "$MINGW_BIN/$d" "$EXE_DIR/" 2>/dev/null || true
-          done
+          "$WINDEPLOY" --compiler-runtime "$EXE_WIN" || true
 
       - name: Empacotar ZIP (portable) em release/
         shell: pwsh
