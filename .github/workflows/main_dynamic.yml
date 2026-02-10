@@ -86,7 +86,7 @@ jobs:
           elif command -v qmake-qt5 >/dev/null 2>&1; then
             QMAKE="$(command -v qmake-qt5)"
           else
-            echo "qmake-qt5 não encontrado"; exit 1
+            echo "❌ qmake-qt5 não encontrado"; exit 1
           fi
 
           # windeployqt
@@ -98,13 +98,13 @@ jobs:
             WINDEPLOY=""
           fi
 
-          # lrelease (IMPORTANTE: no MSYS2 ele é lrelease-qt5.exe)
+          # lrelease
           if [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
             LRELEASE="/mingw64/bin/lrelease-qt5.exe"
           elif command -v lrelease-qt5 >/dev/null 2>&1; then
             LRELEASE="$(command -v lrelease-qt5)"
           else
-            echo "lrelease-qt5 não encontrado"; exit 1
+            echo "❌ lrelease-qt5 não encontrado"; exit 1
           fi
 
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
@@ -120,12 +120,17 @@ jobs:
           echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
 
-      - name: "Guardiao - falha se SimulIDE.pri nao for qmake"
+          echo "✔ QMAKE=$QMAKE"
+          echo "✔ WINDEPLOY=$WINDEPLOY"
+          echo "✔ LRELEASE=$LRELEASE"
+          echo "✔ QT_PLUGIN_PATH=$PLUG_DIR"
+
+      - name: Guardiao - falha se SimulIDE.pri nao for qmake
         shell: bash
         run: |
           set -euo pipefail
           if ! grep -qE '^(TEMPLATE|VERSION)[[:space:]]*=' SimulIDE.pri; then
-            echo "SimulIDE.pri nao parece arquivo qmake (.pri). Primeiras 20 linhas:"
+            echo "❌ SimulIDE.pri nao parece arquivo qmake (.pri). Primeiras 20 linhas:"
             sed -n '1,20p' SimulIDE.pri || true
             exit 1
           fi
@@ -134,8 +139,8 @@ jobs:
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          [ -d build_XX ] || { echo "Pasta build_XX não encontrada."; exit 1; }
-          [ -f build_XX/SimulIDE_Build.pro ] || { echo "build_XX/SimulIDE_Build.pro não encontrado."; exit 1; }
+          [ -d build_XX ] || { echo "❌ Pasta build_XX não encontrada."; exit 1; }
+          [ -f build_XX/SimulIDE_Build.pro ] || { echo "❌ build_XX/SimulIDE_Build.pro não encontrado."; exit 1; }
 
       - name: Hotfix GCC (shift de double em mcuocunit.cpp)
         shell: bash
