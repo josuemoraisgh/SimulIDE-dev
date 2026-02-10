@@ -74,7 +74,7 @@ jobs:
           test -n "${VERSION}" || { echo "Versão não informada."; exit 1; }
           echo "Versão/Tag alvo: ${VERSION}"
 
-      - name: Detectar Qt (qmake-qt5, windeployqt-qt5, lrelease-qt5) + plugins
+      - name: Detectar Qt (qmake-qt5, windeployqt-qt5) + plugins
         shell: msys2 {0}
         run: |
           set -Eeuo pipefail
@@ -89,22 +89,13 @@ jobs:
             echo "❌ qmake-qt5 não encontrado"; exit 1
           fi
 
-          # windeployqt
+          # windeployqt (opcional)
           if [ -f "/mingw64/bin/windeployqt-qt5.exe" ]; then
             WINDEPLOY="/mingw64/bin/windeployqt-qt5.exe"
           elif command -v windeployqt-qt5 >/dev/null 2>&1; then
             WINDEPLOY="$(command -v windeployqt-qt5)"
           else
             WINDEPLOY=""
-          fi
-
-          # lrelease
-          if [ -f "/mingw64/bin/lrelease-qt5.exe" ]; then
-            LRELEASE="/mingw64/bin/lrelease-qt5.exe"
-          elif command -v lrelease-qt5 >/dev/null 2>&1; then
-            LRELEASE="$(command -v lrelease-qt5)"
-          else
-            echo "❌ lrelease-qt5 não encontrado"; exit 1
           fi
 
           PLUG_DIR="$("$QMAKE" -query QT_INSTALL_PLUGINS || true)"
@@ -116,14 +107,30 @@ jobs:
 
           echo "QMAKE=$QMAKE" >> $GITHUB_ENV
           echo "WINDEPLOY=$WINDEPLOY" >> $GITHUB_ENV
-          echo "LRELEASE=$LRELEASE" >> $GITHUB_ENV
           echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
 
           echo "✔ QMAKE=$QMAKE"
           echo "✔ WINDEPLOY=$WINDEPLOY"
-          echo "✔ LRELEASE=$LRELEASE"
           echo "✔ QT_PLUGIN_PATH=$PLUG_DIR"
+
+      - name: Criar alias "lrelease" (necessário pro runLrelease do .pri)
+        shell: msys2 {0}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/mingw64/bin:$PATH"
+
+          echo "Bins existentes:"
+          ls -la /mingw64/bin/lrelease* || true
+
+          # Seu .pri chama "lrelease" (sem sufixo). No MSYS2 ele vem como lrelease-qt5.exe.
+          if [ ! -f /mingw64/bin/lrelease.exe ] && [ -f /mingw64/bin/lrelease-qt5.exe ]; then
+            cp -f /mingw64/bin/lrelease-qt5.exe /mingw64/bin/lrelease.exe
+          fi
+
+          # Confirma que agora "lrelease" resolve:
+          command -v lrelease >/dev/null 2>&1 || { echo "❌ lrelease ainda não encontrado"; exit 1; }
+          lrelease -version || true
 
       - name: Guardiao - falha se SimulIDE.pri nao for qmake
         shell: bash
@@ -164,7 +171,7 @@ jobs:
 
           rm -f Makefile* .qmake.stash 2>/dev/null || true
 
-          "$QMAKE" SimulIDE_Build.pro "CONFIG+=release" "QMAKE_LRELEASE=${LRELEASE}"
+          "$QMAKE" SimulIDE_Build.pro "CONFIG+=release"
 
           CORES=$(nproc || echo 2)
           mingw32-make -j"${CORES}" release
