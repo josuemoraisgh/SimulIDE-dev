@@ -10,6 +10,7 @@
 
 #include "doubleprop.h"
 #include "stringprop.h"
+#include "boolprop.h"
 #include "intprop.h"
 
 #define tr(str) simulideTr("Ssd1306",str)
@@ -32,6 +33,8 @@ Ssd1306::Ssd1306( QString type, QString id )
 {
     m_address = m_cCode = 0b00111100; // 0x3A - 60
 
+    m_rotate = true;
+
     setColorStr("White");
 
     setSize( 128,64 );
@@ -46,6 +49,9 @@ Ssd1306::Ssd1306( QString type, QString id )
 
         new IntProp <Ssd1306>("Height", tr("Height"), "_px"
                              ,this,&Ssd1306::height, &Ssd1306::setHeight, propNoCopy,"uint" ),
+
+        new BoolProp<Ssd1306>("Rotate", tr("Rotate"), ""
+                             , this, &Ssd1306::imgRotated, &Ssd1306::setImgRotated ),
     }, 0} );
 
     addPropGroup( { tr("I2C"), {
