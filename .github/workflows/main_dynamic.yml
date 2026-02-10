@@ -120,15 +120,15 @@ jobs:
           echo "QT_PLUGIN_PATH=$PLUG_DIR" >> $GITHUB_ENV
           echo "/mingw64/bin" >> $GITHUB_PATH
 
-      - name: Guardião: falha se SimulIDE.pri não for qmake
+      - name: "Guardiao - falha se SimulIDE.pri nao for qmake"
         shell: bash
         run: |
           set -euo pipefail
-          grep -qE '^TEMPLATE *=|^VERSION *=|^QT *\+=' SimulIDE.pri || {
-            echo "❌ SimulIDE.pri não parece arquivo qmake (.pri). Primeiras 20 linhas:";
-            sed -n '1,20p' SimulIDE.pri || true;
-            exit 1;
-          }
+          if ! grep -qE '^(TEMPLATE|VERSION)[[:space:]]*=' SimulIDE.pri; then
+            echo "SimulIDE.pri nao parece arquivo qmake (.pri). Primeiras 20 linhas:"
+            sed -n '1,20p' SimulIDE.pri || true
+            exit 1
+          fi
 
       - name: Preflight
         shell: msys2 {0}
