@@ -82,6 +82,7 @@ void PicSpi::writeStatus( uint8_t newSSPSTAT ) // SSPSTAT is being written
 void PicSpi::writeSpiReg( uint8_t newSSPBUF ) // SSPBUF is being written
 {
     m_srReg = newSSPBUF;
+    *m_statReg |= 1;
 
     if( m_mode == SPI_MASTER ) StartTransaction();
 }
@@ -90,6 +91,7 @@ void PicSpi::endTransaction()
 {
     SpiModule::endTransaction();
     *m_dataReg = m_srReg;
+    *m_statReg &= ~1;
     m_interrupt->raise();
 }
 
