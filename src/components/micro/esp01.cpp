@@ -45,7 +45,6 @@ Esp01::Esp01( QString type, QString id )
     setBackground("esp01.png");
     setLabelPos(-20,-34, 0 );
 
-    m_serialMon = false;
     m_debug = true;
     m_OK    = "\r\nOK\r\n";
     m_ERROR = "\r\nERROR\r\n"; // Default reply: Error //+CWJAP:<5>
@@ -83,7 +82,7 @@ Esp01::Esp01( QString type, QString id )
 
     addPropGroup( {"Hidden", {
         new BoolProp<Esp01>("SerialMon","",""
-                           , this, &Esp01::serialMon, &Esp01::setSerialMon ),
+                           , this, &Esp01::monitorOpen, &Esp01::setSerialMon ),
     }, groupHidden} );
 }
 Esp01::~Esp01(){}
@@ -160,7 +159,7 @@ void Esp01::runEvent()
 void Esp01::byteReceived( uint8_t byte )
 {
     m_receiver->getData();
-    if( m_monitor ) m_monitor->printIn( byte );
+    printIn( byte );
     if( m_dataLenght )
     {
         if( m_tcpData.size() < m_dataLenght-2 ) m_tcpData.append( byte );
@@ -333,7 +332,7 @@ void Esp01::command()
 
 void Esp01::frameSent( uint8_t data )
 {
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
     if( m_uartReply.size() )
     {
         uint8_t byte = m_uartReply.at( 0 );
@@ -403,7 +402,7 @@ void Esp01::connectReply( QByteArray OP, int link )
 void Esp01::setIdLabel( QString id )
 {
     Component::setIdLabel( id );
-    if( m_monitor ) m_monitor->setWindowTitle( id );
+    setMonitorTittle( id );
 }
 
 void Esp01::slotOpenTerm()

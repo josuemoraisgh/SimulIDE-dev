@@ -9,6 +9,7 @@
 
 TwiModule::TwiModule( QString name )
          : eClockedDevice( name )
+         , TransModule( name )
 {
     m_sda = nullptr;
     m_scl = nullptr;
@@ -55,7 +56,7 @@ void TwiModule::runEvent()
 
     switch( m_i2cState )
     {
-    case I2C_IDLE: break;
+        case I2C_IDLE: break;
 
         case I2C_STOP:           // Send Stop Condition
         {
@@ -77,9 +78,10 @@ void TwiModule::runEvent()
             else if( !clkLow )                     // Step 3: SDA Already Low, Lower Clock
             {
                 setSCL( false ); //m_toggleScl = true;
+                m_lastState = I2C_IDLE;
                 if( m_i2cState == I2C_WRITE ) setTwiState( TWI_REP_START );
                 else                          setTwiState( TWI_START );
-                m_i2cState = I2C_IDLE;
+                m_i2cState = m_lastState;
             }
         }break;
 
@@ -88,12 +90,15 @@ void TwiModule::runEvent()
             if( !clkLow )         // Read bit while clk is high
             {
                 readBit();
-                if( m_bitPtr == 8 ) readByte();
+                if( m_bitPtr == 8 ){
+                    printIn( m_rxReg );
+                    readByte();
+                }
             }
             m_toggleScl = true;
         }break;
 
-        case I2C_WRITE :          // We are Writting data
+        case I2C_WRITE:          // We are Writting data
         {
             if( clkLow )  // Set SDA while clk is Low
             {
@@ -213,6 +218,7 @@ void TwiModule::voltChanged() // Used by slave
                 if( m_addrMatch )
                      m_nextState = m_sendACK ? TWI_SRX_ADR_DATA_ACK : TWI_SRX_ADR_DATA_NACK;
                 else m_nextState = m_sendACK ? TWI_SRX_GEN_DATA_ACK : TWI_SRX_GEN_DATA_NACK;
+                printIn( m_rxReg );
                 readByte();
         }   }
         else if( m_i2cState == I2C_READACK )      // We wait for Master ACK
@@ -279,7 +285,11 @@ void TwiModule::readBit()
 
 void TwiModule::writeBit()
 {
-    if( m_bitPtr < 0 ) { waitACK(); return; }
+    if( m_bitPtr < 0 ){
+        printOut( m_txReg );
+        waitACK();
+        return;
+    }
 
     bool bit = m_txReg>>m_bitPtr & 1;
     m_bitPtr--;

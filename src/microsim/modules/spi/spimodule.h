@@ -6,6 +6,7 @@
 #pragma once
 
 #include "e-clocked_device.h"
+#include "transmodule.h"
 
 enum spiMode_t{
     SPI_OFF=0,
@@ -15,7 +16,7 @@ enum spiMode_t{
 
 class IoPin;
 
-class SpiModule : public eClockedDevice
+class SpiModule : public eClockedDevice, public TransModule
 {
     public:
         SpiModule( QString name );
@@ -62,7 +63,7 @@ class SpiModule : public eClockedDevice
         uint8_t m_bitCount;
 
         uint8_t m_srReg;    // Shift Register
-        //uint8_t m_rxReg;    // Byte Received
+        uint8_t m_txReg;    // Byte sent
 
         spiMode_t m_mode;
 

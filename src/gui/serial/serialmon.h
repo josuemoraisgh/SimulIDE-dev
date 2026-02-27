@@ -11,14 +11,14 @@
 #include "outpaneltext.h"
 #include "updatable.h"
 
-class UsartModule;
+class TransModule;
 
 class SerialMonitor : public QDialog, private Ui::SerialMonitor, public Updatable
 {
     Q_OBJECT
 
     public:
-        SerialMonitor( QWidget* parent, UsartModule* usart, bool send=false );
+        SerialMonitor( QWidget* parent, TransModule* module, bool send=false );
 
         virtual void updateStep() override;
 
@@ -45,7 +45,7 @@ class SerialMonitor : public QDialog, private Ui::SerialMonitor, public Updatabl
         OutPanelText m_uartInPanel;
         OutPanelText m_uartOutPanel;
 
-        UsartModule* m_usart;
+        TransModule* m_module;
 
         int  m_printMode;
         bool m_addCR;

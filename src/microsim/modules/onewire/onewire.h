@@ -6,10 +6,11 @@
 #pragma once
 
 #include "e-element.h"
+#include "transmodule.h"
 
 class IoPin;
 
-class OneWire : public eElement
+class OneWire : public eElement, public TransModule
 {
     public:
         OneWire( QString id );

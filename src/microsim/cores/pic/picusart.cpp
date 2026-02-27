@@ -135,7 +135,7 @@ void PicUsart::sendByte(  uint8_t data )
 
 void PicUsart::frameSent( uint8_t data ) // TSR is empty
 {
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
 
     if( getRegBitsBool( *m_PIR1, m_TXIF ) )  // TXREG is empty, no data to load
         clearRegBits( m_TRMT );              // Clear TMRT bit

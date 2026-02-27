@@ -15,6 +15,7 @@
 
 TcpModule::TcpModule( QString name )
          : eElement( name )
+         , TransModule( name )
 {
     m_debug = false;
 
