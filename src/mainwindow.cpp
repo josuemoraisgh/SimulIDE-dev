@@ -78,13 +78,14 @@ MainWindow::MainWindow()
     if( m_settings->contains("fontName") ) fontName = m_settings->value("fontName").toString();
     setDefaultFontName( fontName );
 
-    QFont df=qApp->font();
+    QFont df = qApp->font();
     df.setFamily( fontName );
     qApp->setFont( df );
     setFont( df );
     //----------------------------------------------
 
     QApplication::setStyle( QStyleFactory::create("Fusion") ); //applyStyle();
+
     createWidgets();
     m_circuitW->newCircuit();
     readSettings();

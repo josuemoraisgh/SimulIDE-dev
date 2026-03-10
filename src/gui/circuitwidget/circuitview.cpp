@@ -150,8 +150,8 @@ void CircuitView::mousePressEvent( QMouseEvent* event )
     if( event->button()   == Qt::LeftButton )
     {
         if( event->modifiers() & Qt::ControlModifier
-            && event->modifiers() & Qt::ShiftModifier
-            && !m_circuit->is_constarted() )                   // Prepare Copy by drag
+         && event->modifiers() & Qt::ShiftModifier
+         && !m_circuit->is_constarted() )                   // Prepare Copy by drag
         {
             QGraphicsItem* item = itemAt( event->pos() );
             if( item ){                                                 // Check if item exists before start drag:

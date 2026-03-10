@@ -277,60 +277,59 @@ void OledController::paint( QPainter* p, const QStyleOptionGraphicsItem*, QWidge
     p->setBrush( QColor( 50, 70, 100 ) );
     p->drawRoundedRect( m_area, 2, 2 );
 
-    if( m_dispFull ) p->fillRect(-64,-m_height/2-10, m_width, m_height, m_foreground );
+    if( !m_dispOn ) p->fillRect(-64,-m_height/2-10, m_width, m_height, Qt::black );
+    else if( m_dispFull ) p->fillRect(-64,-m_height/2-10, m_width, m_height, m_foreground );
     else{
         QImage img( m_width*3, m_height*3, QImage::Format_RGB32 );
         QPainter painter;
         painter.begin( &img );
         painter.fillRect( 0, 0, m_width*3, m_height*3, Qt::black );
 
-        if( m_dispOn  ){
-            for( int col=0; col<m_width; col++ ){
-                for( int row=0; row<m_rows; row++ )
+        for( int col=0; col<m_width; col++ ){
+            for( int row=0; row<m_rows; row++ )
+            {
+                int ramY = row*8;
+                if( m_ramOffset ){
+                    ramY += m_ramOffset;
+                    if( ramY >= m_height ) ramY -= m_height;
+                }
+                if( ramY > m_mr ) continue;
+
+                uint8_t rowByte = ramY/8;
+                uint8_t byte0 = m_DDRAM[col][rowByte];
+                if( m_dispInv ) byte0 = ~byte0;          // Display Inverted
+
+
+                uint8_t startBit = ramY%8;
+                uint8_t byte1 = 0;
+                if( startBit ){                          // bits spread 2 bytes
+                    rowByte++;
+                    byte1 = m_DDRAM[col][rowByte];
+                    if( m_dispInv ) byte1 = ~byte1;      // Display Inverted
+                }
+                int dy = row*8;
+                if( m_dispOffset ){
+                    dy += m_dispOffset;
+                    if( dy >= m_height ) dy -= m_height;
+                }
+
+                for( int bit=startBit; bit<startBit+8; bit++ )
                 {
-                    int ramY = row*8;
-                    if( m_ramOffset ){
-                        ramY += m_ramOffset;
-                        if( ramY >= m_height ) ramY -= m_height;
-                    }
-                    if( ramY > m_mr ) continue;
+                    uint8_t pixel;
+                    if( bit < 8 ) pixel = byte0 & 1<<bit;
+                    else          pixel = byte1 & 1<<(bit-startBit);
 
-                    uint8_t rowByte = ramY/8;
-                    uint8_t byte0 = m_DDRAM[col][rowByte];
-                    if( m_dispInv ) byte0 = ~byte0;          // Display Inverted
-
-
-                    uint8_t startBit = ramY%8;
-                    uint8_t byte1 = 0;
-                    if( startBit ){                          // bits spread 2 bytes
-                        rowByte++;
-                        byte1 = m_DDRAM[col][rowByte];
-                        if( m_dispInv ) byte1 = ~byte1;      // Display Inverted
-                    }
-                    int dy = row*8;
-                    if( m_dispOffset ){
-                        dy += m_dispOffset;
-                        if( dy >= m_height ) dy -= m_height;
-                    }
-
-                    for( int bit=startBit; bit<startBit+8; bit++ )
-                    {
-                        uint8_t pixel;
-                        if( bit < 8 ) pixel = byte0 & 1<<bit;
-                        else          pixel = byte1 & 1<<(bit-startBit);
-
-                        if( pixel ){
-                            int screenY = m_scanInv ? m_height-1-dy : dy;
-                            int screenX = m_remap   ? m_width-1-col : col;
-                            if( m_rotate ){
-                                screenY = m_height-1-screenY;
-                                screenX = m_width-1-screenX;
-                            }
-                            painter.fillRect( screenX*3, screenY*3, 3, 3, m_foreground );
+                    if( pixel ){
+                        int screenY = m_scanInv ? m_height-1-dy : dy;
+                        int screenX = m_remap   ? m_width-1-col : col;
+                        if( m_rotate ){
+                            screenY = m_height-1-screenY;
+                            screenX = m_width-1-screenX;
                         }
-                        dy++;
-                        if( dy >= m_height ) dy -= m_height;
+                        painter.fillRect( screenX*3, screenY*3, 3, 3, m_foreground );
                     }
+                    dy++;
+                    if( dy >= m_height ) dy -= m_height;
                 }
             }
         }
