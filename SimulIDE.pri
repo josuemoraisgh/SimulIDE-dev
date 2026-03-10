@@ -81,7 +81,7 @@ INCLUDEPATH += $$PWD/src \
     $$PWD/src/angel/src
 
 QMAKE_CXXFLAGS += -Wno-unused-parameter
-QMAKE_CXXFLAGS += -Wno-deprecated-declarations
+#QMAKE_CXXFLAGS += -Wno-deprecated-declarations
 QMAKE_CXXFLAGS += -Wno-implicit-fallthrough
 QMAKE_CXXFLAGS += -fno-strict-aliasing      #AngelScript
 QMAKE_CXXFLAGS += -Wno-cast-function-type   #AngelScript
@@ -120,7 +120,11 @@ macx {
 }
 
 contains( QMAKE_HOST.arch, arm64|aarch64 ) | contains( QMAKE_CC, .*aarch64.* ){
-    SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_gcc.S
+    macx {
+        SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_xcode.S
+    } else {
+        SOURCES += $$PWD/src/angel/src/as_callfunc_arm64_gcc.S
+    }
 }
 
 contains( QMAKE_HOST.os, Windows ) {
