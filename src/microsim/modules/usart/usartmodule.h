@@ -9,6 +9,7 @@
 
 #include "mcumodule.h"
 #include "e-element.h"
+#include "transmodule.h"
 
 #define mSTOPBITS m_usart->stopBits()
 #define mDATABITS m_usart->dataBits()
@@ -33,7 +34,7 @@ class UartRx;
 class UartSync;
 class SerialMonitor;
 
-class UsartModule
+class UsartModule : public TransModule
 {
         friend class eMcu;
     public:
@@ -54,8 +55,6 @@ class UsartModule
         parity_t parity() { return m_parity; }
         void setParity( int par ) { m_parity = (parity_t)par; }
 
-        bool serialMon() { return m_serialMon; }
-
         virtual uint8_t getBit9Tx(){return 0;}
         virtual void setBit9Rx( uint8_t bit ){;}
 
@@ -66,20 +65,13 @@ class UsartModule
         virtual void byteReceived( uint8_t data );
         virtual void setRxFlags( uint16_t frame ){;}
 
-        void openMonitor( QString id, int num=0, bool send=false );
-        void setMonitorTittle( QString t );
-        virtual void monitorClosed();
-
     protected:
         void setPeriod( uint64_t period );
         void setSynchronous( bool s );
 
         bool m_synchronous;
-        bool m_serialMon;
 
         int m_baudRate;
-
-        SerialMonitor* m_monitor;
 
         UartSync* m_uartSync;
         UartTx* m_sender;

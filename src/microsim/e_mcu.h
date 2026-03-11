@@ -137,7 +137,8 @@ class eMcu : public DataSpace, public eIou
         bool m_saveEepr;
 
         std::vector<McuModule*> m_modules;
-        std::vector<McuUsart*> m_usarts;
+        std::vector<TransModule*> m_transModules;
+
 
         QHash<QString, McuTimer*> m_timerList;// Access TIMERS by name
         QHash<QString, McuPort*>  m_mcuPorts; // Access PORTS by name

@@ -9,6 +9,7 @@
 
 SpiModule::SpiModule( QString name )
          : eClockedDevice( name )
+         , TransModule( name )
 {
     m_MOSI = nullptr;
     m_MISO = nullptr;
@@ -89,12 +90,17 @@ void SpiModule::voltChanged() // Called in Slave mode on SCK or SS changes
 
 void SpiModule::endTransaction()
 {
-    if( m_mode == SPI_MASTER ){ if( m_dataOutPin) m_dataOutPin->setOutState( true ); }
-    else                      resetSR();
+    if( m_mode == SPI_MASTER ){
+        if( m_dataOutPin) m_dataOutPin->setOutState( true );
+        printOut( m_txReg );
+        printIn( m_srReg );
+    }
+    else resetSR();
 }
 
 void SpiModule::StartTransaction()
 {
+    //qDebug() <<"SpiModule::StartTransaction"<<this->getId() << m_mode<<m_bitCount;
     resetSR();
     Simulator::self()->cancelEvents( this );
     if( m_sampleEdge == m_leadEdge ) // Sample in first Leading Edge => setup now
@@ -107,6 +113,7 @@ void SpiModule::StartTransaction()
 
 void SpiModule::resetSR()
 {
+    m_txReg = m_srReg;
     m_bitCount = 0;
     if( m_lsbFirst )
     {
@@ -121,8 +128,8 @@ void SpiModule::resetSR()
 void SpiModule::step()
 {
     if( m_mode == SPI_MASTER ) keepClocking();
-    //else
-    //    qDebug() << m_elmId;
+
+    //qDebug() <<"SpiModule::step"<< m_elmId << m_bitCount;
 
     if( m_clkState == m_sampleEdge )         //Read one bit
     {
@@ -142,7 +149,7 @@ void SpiModule::setMode( spiMode_t mode )
 {
     if( mode == m_mode ) return;
     m_mode = mode;
-
+    //qDebug() <<"SpiModule::setMode"<<this->getId() << mode << m_mode;
     m_dataOutPin = nullptr;
     m_dataInPin  = nullptr;
 

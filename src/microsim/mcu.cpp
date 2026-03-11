@@ -298,7 +298,7 @@ void Mcu::setupMcu()
     if( m_eMcu.romSize() )
     hi.propList.append(new StrProp<Mcu>("eeprom"   ,"","", this, &Mcu::getEeprom, &Mcu::setEeprom ) );
 
-    if( m_eMcu.m_usarts.size() )
+    if( m_eMcu.m_transModules.size() )
     hi.propList.append(new IntProp<Mcu>("SerialMon","","", this, &Mcu::serialMon, &Mcu::setSerialMon ) );
 
     if( hi.propList.size() > 0 ) addPropGroup( hi );
@@ -577,16 +577,14 @@ void Mcu::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu )
     QAction* openRamTab = menu->addAction( QIcon(":/terminal.svg"),tr("Open Mcu Monitor.") );
     QObject::connect( openRamTab, &QAction::triggered, [=](){ slotOpenMcuMonitor(); } );
 
-    if( m_eMcu.m_usarts.size() )
+    if( m_eMcu.m_transModules.size() )
     {
-        QMenu* serMonMenu = menu->addMenu( QIcon(":/serialterm.png"),tr("Open Serial Monitor.") );
+        QMenu* serMonMenu = menu->addMenu( QIcon(":/serialterm.png"),tr("Open Monitor.") );
 
-        for( uint i=0; i<m_eMcu.m_usarts.size(); ++i )
+        for( uint i=0; i<m_eMcu.m_transModules.size(); ++i )
         {
-            const int portNumber = i + 1;
-
-            QAction* act = serMonMenu->addAction( "USART"+QString::number( portNumber ) );
-            QObject::connect( act, &QAction::triggered, [=](){ slotOpenTerm( portNumber ); } );
+            QAction* act = serMonMenu->addAction( m_eMcu.m_transModules.at(i)->moduleName() );
+            QObject::connect( act, &QAction::triggered, [=](){ slotOpenTerm( i ); } );
         }
     }
     menu->addSeparator();
@@ -609,10 +607,10 @@ void Mcu::slotLinkComp()
 void Mcu::setIdLabel( QString id )
 {
     Component::setIdLabel( id );
-    for( uint i=0; i<m_eMcu.m_usarts.size(); ++i )
+    for( uint i=0; i<m_eMcu.m_transModules.size(); ++i )
     {
-        QString id = findIdLabel()+" - Uart"+QString::number(i+1);
-        m_eMcu.m_usarts.at(i)->setMonitorTittle( id );
+        QString id = findIdLabel();
+        m_eMcu.m_transModules.at(i)->setMonitorTittle( id );
     }
 }
 
@@ -625,14 +623,14 @@ void Mcu::slotOpenMcuMonitor()
 
 void Mcu::slotOpenTerm( int num )
 {
-    m_eMcu.m_usarts.at(num-1)->openMonitor( findIdLabel(), num );
+    m_eMcu.m_transModules.at(num)->openMonitor( findIdLabel(), num );
     m_serialMon = num;
 }
 
 int Mcu::serialMon()
 {
     if( m_serialMon < 0 ) return -1;
-    if( m_eMcu.m_usarts.at( m_serialMon-1 )->serialMon() ) return m_serialMon;
+    if( m_eMcu.m_transModules.at( m_serialMon )->monitorOpen() ) return m_serialMon;
     return -1;
 }
 

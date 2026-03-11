@@ -106,7 +106,7 @@ SerialTerm::SerialTerm( QString type, QString id )
 
     addPropGroup( {"Hidden", {
         new BoolProp<SerialTerm>("SerialMon","",""
-                                , this, &SerialTerm::serialMon, &SerialTerm::setSerialMon ),
+                                , this, &SerialTerm::monitorOpen, &SerialTerm::setSerialMon ),
     }, groupHidden} );
 }
 SerialTerm::~SerialTerm()
@@ -155,14 +155,14 @@ void SerialTerm::sendByte( uint8_t data )
 void SerialTerm::byteReceived( uint8_t byte )
 {
     m_receiver->getData();
-    if( m_monitor ) m_monitor->printIn( byte );
+    printIn( byte );
     m_terminal->received( byte );
     m_receiving = true;
 }
 
 void SerialTerm::frameSent( uint8_t data )
 {
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
     if( m_uartData.size() )
     {
         uint8_t byte = m_uartData.at( 0 );
@@ -186,7 +186,7 @@ void SerialTerm::onbuttonclicked()
 void SerialTerm::setIdLabel( QString id )
 {
     Component::setIdLabel( id );
-    if( m_monitor ) m_monitor->setWindowTitle( id );
+    setMonitorTittle( id );
     m_terminal->setWindowTitle( id );
 }
 

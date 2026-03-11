@@ -108,7 +108,7 @@ SerialPort::SerialPort( QString type, QString id )
 
     addPropGroup( {"Hidden", {
         new BoolProp<SerialPort>("SerialMon","",""
-                                , this, &SerialPort::serialMon, &SerialPort::setSerialMon ),
+                                , this, &SerialPort::monitorOpen, &SerialPort::setSerialMon ),
     }, groupHidden} );
 }
 SerialPort::~SerialPort(){}
@@ -194,14 +194,14 @@ void SerialPort::setflip()
 void SerialPort::byteReceived( uint8_t byte )
 {
     m_receiver->getData();
-    if( m_monitor ) m_monitor->printIn( byte );
+    printIn( byte );
     m_serData.append( byte );
     m_receiving = true;
 }
 
 void SerialPort::frameSent( uint8_t data )
 {
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
     if( m_uartData.size() )
     {
         uint8_t byte = m_uartData.at( 0 );
@@ -226,7 +226,7 @@ void SerialPort::onbuttonclicked()
 void SerialPort::setIdLabel( QString id )
 {
     Component::setIdLabel( id );
-    if( m_monitor ) m_monitor->setWindowTitle( id );
+    setMonitorTittle( id );
 }
 
 void SerialPort::slotOpenTerm()

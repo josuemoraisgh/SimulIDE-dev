@@ -7,6 +7,7 @@
 
 #include "e-clocked_device.h"
 #include "avrtwicodes.h" // Using AVR states comes at hand
+#include "transmodule.h"
 
 enum twiMode_t{
     TWI_OFF=0,
@@ -16,7 +17,7 @@ enum twiMode_t{
 
 class eSource;
 
-class TwiModule : public eClockedDevice
+class TwiModule : public eClockedDevice, public TransModule
 {
     public:
         TwiModule( QString name );

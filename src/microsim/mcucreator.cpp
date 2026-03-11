@@ -950,7 +950,7 @@ void McuCreator::createUsart( QDomElement* u )
     }
     else return;
 
-    mcu->m_usarts.emplace_back( usartM );
+    mcu->m_transModules.emplace_back( usartM );
     mcu->m_modules.emplace_back( usartM );
 
     setConfigRegs( u, usartM );
@@ -1136,6 +1136,7 @@ void McuCreator::createTwi( QDomElement* e )
     else return;
 
     mcu->m_modules.emplace_back( m_twi );
+    mcu->m_transModules.emplace_back( m_twi );
 
     setConfigRegs( e, m_twi );
 
@@ -1181,6 +1182,7 @@ void McuCreator::createSpi( QDomElement* e )
     else return;
 
     mcu->m_modules.emplace_back( m_spi );
+    mcu->m_transModules.emplace_back( m_spi );
 
     setConfigRegs( e, m_spi );
 
@@ -1213,6 +1215,7 @@ void McuCreator::createTcp( QDomElement* e )
     if( m_core == "scripted"){
         ScriptTcp* su = new ScriptTcp( mcu, name );
         m_scriptPerif.push_back( su );
+        mcu->m_transModules.emplace_back( su );
         /// mcu->m_modules.emplace_back( su );
     }
     else return;

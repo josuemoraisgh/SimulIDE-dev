@@ -4,11 +4,11 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include "serialmon.h"
-#include "usartmodule.h"
+#include "transmodule.h"
 #include "simulator.h"
 #include "utils.h"
 
-SerialMonitor::SerialMonitor( QWidget* parent, UsartModule* usart, bool send )
+SerialMonitor::SerialMonitor( QWidget* parent, TransModule* module, bool send )
              : QDialog( parent )
              , Updatable()
              , m_uartInPanel(this)
@@ -38,7 +38,7 @@ SerialMonitor::SerialMonitor( QWidget* parent, UsartModule* usart, bool send )
         textLabel->setVisible( false );
         sendLabel->setVisible( false );
     }
-    m_usart = usart;
+    m_module = module;
     m_printMode = 0;
     m_addCR = false;
     m_paused = false;
@@ -53,12 +53,12 @@ void SerialMonitor::updateStep()
         m_uartOutPanel.updateStep();
     }
 
-    if( m_outBuffer.isEmpty() ) return;
+    //if( m_outBuffer.isEmpty() ) return;
 
-    for( int i=0; i<m_outBuffer.size(); i++ )
-        m_usart->sendByte( m_outBuffer.at(i) );
+    //for( int i=0; i<m_outBuffer.size(); i++ )
+    //    m_module->sendByte( m_outBuffer.at(i) );
 
-    m_outBuffer.clear();
+    //m_outBuffer.clear();
 }
 
 void SerialMonitor::on_pauseButton_clicked()
@@ -128,5 +128,5 @@ void SerialMonitor::activateSend()
 void SerialMonitor::closeEvent( QCloseEvent* event )
 {
     event->accept();
-    m_usart->monitorClosed();
+    m_module->monitorClosed();
 }

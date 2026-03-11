@@ -17,6 +17,7 @@
 
 OneWire::OneWire( QString id )
        : eElement( id )
+       , TransModule( id )
 {
     m_state    = W1_IDLE;
     m_inpin = nullptr;

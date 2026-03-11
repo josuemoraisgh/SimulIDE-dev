@@ -77,7 +77,7 @@ void ComponentList::createList()
     QDir compSetDir = MainWindow::self()->getConfigPath("data");
     if( compSetDir.exists() ) LoadCompSetAt( compSetDir );
 
-    compSetDir = QString("./data");          // FIXME: provisional, used by QemuDevice
+    compSetDir.setPath("./data");          // FIXME: provisional, used by QemuDevice
     LoadCompSetAt( compSetDir );
 
     MainWindow::self()->installer()->loadInstalled(); // Load Installed components
@@ -101,7 +101,7 @@ void ComponentList::loadTest( QString userDir )
     QDir compSetDir( userDir );
     if( !compSetDir.cd("test") ) return;
 
-    m_compSetDir = userDir;
+    m_compSetDir.setPath( userDir );
 
     QStringList dirList = compSetDir.entryList( {"*"}, QDir::Dirs );
     if( dirList.isEmpty() ) return;

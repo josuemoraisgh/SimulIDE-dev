@@ -10,20 +10,20 @@
 #include "usartrx.h"
 #include "e_mcu.h"
 #include "mcuinterrupts.h"
-#include "circuitwidget.h"
+
 #include "serialmon.h"
 #include "datautils.h"
 #include "iopin.h"
 #include "simulator.h"
 
 UsartModule::UsartModule( eMcu* mcu, QString name )
+           : TransModule( name )
 {
     m_sender   = new UartTx( this, mcu, name+"Tx" );
     m_receiver = new UartRx( this, mcu, name+"Rx" );
     m_uartSync = nullptr;
 
     m_mode = 0xFF; // Force first mode change.
-    m_monitor = nullptr;
 
     m_stopBits = 1;
     m_dataBits = 8;
@@ -31,13 +31,12 @@ UsartModule::UsartModule( eMcu* mcu, QString name )
     m_parity   = parNONE;
 
     m_synchronous = false;
-    m_serialMon   = false;
 }
 UsartModule::~UsartModule( )
 {
     delete m_sender;
     delete m_receiver;
-    if( m_monitor ) m_monitor->close();
+    closeMonitor();
 }
 
 void UsartModule::setSynchronous( bool s )
@@ -76,34 +75,14 @@ void UsartModule::sendByte( uint8_t data )  // Buffer is being written
 
 void UsartModule::frameSent( uint8_t data )
 {
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
 }
 
 void UsartModule::byteReceived( uint8_t data )
 {
-    if( m_monitor ) m_monitor->printIn( data );
+    printIn( data );
 }
 
-void UsartModule::openMonitor( QString id, int num, bool send )
-{
-    if( !m_monitor )
-        m_monitor = new SerialMonitor( CircuitWidget::self(), this, send );
-
-    if( num > 0 ) id.append(" - Uart"+QString::number(num) );
-    m_monitor->setWindowTitle( id );
-    m_monitor->show();
-    m_serialMon = true;
-}
-
-void UsartModule::setMonitorTittle( QString t )
-{
-    if( m_monitor ) m_monitor->setWindowTitle( t );
-}
-
-void UsartModule::monitorClosed()
-{
-    m_serialMon = false;
-}
 
 //---------------------------------------
 //---------------------------------------

@@ -9,10 +9,11 @@
 
 #include "e-element.h"
 #include "updatable.h"
+#include "transmodule.h"
 
 class QTcpSocket;
 
-class TcpModule : public eElement, public Updatable
+class TcpModule : public eElement, public Updatable, public TransModule
 {
     public:
         TcpModule( QString name );

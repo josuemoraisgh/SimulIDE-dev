@@ -26,7 +26,7 @@ void McuUsart::bufferEmpty()
 
 void McuUsart::frameSent( uint8_t data )
 {
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
     m_sender->raiseInt();
 }
 

@@ -72,7 +72,7 @@ class CircuitWidget : public QWidget
 
  static CircuitWidget* m_pSelf;
 
-        enum { MaxRecentFiles = 10 };
+        enum { MaxRecentFiles = 20 };
         void updateRecentFiles();
         void updateRecentFileActions();
 

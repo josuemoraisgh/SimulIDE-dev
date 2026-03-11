@@ -42,10 +42,14 @@ Component* SubCircuit::construct( QString type, QString id )
     QString subcFile;
     subcData_t subcData;
 
-    QString fileName = device+".sim1";
-    subcFile = MainWindow::self()->getCircFilePath( fileName ); // Search sim1 in circuit or circuit/data folder
+    subcFile = MainWindow::self()->getCircFilePath( device+".sim2" ); // Search sim2 in circuit or circuit/data folder
     if( subcFile.isEmpty() )                                    // Search sim1 in circuit/name or circuit/data/name folder
-        subcFile = MainWindow::self()->getCircFilePath( device+"/"+fileName );
+        subcFile = MainWindow::self()->getCircFilePath( device+"/"+device+".sim2" );
+
+    if( subcFile.isEmpty() )
+        subcFile = MainWindow::self()->getCircFilePath( device+".sim1" ); // Search sim1 in circuit or circuit/data folder
+    if( subcFile.isEmpty() )                                    // Search sim1 in circuit/name or circuit/data/name folder
+        subcFile = MainWindow::self()->getCircFilePath( device+"/"+device+".sim1" );
 
     bool isLocal = !subcFile.isEmpty();
 
