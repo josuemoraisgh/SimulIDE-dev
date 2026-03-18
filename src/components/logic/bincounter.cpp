@@ -176,7 +176,7 @@ void BinCounter::voltChanged()
             else if( m_counter < 0 )
             {
                 m_counter = m_topValue;
-                m_rcoPin->scheduleState( false, m_delayBase*m_delayMult );
+                m_rboPin->scheduleState( false, m_delayBase*m_delayMult );
             }
         }
         m_nextOutVal = m_counter;
