@@ -22,13 +22,16 @@ InstallItem::InstallItem( Installer* parent, QString item )
     setItem( item );
 }
 
-void InstallItem::shouldUpdate( int64_t v )
+bool InstallItem::shouldUpdate( int64_t v )
 {
-    if( m_version == m_versionNext ) setButtonState( bUninstall );
-    else{
-        if( v == 0 ) setButtonState( bInstall );
-        else         setButtonState( bUpdate );
+    if( m_version == m_versionNext )
+    {
+        setButtonState( bUninstall );
+        return false;
     }
+    if( v == 0 ) setButtonState( bInstall );
+    else         setButtonState( bUpdate );
+    return true;
 }
 
 void InstallItem::setItem( QString itemStr )

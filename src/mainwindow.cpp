@@ -90,7 +90,10 @@ MainWindow::MainWindow()
     m_circuitW->newCircuit();
     readSettings();
 
-    if( m_autoUpdt ) m_installer->checkForUpdates();
+    if( m_autoUpdt ){
+        QTimer::singleShot( 5000, CircuitWidget::self()
+                           , [=]()->void{ m_installer->checkForUpdates(); } );
+    }
 
     QString backPath = getConfigPath( "backup.sim2" );
     if( QFile::exists( backPath ) )

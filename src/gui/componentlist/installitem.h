@@ -27,7 +27,7 @@ class InstallItem : public QWidget, private Ui::installItem
 
         void setItem( QString itemStr );
 
-        void shouldUpdate( int64_t v );
+        bool shouldUpdate( int64_t v );
 
         //int64_t version() { return m_version; }
         QString toString();// { return m_itemStr; }
