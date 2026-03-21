@@ -30,68 +30,12 @@ VarResBase::VarResBase( QString type, QString id )
     m_idLabel->setPos(-12,-24);
     setLabelPos(-16,-24, 0);
     setValLabelPos(-16, 30, 0);
-
-    m_minVal = 0;
-    m_maxVal = 1000;
-    m_step = 0;
-
-    Simulator::self()->addToUpdateList( this );
 }
 VarResBase::~VarResBase(){}
 
 void VarResBase::initialize()
 {
     m_needUpdate = true;
-}
-
-void VarResBase::setMinVal( double min )
-{
-    if( min < 1e-12    ) min = 1e-12;
-    if( min > m_maxVal ) min = m_maxVal;
-    m_minVal = min;
-
-    updtValue();
-}
-
-void VarResBase::setMaxVal( double max )
-{
-    if( max < 1e-12    ) max = 1e-12;
-    if( max < m_minVal ) max = m_minVal;
-    m_maxVal = max;
-
-    updtValue();
-}
-
-void VarResBase::setVal( double val )
-{
-    m_value = val;
-    updtValue();
-}
-
-void VarResBase::setLinkedValue( double v, int i )
-{
-    if( i == 0 ) Dialed::setLinkedValue( v, i );
-    else         setVal( v );
-}
-
-void VarResBase::dialChanged( int val )
-{
-    m_value = m_minVal+val*( m_maxVal-m_minVal)/1000;
-    if( m_step > 0 ) m_value = round( m_value/m_step )*m_step;
-
-    m_needUpdate = true;
-    if( !Simulator::self()->isRunning() ) updateStep();
-}
-
-void VarResBase::updtValue()
-{
-    if     ( m_value > m_maxVal ) m_value = m_maxVal;
-    else if( m_value < m_minVal ) m_value = m_minVal;
-
-    double dialV = (m_value-m_minVal)*1000/(m_maxVal-m_minVal);
-    m_dialW.setValue( dialV );
-
-    if( m_propDialog ) m_propDialog->updtValues();
 }
 
 void VarResBase::updateProxy()
