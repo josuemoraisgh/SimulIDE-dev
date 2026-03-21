@@ -27,7 +27,7 @@ class TransModule
         void setMonitorTittle( QString t );
         virtual void monitorClosed();
 
-    private:
+    protected:
 
         QString m_moduleName;
 
