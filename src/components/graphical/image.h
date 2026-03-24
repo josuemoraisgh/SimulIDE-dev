@@ -29,9 +29,9 @@ class Image : public Shape
 
         void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
-    public slots:
         void updateGif( const QRect &rect );
         void slotLoad();
+        void slotSave();
 
     protected:
         void contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu ) override;

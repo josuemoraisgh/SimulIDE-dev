@@ -12,6 +12,7 @@
 #include "image.h"
 #include "circuit.h"
 #include "itemlibrary.h"
+#include "mainwindow.h"
 #include "utils.h"
 
 #include "stringprop.h"
@@ -66,6 +67,10 @@ void Image::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu )
     QAction* loadAction = menu->addAction( QIcon(":/load.svg"),tr("Load Image") );
     QObject::connect( loadAction, &QAction::triggered, [=](){ slotLoad(); } );
 
+    if( !m_bckGndData.isEmpty() ){
+        QAction* saveAction = menu->addAction( QIcon(":/save.svg"),tr("Save Image") );
+        QObject::connect( saveAction, &QAction::triggered, [=](){ slotSave(); } );
+    }
     menu->addSeparator();
     Component::contextMenu( event, menu );
 }
@@ -85,6 +90,32 @@ void Image::slotLoad()
     setBackground( fileName );
     Shape::setHSize( m_image.width() );
     Shape::setVSize( m_image.height() );
+}
+
+void Image::slotSave()
+{
+    QString dir = Circuit::self()->getFilePath();
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Image"), dir, "");
+    if( fileName.isEmpty() ) return;
+
+    //m_image.save( fileName ); // This saves data from the pixmap
+
+    QFile imgFile( fileName );
+    if( !imgFile.open( QFile::WriteOnly ) )
+    {
+        qDebug() << "Cannot write file:"<< fileName << imgFile.errorString();
+    }else{
+        QStringView dataRef{m_bckGndData}; // This saves data from the original file
+        bool ok;
+        for( int i=0; i<dataRef.size(); i+=2 )
+        {
+            QStringView ch = dataRef.mid( i, 2 );
+            char byte = ch.toInt( &ok, 16 );
+            //qDebug() << ch << (uint8_t)byte;
+            imgFile.write( &byte, 1 );
+        }
+        imgFile.close();
+    }
 }
 
 void Image::updateGif( const QRect &rect )
@@ -116,9 +147,14 @@ void Image::setBackground( QString bck )
         else qDebug() << "Image::setBackground : not a valid Gif animation";
     }
 
-    if( m_image.load( absPath ) )     m_background = absPath;
-    else if( m_background.isEmpty() ) m_image = QPixmap( ":/saveimage.svg" );
-    else                              m_image = QPixmap( m_background );
+    if( m_background.isEmpty() ) m_image = QPixmap( ":/saveimage.svg" );
+    else{
+        if( m_image.load( absPath ) ) m_background = absPath;
+        else                          m_image = QPixmap( m_background );
+        QByteArray ba = fileToByteArray( m_background, "SubPackage::setBackground");
+        QString bckData( ba.toHex() );
+        m_bckGndData = bckData;
+    }
 }
 
 QString Image::background()
@@ -129,27 +165,16 @@ QString Image::background()
 
 QString Image::bckGndData()
 {
-    if( !m_embeedBck || m_background.isEmpty() ) return "";
+    if( !m_embeedBck ) return "";
 
-    QByteArray ba = fileToByteArray( m_background, "SubPackage::setBackground");
-    QString bckData( ba.toHex() );
-    return bckData;
+    return m_bckGndData;
 }
 
 void Image::setBckGndData( QString data )
 {
     m_bckGndData = data;
 
-    //m_hasBckGndData = false;
-    //if( m_image )
-    //{
-    //    delete m_image;
-    //    m_image = nullptr;
-    //}
     if( data.isEmpty() ) return;
-
-    //m_hasBckGndData = true;
-    //m_image = new QPixmap();
 
     QStringView dataRef{data};
     QByteArray ba;
