@@ -12,8 +12,10 @@
 #include "image.h"
 #include "circuit.h"
 #include "itemlibrary.h"
+#include "utils.h"
 
 #include "stringprop.h"
+#include "boolprop.h"
 
 #define tr(str) simulideTr("Image",str)
 
@@ -39,11 +41,19 @@ Image::Image( QString type, QString id )
     m_vSize = 80;
     m_area = QRectF(-40,-40, 80, 80 );
 
+    m_embeedBck = false;
     m_movie = nullptr;
+
+    addProperty( tr("Main"),
+        new BoolProp<Image>("Embeed_bck", tr("Embeed background"),""
+                          , this, &Image::embeedBck, &Image::setEmbeedBck ) );
 
     addPropGroup( {"Hidden", {
         new StrProp<Image>("Image_File", tr("Image File"),""
-                          , this, &Image::background, &Image::setBackground )
+                          , this, &Image::background, &Image::setBackground ),
+
+        new StrProp<Image>("BckGndData", "",""
+                          , this, &Image::bckGndData, &Image::setBckGndData )
     }, groupNoCopy | groupHidden} );
 }
 Image::~Image()
@@ -115,6 +125,42 @@ QString Image::background()
 {
     QDir circuitDir = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
     return circuitDir.relativeFilePath( m_background );
+}
+
+QString Image::bckGndData()
+{
+    if( !m_embeedBck || m_background.isEmpty() ) return "";
+
+    QByteArray ba = fileToByteArray( m_background, "SubPackage::setBackground");
+    QString bckData( ba.toHex() );
+    return bckData;
+}
+
+void Image::setBckGndData( QString data )
+{
+    m_bckGndData = data;
+
+    //m_hasBckGndData = false;
+    //if( m_image )
+    //{
+    //    delete m_image;
+    //    m_image = nullptr;
+    //}
+    if( data.isEmpty() ) return;
+
+    //m_hasBckGndData = true;
+    //m_image = new QPixmap();
+
+    QStringView dataRef{data};
+    QByteArray ba;
+    bool ok;
+    for( int i=0; i<dataRef.size(); i+=2 )
+    {
+        QStringView ch = dataRef.mid( i, 2 );
+        ba.append( ch.toInt( &ok, 16 ) );
+    }
+    m_image.loadFromData( ba );
+    update();
 }
 
 void Image::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
