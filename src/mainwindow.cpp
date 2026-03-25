@@ -408,7 +408,7 @@ QString MainWindow::getDataFilePath( QString file )
     QString path = getUserFilePath( file );           // File in user data folder
 
     if( path.isEmpty() || !QFileInfo::exists( path ) )
-        path = getConfigPath("data/"+file );          // File in SimulIDE data folder
+        path = getConfigPath("data/"+file );          // File in Config data folder
 
     if( path.isEmpty() || !QFileInfo::exists( path ) )
         path = ":/"+file;                             // File in SimulIDE resources
