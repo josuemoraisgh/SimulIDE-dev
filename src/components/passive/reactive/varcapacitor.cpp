@@ -65,7 +65,7 @@ VarCapacitor::VarCapacitor( QString type, QString id )
         new DoubProp<VarCapacitor>("Max_Capacitance", tr("Maximum Capacitance"), "µF"
                                  , this, &VarCapacitor::maxVal, &VarCapacitor::setMaxVal ),
 
-        new DoubProp<VarCapacitor>("Value_Farad", tr("Current Value"), "µF"
+        new DoubProp<VarCapacitor>("Capacitance", tr("Current Value"), "µF"
                                  , this, &VarCapacitor::getVal, &VarCapacitor::setVal ),
 
         new DoubProp<VarCapacitor>("Resistance" , tr("Resistance"), "µΩ"

@@ -23,17 +23,37 @@ class Dialed : public Component
         double scale() { return m_dialW.scale(); }
         void setScale( double s );
 
+        double maxVal()  { return m_maxVal; }
+        virtual void setMaxVal( double max );
+
+        double minVal() { return m_minVal; }
+        virtual void setMinVal( double min );
+
+        double getVal() { return m_value; }
+        void setVal( double val );
+
+        double getStep() { return m_step; }
+        void setStep( double step ) { if( step<0 ) step=0; m_step = step ; }
+
         virtual void setHidden( bool hid, bool hidArea=false, bool hidLabel=false ) override;
 
         virtual void setLinkedValue( double v, int i=0 ) override;
 
-        virtual void dialChanged( int );
+        virtual void dialChanged( int val );
 
     protected:
+        void updtValue();
         virtual void updateProxy(){;}
+
+        double m_value;
+        double m_minVal;
+        double m_maxVal;
+        double m_step;
 
         bool m_needUpdate;
         bool m_slider;
+
+        bool m_blocked;
 
         QRectF m_areaDial;
         QRectF m_areaComp;

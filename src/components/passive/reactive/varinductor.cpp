@@ -65,7 +65,7 @@ VarInductor::VarInductor( QString type, QString id )
         new DoubProp<VarInductor>("Max_Inductance", tr("Maximum Inductance"), "mH"
                                  , this, &VarInductor::maxVal, &VarInductor::setMaxVal ),
 
-        new DoubProp<VarInductor>("Value_Farad", tr("Current Value"), "mH"
+        new DoubProp<VarInductor>("Inductance", tr("Current Value"), "mH"
                                  , this, &VarInductor::getVal, &VarInductor::setVal ),
 
         new DoubProp<VarInductor>("Resistance" , tr("Resistance"), "µΩ"
