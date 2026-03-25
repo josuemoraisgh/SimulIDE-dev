@@ -98,24 +98,7 @@ void Image::slotSave()
     QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Image"), dir, "");
     if( fileName.isEmpty() ) return;
 
-    //m_image.save( fileName ); // This saves data from the pixmap
-
-    QFile imgFile( fileName );
-    if( !imgFile.open( QFile::WriteOnly ) )
-    {
-        qDebug() << "Cannot write file:"<< fileName << imgFile.errorString();
-    }else{
-        QStringView dataRef{m_bckGndData}; // This saves data from the original file
-        bool ok;
-        for( int i=0; i<dataRef.size(); i+=2 )
-        {
-            QStringView ch = dataRef.mid( i, 2 );
-            char byte = ch.toInt( &ok, 16 );
-            //qDebug() << ch << (uint8_t)byte;
-            imgFile.write( &byte, 1 );
-        }
-        imgFile.close();
-    }
+    m_image.save( fileName );
 }
 
 void Image::updateGif( const QRect &rect )
@@ -147,13 +130,15 @@ void Image::setBackground( QString bck )
         else qDebug() << "Image::setBackground : not a valid Gif animation";
     }
 
-    if( m_background.isEmpty() ) m_image = QPixmap( ":/saveimage.svg" );
+    if( bck.isEmpty() ) m_image = QPixmap( ":/saveimage.svg" );
     else{
         if( m_image.load( absPath ) ) m_background = absPath;
         else                          m_image = QPixmap( m_background );
-        QByteArray ba = fileToByteArray( m_background, "SubPackage::setBackground");
-        QString bckData( ba.toHex() );
-        m_bckGndData = bckData;
+        if( QFile::exists( m_background ) ){
+            QByteArray ba = fileToByteArray( m_background, "Image::setBackground");
+            QString bckData( ba.toHex() );
+            m_bckGndData = bckData;
+        }
     }
 }
 
