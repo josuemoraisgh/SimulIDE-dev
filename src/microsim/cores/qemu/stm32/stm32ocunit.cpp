@@ -6,12 +6,14 @@
 #include <math.h>
 
 #include "stm32ocunit.h"
+#include "stm32pin.h"
 
 Stm32OcUnit::Stm32OcUnit( Stm32Timer* timer, QString name, int number )
            : eElement( name ) // QemuOcUnit( mcu, name, number, nullptr, 0, 0 )
 {
     m_timer  = timer;
     m_number = number;
+    m_pin = nullptr;
 }
 Stm32OcUnit::~Stm32OcUnit() {}
 
@@ -87,5 +89,5 @@ void Stm32OcUnit::writeCCER( uint16_t ccer )
 
 void Stm32OcUnit::setPinState( bool s )
 {
-
+    m_pin->setOutState( s );
 }

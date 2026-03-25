@@ -3,6 +3,8 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+#include <QDebug>
+
 #include "esp32iomux.h"
 #include "esp32gpio.h"
 
@@ -15,25 +17,24 @@ Esp32IoMux::~Esp32IoMux() {}
 
 void Esp32IoMux::reset()
 {
-    for (int i = 0; i < 40; ++i) {
-        m_iomuxReg[i] = 0;
-    }
+    for( int i=0; i<40; ++i ) m_iomuxReg[i] = 0;
 }
 
 void Esp32IoMux::readRegister()
 {
-    uint64_t offset = m_eventAddress - m_memStart;
-    uint16_t val = 0;
+    // uint64_t offset = m_eventAddress - m_memStart;
+    // uint16_t val = 0;
 
-    uint32_t index = offset/4;
-    if( index < 40 ) val = m_iomuxReg[index];
+    // uint32_t index = offset/4;
+    // if( index < 40 ) val = m_iomuxReg[index];
 
-    m_arena->regData = val;
-    m_arena->qemuAction = SIM_READ;
+    // m_arena->regData = val;
+    // m_arena->qemuAction = SIM_READ;
 }
 
 void Esp32IoMux::writeRegister()
 {
+    //qDebug() << "Esp32IoMux::writeRegister"<< m_name << m_eventAddress << m_eventValue;
     uint64_t offset = m_eventAddress - m_memStart;
 
     int pin = getMuxGpio( offset );
@@ -48,7 +49,7 @@ void Esp32IoMux::writeRegister()
 
 int Esp32IoMux::getMuxGpio( uint64_t addr )
 {
-    switch (addr) {
+    switch( addr ) {
     case 0x04: return 36;
     case 0x08: return 37;
     case 0x0C: return 38;

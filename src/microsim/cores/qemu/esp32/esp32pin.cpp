@@ -55,8 +55,9 @@ void Esp32Pin::initialize()
 
 void Esp32Pin::updateStep()
 {
+    IoPin::updateStep();
     Pin::setLabelText( m_iomuxFuncs[m_iomuxIndex].label );
-    Simulator::self()->remFromUpdateList( this );
+    //Simulator::self()->remFromUpdateList( this );
 }
 
 void Esp32Pin::stamp()
@@ -195,8 +196,10 @@ void Esp32Pin::selectIoMuxFunc( uint8_t func ) // Select IO_MUX function
         QemuModule* mod = m_iomuxFuncs[m_iomuxIndex].module;
         if( mod ) mod->connected( false );
     }
-    if( m_iomuxFuncs[func].label.isEmpty() ) m_iomuxFuncs[func].label = m_pinLabel;
-    Simulator::self()->addToUpdateList( this );
+    if( m_iomuxFuncs[func].label == "GPIO" ) m_iomuxFuncs[func].label = m_pinLabel;
+
+
+    Simulator::self()->addToUpdateList( this ); /// FIXME
 
     if( m_iomuxFuncs[func].pinPointer )
     {
@@ -205,23 +208,19 @@ void Esp32Pin::selectIoMuxFunc( uint8_t func ) // Select IO_MUX function
 
         QemuModule* mod = m_iomuxFuncs[func].module;
         if( mod ) mod->connected( true );
-
+    }
+    if( m_iomuxFuncs[func].pinPointer || m_iomuxFuncs[func].label == m_pinLabel ){
         Pin::setLabelColor( QColor( 255, 255, 100 ) );
     }else{
         Pin::setLabelColor( QColor( 100, 100, 100 ) );
     }
     m_iomuxIndex = func;
-    //qDebug() << this->pinId() << "Selected func"<< func << m_iomuxPin[func].label;
+    //qDebug() << this->pinId() << "Selected func"<< func << m_iomuxFuncs[func].label;
     //update();
 }
 
 void Esp32Pin::setMatrixFunc( uint16_t val, funcPin func ) // Set Function for GPIO Matrix: index=2
 {
-    // val & 1<<11: OEN_INV_SEL 1: Invert the output enable signal
-    // val & 1<<10: 1: use output enable from bit n of GPIO_ENABLE_REG;
-    //              0: use output enable from peripheral. (R/W)
-    // val & 1<< 9: 1. Invert the output value
-
     //qDebug() << this->pinId() << "Matrix function"<< func.label<< (val & 0b111000000000);
     m_iomuxFuncs[2] = func;
     if( m_iomuxIndex == 2 ) selectIoMuxFunc( 2 );

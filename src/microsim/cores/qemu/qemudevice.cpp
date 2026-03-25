@@ -72,8 +72,6 @@ QemuDevice::QemuDevice( QString type, QString id )
     m_pSelf = this;
     m_rstPin = nullptr;
 
-    //m_fullSynch = false; //true;
-
     uint64_t pid = QCoreApplication::applicationPid();
     m_shMemKey = QString::number( pid )+id;
     void* arena = nullptr;
@@ -86,7 +84,7 @@ QemuDevice::QemuDevice( QString type, QString id )
     m_shMemId = shm_open( charMemKey, O_CREAT | O_RDWR, 0666);
     if( m_shMemId != -1 )
     {
-        int t = ftruncate( m_shMemId, shMemSize );
+        ftruncate( m_shMemId, shMemSize );
         arena = mmap( 0, shMemSize, PROT_WRITE, MAP_SHARED, m_shMemId, 0 );
     }
 #elif defined(_WIN32)
@@ -179,12 +177,6 @@ void QemuDevice::stamp()
     m_arena->running = 0;
     m_arena->ps_per_inst = 0;
 
-    //for( IoPin* pin : m_ioPin ) // Qemu calls us to read input
-    //{
-    //    if( !pin ) continue;
-    //    pin->setOutState( false );
-    //    pin->setPinMode( input );
-    //}
     if( m_rstPin ) m_rstPin->changeCallBack( this );
 
     if( createArgs() )
@@ -196,6 +188,7 @@ void QemuDevice::stamp()
         if( !QFileInfo::exists( executable ) )
         {
             qDebug() << "Error: QemuDevice::stamp executable does not exist:" << Qt::endl << executable;
+            return;
         }
         m_qemuProcess.start( executable, m_arguments );
 
@@ -227,7 +220,7 @@ void QemuDevice::stamp()
                 return;
             }
         }
-        qDebug() << "QemuDevice::stamp started";
+        qDebug() << "\nQemuDevice::stamp started";
 
         Simulator::self()->addEvent( 1, this );
     }
@@ -264,51 +257,14 @@ void QemuDevice::voltChanged()
     else if( m_qemuProcess.state() == QProcess::NotRunning ) stamp();
 }
 
-void QemuDevice::runToTime( uint64_t time )
+void QemuDevice::runModuleEvent()
 {
-    /// if( this->eventTime ) // Our event still not executed
-    /// {
-    ///     //qDebug() << "QemuDevice::runToTime ERROR: event not executed"<<Simulator::self()->circTime();
-    ///     return;
-    /// }
-
-    /// //if( !m_fullSynch )
-    /// //{
-    /// //    uint64_t now = Simulator::self()->circTime();
-    /// //    if( m_firstEvent )
-    /// //    {
-    /// //        m_arena->qemuEvent = 1;
-    /// //        time = m_firstEvent->eventTime;
-    /// //        //qDebug() << "\nQemuDevice::runToTime qemuEvent"<<now<< time;
-    /// //    }
-    /// //    else time = now + 1000000000; // 1 ms
-    /// //}
-    /// //if( m_lastTime != time )
-    /// //{
-    /// //    m_lastTime = time;
-    /// //    //qDebug() << "\nQemuDevice::runToTime"<< time;
-
-    /// //    //m_arena->simuTime = 0;
-    /// //    m_arena->qemuTime = time; // Tell Qemu to run up to time
-    /// //}
-
-    /// while( m_arena->simuTime == 0 ) // Wait for Qemu action
-    /// {
-    ///     if( Simulator::self()->simState() != SIM_RUNNING )
-    ///     {
-    ///         //qDebug() << "QemuDevice::runToTime BREAK --------------------------";
-    ///         return;
-    ///     }
-    /// }
-    /// if( m_arena->simuTime <= Simulator::self()->circTime()){
-    ///     qDebug() << "QemuDevice::runToTime ERROR"<< m_arena->simuTime << Simulator::self()->circTime();
-    ///     //m_arena->simuTime += 1;
-    ///     return;
-    /// }
-
-    /// Simulator::self()->addEventAt( m_arena->simuTime, this );
-    /// //if( m_firstEvent )
-    ///     //qDebug() << "QemuDevice::runToTime event"<< m_arena->simuTime;
+    if( m_eventModule )
+    {
+        m_eventModule->runAction();
+        m_eventModule->m_eventAction = 0;
+        m_eventModule = nullptr;
+    }
 }
 
 void QemuDevice::runEvent()
@@ -316,43 +272,41 @@ void QemuDevice::runEvent()
     uint64_t now = Simulator::self()->circTime();
     //qDebug() << "   QemuDevice::runEvent"<< now;
 
-    if( m_eventModule )
-    {
-        m_eventModule->runAction();
-        m_eventModule->m_eventAction = 0;
-        m_eventModule = nullptr;
-    }
+    runModuleEvent();
 
-
-    m_arena->simuTime = 0;
-    while( !m_arena->simuTime )   // Wait for next event from Qemu
+    uint64_t nextTime = 0;
+    while( true )
     {
-        if( Simulator::self()->simState() < SIM_RUNNING ) //
+        m_arena->simuTime = 0;
+        while( !m_arena->simuTime )   // Wait for next event from Qemu
         {
-            Simulator::self()->addEvent( 1, this );
+            if( Simulator::self()->simState() < SIM_RUNNING ) //
+            {
+                Simulator::self()->addEvent( 1, this );
+                return;
+            }
+        }
+        nextTime = m_arena->simuTime;
+
+        if( nextTime < now ){
+            qDebug() << "    QemuDevice::runEvent ERROR"<< nextTime << now;
             return;
         }
+
+        if( m_arena->simuAction )
+        {
+            if     ( m_arena->simuAction == SIM_FREQ  ) updtFrequency();
+            else if( m_arena->simuAction != SIM_EVENT ) doAction();
+            m_arena->simuAction = 0;
+
+            if( nextTime == now ) runModuleEvent();
+            else break;
+        }
+        else qDebug() << "QemuDevice::runEvent No action";
     }
-    uint64_t nextTime = m_arena->simuTime;
-
-    if( nextTime <= now ){
-        qDebug() << "    QemuDevice::runEvent ERROR"<< nextTime << now;
-
-        return;
-    }
-
-    if( m_arena->simuAction )
-    {
-        if     ( m_arena->simuAction == SIM_FREQ  ) updtFrequency();
-        else if( m_arena->simuAction != SIM_EVENT ) doAction();
-        m_arena->simuAction = 0;
-    }
-    else qDebug() << "QemuDevice::runEvent No action";
-
-    //qDebug() << "QemuDevice::runEvent Next"<< nextQemutime;
+    //qDebug() << "QemuDevice::runEvent Next"<< nextTime;
 
     Simulator::self()->addEventAt( nextTime, this );
-    //m_lastEvent = m_nextEvent;
 }
 
 void QemuDevice::doAction()
@@ -364,7 +318,8 @@ void QemuDevice::doAction()
     {
         if( address < module->m_memStart
          || address > module->m_memEnd ) continue;
-//qDebug() << "   QemuDevice::doAction"<< module->m_name;
+
+        //qDebug() << "   QemuDevice::doAction"<< module->m_name;
         m_eventModule = module;
         module->m_eventAddress = address;
         module->m_eventValue   = m_arena->regData;
@@ -372,55 +327,6 @@ void QemuDevice::doAction()
         break;
     }
 }
-
-//void QemuDevice::addEvent( uint64_t time, QemuModule* el )
-//{
-//    //if( m_state < SIM_STARTING ) return;
-//
-//    if( el->eventTime ){
-//        //m_warning = 200; //
-//        qDebug() << "Warning: QemuDevice::addEvent Repeated event"<<el->eventTime;
-//        return;
-//    }
-//
-//    time += Simulator::self()->circTime();
-//    QemuModule* last  = nullptr;
-//    QemuModule* event = m_firstEvent;
-//
-//    while( event )
-//    {
-//        if( time <= event->eventTime ) break; // Insert event here
-//        last  = event;
-//        event = event->nextEvent;
-//    }
-//    el->eventTime = time;
-//
-//    if( last ) last->nextEvent = el;
-//    else       m_firstEvent = el; // List was empty or insert First
-//
-//    el->nextEvent = event;
-//}
-//
-//void QemuDevice::cancelEvents( QemuModule* el )
-//{
-//    if( el->eventTime == 0 ) return;
-//    QemuModule* event = m_firstEvent;
-//    QemuModule* last  = nullptr;
-//    QemuModule* next  = nullptr;
-//    el->eventTime = 0;
-//
-//    while( event ){
-//        next = event->nextEvent;
-//        if( el == event )
-//        {
-//            if( last ) last->nextEvent = next;
-//            else       m_firstEvent = next;
-//            event->nextEvent = nullptr;
-//        }
-//        else last = event;
-//        event = next;
-//    }
-//}
 
 void QemuDevice::slotOpenTerm( int num )
 {

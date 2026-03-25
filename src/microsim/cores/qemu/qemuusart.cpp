@@ -46,12 +46,12 @@ void QemuUsart::setRxPin( IoPin* pin )
     m_receiver->setPins({pin});
 }
 
-IoPin** QemuUsart::getTxPinPointer()
+IoPin** QemuUsart::getTxPinPtr()
 {
     return m_sender->getPinPointer();
 }
 
-IoPin** QemuUsart::getRxPinPointer()
+IoPin** QemuUsart::getRxPinPtr()
 {
     return m_receiver->getPinPointer();
 }
@@ -69,7 +69,7 @@ void QemuUsart::bufferEmpty()
 void QemuUsart::frameSent( uint8_t data )
 {
     //qDebug() << "QemuUsart::frameSent"<< m_number;
-    if( m_monitor ) m_monitor->printOut( data );
+    printOut( data );
     //m_sender->raiseInt();
 }
 

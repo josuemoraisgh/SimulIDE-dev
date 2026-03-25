@@ -13,6 +13,7 @@ class LibraryItem;
 //class esp32Pin;
 class Esp32Gpio;
 class Esp32IoMux;
+class Esp32Led;
 
 class Esp32 : public QemuDevice
 {
@@ -27,8 +28,16 @@ class Esp32 : public QemuDevice
                     int n, int x, int y, int angle, int length=8, int space=0 ) override;
 
         bool createArgs() override;
+
+         void updtFrequency() override;
+
         void createMatrix();
+
+        uint32_t m_cpuFreq;
+        uint32_t m_apbFreq;
 
         Esp32Gpio* m_gpio;
         Esp32IoMux* m_iomux;
+
+        Esp32Led* m_leds;
 };

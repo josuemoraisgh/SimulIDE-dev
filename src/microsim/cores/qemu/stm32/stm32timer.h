@@ -8,9 +8,12 @@
 #include "qemutimer.h"
 
 class Stm32OcUnit;
+class Stm32Pin;
 
 class Stm32Timer : public QemuTimer //, public McuTimer
 {
+    friend class Stm32;
+
     public:
         Stm32Timer( QemuDevice* mcu, QString name, int n, uint32_t* clk=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
         ~Stm32Timer();
@@ -19,6 +22,8 @@ class Stm32Timer : public QemuTimer //, public McuTimer
 
         uint32_t getCount();
         void setCount();
+
+        void setOcPins( Stm32Pin* oc0Pin, Stm32Pin* oc1Pin, Stm32Pin* oc2Pin, Stm32Pin* oc3Pin );
 
     private:
         void writeRegister() override;

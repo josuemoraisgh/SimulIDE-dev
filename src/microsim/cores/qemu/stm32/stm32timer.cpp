@@ -3,8 +3,11 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+#include <QDebug>
+
 #include "stm32timer.h"
 #include "stm32ocunit.h"
+#include "stm32pin.h"
 
 #define CR1_OFFSET   0x00
 #define CR2_OFFSET   0x04
@@ -50,30 +53,38 @@ void Stm32Timer::writeRegister()
 {
     uint64_t offset = m_eventAddress - m_memStart;
 
-    switch( offset )
-    {
-    case CR1_OFFSET:   writeCR1();                         break;
-    case CR2_OFFSET:   m_cr2  = m_eventValue & 0x00F8;     break;
-    case SMCR_OFFSET:  m_smcr = m_eventValue;              break;
-    case DIER_OFFSET:  m_dier = m_eventValue & 0x5F5F;     break;
-    case SR_OFFSET:    updateUIF();                        break;
-    case EGR_OFFSET:   writeEGR();                         break;
-    case CCMR1_OFFSET: writeCCMR( 0 );                     break;
-    case CCMR2_OFFSET: writeCCMR( 1 );                     break;
-    case CCER_OFFSET:  writeCCER();                        break;
-    case CNT_OFFSET:   setCount();                         break;
-    case PSC_OFFSET:   updtFreq();                         break;
-    case ARR_OFFSET:   updtPeriod();                       break;
-    case RCR_OFFSET:   m_rcr = m_eventValue;               break;
-    case CCR1_OFFSET:  m_channel[0]->m_CCR = m_eventValue; break;
-    case CCR2_OFFSET:  m_channel[1]->m_CCR = m_eventValue; break;
-    case CCR3_OFFSET:  m_channel[2]->m_CCR = m_eventValue; break;
-    case CCR4_OFFSET:  m_channel[3]->m_CCR = m_eventValue; break;
-    case BDTR_OFFSET:  m_bdtr = m_eventValue;              break;
-    case DCR_OFFSET:   m_dcr  = m_eventValue;              break;
-    case DMAR_OFFSET:  m_dmar = m_eventValue;              break;
-    default:           write();                            break;
-    }
+    if( offset != 0 ) return;
+
+    int ch = m_eventValue & 0xFF;
+    int state = m_eventValue & 1<<8;
+
+    m_channel[ch]->m_pin->setOutState( state );
+    //qDebug() << "Stm32Timer::writeRegister" << m_number << ch << m_channel[ch]->m_pin->pinId();
+
+    //switch( offset )
+    //{
+    //case CR1_OFFSET:   writeCR1();                         break;
+    //case CR2_OFFSET:   m_cr2  = m_eventValue & 0x00F8;     break;
+    //case SMCR_OFFSET:  m_smcr = m_eventValue;              break;
+    //case DIER_OFFSET:  m_dier = m_eventValue & 0x5F5F;     break;
+    //case SR_OFFSET:    updateUIF();                        break;
+    //case EGR_OFFSET:   writeEGR();                         break;
+    //case CCMR1_OFFSET: writeCCMR( 0 );                     break;
+    //case CCMR2_OFFSET: writeCCMR( 1 );                     break;
+    //case CCER_OFFSET:  writeCCER();                        break;
+    //case CNT_OFFSET:   setCount();                         break;
+    //case PSC_OFFSET:   updtFreq();                         break;
+    //case ARR_OFFSET:   updtPeriod();                       break;
+    //case RCR_OFFSET:   m_rcr = m_eventValue;               break;
+    //case CCR1_OFFSET:  m_channel[0]->m_CCR = m_eventValue; break;
+    //case CCR2_OFFSET:  m_channel[1]->m_CCR = m_eventValue; break;
+    //case CCR3_OFFSET:  m_channel[2]->m_CCR = m_eventValue; break;
+    //case CCR4_OFFSET:  m_channel[3]->m_CCR = m_eventValue; break;
+    //case BDTR_OFFSET:  m_bdtr = m_eventValue;              break;
+    //case DCR_OFFSET:   m_dcr  = m_eventValue;              break;
+    //case DMAR_OFFSET:  m_dmar = m_eventValue;              break;
+    //default:           write();                            break;
+    //}
 }
 
 void Stm32Timer::readRegister()
@@ -217,4 +228,13 @@ void Stm32Timer::updtFreq()
 void Stm32Timer::updtPeriod()
 {
     m_arr = m_eventValue;
+}
+
+void Stm32Timer::setOcPins( Stm32Pin* oc0Pin, Stm32Pin* oc1Pin, Stm32Pin* oc2Pin , Stm32Pin *oc3Pin)
+{
+    //qDebug() << "Stm32Timer::setOcPins" << m_number << oc0Pin->pinId() << oc1Pin->pinId() << oc2Pin->pinId() << oc3Pin->pinId();
+    m_channel[0]->m_pin = oc0Pin;
+    m_channel[1]->m_pin = oc1Pin;
+    m_channel[2]->m_pin = oc2Pin;
+    m_channel[3]->m_pin = oc3Pin;
 }

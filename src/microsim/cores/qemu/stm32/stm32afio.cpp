@@ -4,6 +4,7 @@
  ***( see copyright.txt file at root folder )*******************************/
 
 #include "stm32afio.h"
+#include "stm32.h"
 
 #define EVCR_OFFSET    0x00
 #define MAPR_OFFSET    0x04
@@ -11,6 +12,21 @@
 #define EXTICR2_OFFSET 0x0c
 #define EXTICR3_OFFSET 0x10
 #define EXTICR4_OFFSET 0x14
+
+
+#define AFIO_MAPR_TIM4_REMAP_BIT 12
+#define AFIO_MAPR_TIM3_REMAP_START 10
+#define AFIO_MAPR_TIM3_REMAP_MASK 0x00000C00
+#define AFIO_MAPR_TIM2_REMAP_START 8
+#define AFIO_MAPR_TIM2_REMAP_MASK 0x00000300
+#define AFIO_MAPR_TIM1_REMAP_START 6
+#define AFIO_MAPR_TIM1_REMAP_MASK 0x000000C0
+#define AFIO_MAPR_USART3_REMAP_START 4
+#define AFIO_MAPR_USART3_REMAP_MASK 0x00000030
+#define AFIO_MAPR_USART2_REMAP_BIT 3
+#define AFIO_MAPR_USART1_REMAP_BIT 2
+#define AFIO_MAPR_I2C1_REMAP_BIT 1
+#define AFIO_MAPR_SPI1_REMAP_BIT 0
 
 
 Stm32Afio::Stm32Afio( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
@@ -70,10 +86,11 @@ void Stm32Afio::writeMAPR()
     //s->Remap[STM32_UART2] = extract32(s->AFIO_MAPR, AFIO_MAPR_USART2_REMAP_BIT, 1);
     //s->Remap[STM32_UART3] = (s->AFIO_MAPR & AFIO_MAPR_USART3_REMAP_MASK) >> AFIO_MAPR_USART3_REMAP_START;
 
-    //stm32_timer_remap( 1, (s->AFIO_MAPR & AFIO_MAPR_TIM1_REMAP_MASK) >> AFIO_MAPR_TIM1_REMAP_START );
-    //stm32_timer_remap( 2, (s->AFIO_MAPR & AFIO_MAPR_TIM2_REMAP_MASK) >> AFIO_MAPR_TIM2_REMAP_START );
-    //stm32_timer_remap( 3, (s->AFIO_MAPR & AFIO_MAPR_TIM3_REMAP_MASK) >> AFIO_MAPR_TIM3_REMAP_START );
-    //stm32_timer_remap( 4, extract32(s->AFIO_MAPR, AFIO_MAPR_TIM4_REMAP_BIT, 1) );
+    Stm32* stm32 = (Stm32*)m_device;
+    stm32->timerRemap( 0, (mapr & AFIO_MAPR_TIM1_REMAP_MASK) >> AFIO_MAPR_TIM1_REMAP_START );
+    stm32->timerRemap( 1, (mapr & AFIO_MAPR_TIM2_REMAP_MASK) >> AFIO_MAPR_TIM2_REMAP_START );
+    stm32->timerRemap( 2, (mapr & AFIO_MAPR_TIM3_REMAP_MASK) >> AFIO_MAPR_TIM3_REMAP_START );
+    stm32->timerRemap( 3, (mapr & 1<<AFIO_MAPR_TIM4_REMAP_BIT) >> AFIO_MAPR_TIM4_REMAP_BIT );
 }
 
 void Stm32Afio::writeEXTICR( uint8_t index )

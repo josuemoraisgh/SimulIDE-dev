@@ -19,13 +19,12 @@ class Esp32Gpio : public QemuModule, public eElement
 
         void reset() override;
 
-        uint32_t readPort();
-
-        Esp32Pin* getPin( int i ) { return m_pins.at(i); }
+        uint32_t readPort( int in );
 
         void writeIoMuxReg( uint8_t pin, uint16_t value );
 
-        uint size(){ return m_pins.size(); }
+        //Esp32Pin* getPin( int i ) { return m_pins.at(i); }
+        //uint size(){ return m_pins.size(); }
 
     protected:
         void writeRegister() override;
@@ -36,10 +35,11 @@ class Esp32Gpio : public QemuModule, public eElement
         void createIoMux();
 
         //void cofigPort( uint32_t config, uint8_t shift );
-        void setPortState( uint16_t state );
-        void matrixChanged( int out, int func );
-        void outChanged( uint32_t newState );
-        void dirChanged( uint32_t newEnable );
+        //void setPortState( uint16_t state );
+        void matrixInChanged( int func );
+        void matrixOutChanged( int pin );
+        void setGpioState( uint32_t newState );
+        void setGpioDir( uint32_t newEnable );
         void clearStatus( int i );
 
         std::vector<Esp32Pin*> m_pins;
@@ -57,11 +57,11 @@ class Esp32Gpio : public QemuModule, public eElement
 
         //uint32_t gpio_pcpu_int[2];
         //uint32_t gpio_acpu_int[2];
-        //uint32_t gpio_enable;
+
         // uint32_t m_gpioPin[40]; // Managed by Pin
 
-        uint32_t m_gpioInFunc[256];
-        uint32_t m_gpioOutFunc[256];
+        //uint32_t m_gpioInFunc[256];
+        //uint32_t m_gpioOutFunc[256];
 
         funcPin m_matrixIn[256];  // Matrix created in Esp32::createMatrix()
         funcPin m_matrixOut[256]; // Matrix created in Esp32::createMatrix()

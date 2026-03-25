@@ -24,7 +24,11 @@ Esp32Gpio::~Esp32Gpio(){}
 
 void Esp32Gpio::reset()
 {
-
+    m_gpioState     = 0;
+    m_gpioEnable    = 0;
+    m_strapMode     = 0;
+    m_gpioStatus[0] = 0;
+    m_gpioStatus[1] = 0;
 }
 
 void Esp32Gpio::writeIoMuxReg( uint8_t pin, uint16_t value )
@@ -35,13 +39,14 @@ void Esp32Gpio::writeIoMuxReg( uint8_t pin, uint16_t value )
 
 void Esp32Gpio::readRegister()
 {
-    //qDebug() <<"Esp32Port::readRegister"<< m_name << m_eventAddress << m_eventValue;
+    //qDebug() <<"Esp32Gpio::readRegister"<< m_name << m_eventAddress << m_eventValue;
 
     uint64_t offset = m_eventAddress - m_memStart;
     uint32_t val = 0;
-    switch( offset )
-    {
 
+    switch( offset ){
+    case 0x3C: val = readPort( 0 ); break; // GPIO_IN_REG
+    case 0x40: val = readPort( 1 ); break; // GPIO_IN1_REG
     }
     m_arena->regData = val;
     m_arena->qemuAction = SIM_READ;
@@ -49,81 +54,102 @@ void Esp32Gpio::readRegister()
 
 void Esp32Gpio::writeRegister()
 {
+    //qDebug() << "Esp32Gpio::writeRegister"<< m_name << m_eventAddress << m_eventValue;
     uint64_t offset = m_eventAddress - m_memStart;
 
-    if( offset < 0x20 )
+    if( offset == 0x04 )
     {
-        uint32_t newState = m_gpioState;
-        switch( offset ){
-        case 0x04: newState   =  m_eventValue; break;      // GPIO_OUT_REG
-        case 0x08: newState  |=  m_eventValue; break;      // GPIO_OUT_W1TS_REG
-        case 0x0C: newState  &= ~m_eventValue; break;      // GPIO_OUT_W1TC_REG
-        }
-        outChanged( newState );
+        setGpioState( m_eventValue );
     }
-    else if( offset < 0x38 )
+    else if( offset == 0x20 )
     {
-        uint32_t newEnable = m_gpioEnable;
-        switch( offset ){
-        case 0x20: newEnable  =  m_eventValue; break;      // GPIO_ENABLE_REG
-        case 0x24: newEnable |=  m_eventValue; break;      // GPIO_ENABLE_W1TS_REG
-        case 0x28: newEnable &= ~m_eventValue; break;      // GPIO_ENABLE_W1TC_REG
-        }
-        dirChanged( newEnable );
+        setGpioDir( m_eventValue );
     }
-    else if( offset < 0x88 )
+    else if( offset >= 0x88 )
     {
-        switch( offset ){
-        case 0x38: m_strapMode      = m_eventValue; break; // A_GPIO_STRAP
-        case 0x44: m_gpioStatus[0]  = m_eventValue; break; // GPIO_STATUS_REG
-        case 0x48: m_gpioStatus[0] |= m_eventValue; break; // GPIO_STATUS_W1TS_REG
-        case 0x4C: clearStatus( 0 );                break; // GPIO_STATUS_W1TC_REG
-        case 0x50: m_gpioStatus[1]  = m_eventValue; break; // GPIO_STATUS1_REG
-        case 0x54: m_gpioStatus[1] |= m_eventValue; break; // GPIO_STATUS1_W1TS_REG
-        case 0x58: clearStatus( 1 );                break; // GPIO_STATUS1_W1TC_REG
+        if( offset < 0x130 ) {                            // GPIO_PINXX_REG
+            uint64_t pinNumber = (offset-0x88)/4;
+            if( pinNumber < 40 )
+            {
+                Esp32Pin* pin = m_espPad[pinNumber];
+                if( pin ) pin->writePinReg( m_eventValue );
+            }
         }
-    }
-    else if( offset < 0x130 ) {                            // GPIO_PINXX_REG
-        uint64_t pinNumber = (offset-0x88)/4;
-        if( pinNumber < m_pins.size() )
-        {
-            Esp32Pin* pin = m_pins[pinNumber];
-            if( pin ) pin->writePinReg( m_eventValue );
+        else if( offset < 0x530 ) {                       // GPIO_FUNCY_IN_SEL_CFG_REG
+            int func = (offset-0x130)/4;
+            //m_gpioInFunc[func] = m_eventValue;
+            matrixInChanged( func );
         }
-    }
-    else if( offset < 0x530 ) {                            // GPIO_FUNCY_IN_SEL_CFG_REG
-        int func = (offset-0x130)/4;
-        m_gpioInFunc[func] = m_eventValue;
-        matrixChanged( 0, func );
-    }
-    else if( offset < 0x5D0 ) {                            // GPIO_FUNCX_OUT_SEL_CFG_REG
-        int func = (offset-0x530)/4;
-        m_gpioOutFunc[func] = m_eventValue;
-        matrixChanged( 1, func );
+        else if( offset < 0x5D0 ) {                       // GPIO_FUNCX_OUT_SEL_CFG_REG
+            int pin = (offset-0x530)/4;
+            //m_gpioOutFunc[pin] = m_eventValue;
+            matrixOutChanged( pin );
+        }
     }
 }
 
-void Esp32Gpio::setPortState( uint16_t state )
+void Esp32Gpio::matrixInChanged( int func )
 {
-    //qDebug() << "   Esp32Port::setPortState:               " << m_name << state<< Simulator::self()->circTime();
+    int pin  = m_eventValue & 0x3F;
+    if( pin >= 40 ) return;
 
-    for( uint8_t i=0; i<m_pins.size(); ++i )
-    {
-        Esp32Pin* ioPin = m_pins.at( i );
-        ioPin->setPortState( state & (1<<i) );
-    }
+    Esp32Pin* espPin = m_espPad[pin];
+    if( !espPin ) return;
+
+    funcPin fp = { nullptr, nullptr, "---" };
+
+    if     ( func  < 256 ) fp = m_matrixIn[func];
+    //else if( func == 256 ) fp = { nullptr, &m_ioPin[pin], ""};
+
+    //qDebug() << "Esp32::matrixInFunc"<< espPin->pinId() << func << fp.label;
+    if( fp.label == "---") return;
+
+
+    espPin->setMatrixFunc( m_eventValue, fp );
 }
 
-uint32_t Esp32Gpio::readPort()
+void Esp32Gpio::matrixOutChanged( int pin )
+{
+    if( pin > 31 ) return;
+    int func  = m_eventValue & 0xFF;
+
+    Esp32Pin* espPin = m_espPad[pin];
+    if( !espPin ) return;
+
+    funcPin fp = { nullptr, nullptr, "---" };
+
+    if     ( func < 256 ) fp = m_matrixOut[func];
+    //else if( func == 256 ) fp = { nullptr, &m_ioPin[pin], ""};
+
+    //qDebug() << "Esp32::matrixOutChanged"<< espPin->pinId() << func << fp.label;
+    if( fp.label == "---") return;
+
+    // val & 1<<11: OEN_INV_SEL 1: Invert the output enable signal
+    // val & 1<<10: 1: use output enable from bit n of GPIO_ENABLE_REG;
+    //              0: use output enable from peripheral. (R/W)
+    // val & 1<< 9: 1. Invert the output value
+
+    espPin->setMatrixFunc( m_eventValue, fp );
+}
+
+uint32_t Esp32Gpio::readPort( int in )
 {
     uint32_t data = 0;
-    for( uint8_t i=0; i<m_pins.size(); ++i )
-        if( m_pins[i]->getInpState() ) data |= (1 << i);
-
+    if( in == 0 ){
+        for( uint8_t i=0; i<32; ++i ){
+            IoPin* pin =  m_espPad[i];
+            if( pin && pin->getInpState() ) data |= (1 << i);
+        }
+    }else{
+        for( uint8_t i=33; i<40; ++i ){
+            IoPin* pin =  m_espPad[i];
+            if( pin && pin->getInpState() ) data |= (1 << (i-33));
+        }
+    }
     return data;
 }
 
-void Esp32Gpio::outChanged( uint32_t newState )
+void Esp32Gpio::setGpioState( uint32_t newState )
 {
     if( m_gpioState == newState ) return;
 
@@ -131,7 +157,7 @@ void Esp32Gpio::outChanged( uint32_t newState )
 
     for( uint i=0; i<32; ++i ) // GPIO pads 34-39 are input-only.
     {
-        IoPin* pin =  m_espPad[i];
+        Esp32Pin* pin =  m_espPad[i];
         if( !pin ) continue;
 
         uint32_t mask = 1<<i;
@@ -141,7 +167,7 @@ void Esp32Gpio::outChanged( uint32_t newState )
     m_gpioState = newState;
 }
 
-void Esp32Gpio::dirChanged( uint32_t newEnable )
+void Esp32Gpio::setGpioDir( uint32_t newEnable )
 {
     if( m_gpioEnable == newEnable ) return;
 
@@ -149,7 +175,7 @@ void Esp32Gpio::dirChanged( uint32_t newEnable )
 
     for( uint i=0; i<32; ++i ) // GPIO pads 34-39 are input-only.
     {
-        IoPin* pin =  m_espPad[i];
+        Esp32Pin* pin =  m_espPad[i];
         if( !pin ) continue;
 
         uint32_t mask = 1<<i;
@@ -157,31 +183,11 @@ void Esp32Gpio::dirChanged( uint32_t newEnable )
         {
             if( newEnable ) pin->setPinMode( output );
             else            pin->setPinMode( input );
+            //qDebug() << "Esp32Gpio::setGpioDir" << i << newEnable;
             //pin->changeCallBack( this, !newDirec ); // CallBack only on Inputs
         }
     }
     m_gpioEnable = newEnable;
-}
-
-void Esp32Gpio::matrixChanged( int out, int func )
-{
-    int pin  = m_eventValue & 0x3F;
-    if( pin >= 40 ) return;
-
-    Esp32Pin* espPin = m_espPad[pin];
-    if( !espPin ) return;
-
-    uint16_t function = m_eventValue & 0x1FF;
-
-    funcPin fp = { nullptr, nullptr, "---" };;
-
-    if     ( function  < 256 ) fp = out ? m_matrixOut[function] : m_matrixIn[function];
-    //else if( function == 256 ) fp = { nullptr, &m_ioPin[pin], ""};
-
-    if( fp.label == "---") return;
-
-    //qDebug() << "Esp32::matrixFunc"<< pin << function;
-    espPin->setMatrixFunc( m_eventValue, fp );
 }
 
 void Esp32Gpio::clearStatus( int i )
@@ -203,10 +209,10 @@ Esp32Pin* Esp32Gpio::createPin( int i, QString id , QemuDevice* mcu )
 #define U0RXD       m_matrixIn[14]
 #define U1RXD       m_matrixIn[17]
 #define U2RXD       m_matrixIn[198]
-//#define I2CEXT0_SCL m_matrixIn[29]
-//#define I2CEXT0_SDA m_matrixIn[30]
-//#define I2CEXT1_SCL m_matrixIn[95]
-//#define I2CEXT1_SDA m_matrixIn[96]
+//#define I2C0SCL m_matrixIn[29]
+//#define I2C0SDA m_matrixIn[30]
+//#define I2C1SCL m_matrixIn[95]
+//#define I2C1SDA m_matrixIn[96]
 
 #define SPICLK      m_matrixOut[0]
 #define SPIQ        m_matrixOut[1]
@@ -227,13 +233,13 @@ Esp32Pin* Esp32Gpio::createPin( int i, QString id , QemuDevice* mcu )
 void Esp32Gpio::createIoMux()
 {
     funcPin DUMMY = { nullptr, nullptr, "---" };
-    funcPin GPIO  = { nullptr, nullptr, "" };
+    funcPin GPIO  = { nullptr, nullptr, "GPIO" }; /// FIXME: pointer to this, same than any peripheral, Gpio shouldn't control pin if it is assigned to other
 
     // 0:  GPIO0    CLK_OUT1 GPIO0  ----      ----      EMAC_TX_CLK
     m_espPad[0]->setIoMuxFuncs( { GPIO, DUMMY, GPIO, DUMMY, DUMMY, DUMMY} );
 
     // 1:  U0TXD    CLK_OUT3 GPIO1  ----      ----      EMAC_RXD2
-    m_espPad[1]->setIoMuxFuncs( { U0TXD, DUMMY, DUMMY, DUMMY, DUMMY, DUMMY} );
+    m_espPad[1]->setIoMuxFuncs( { U0TXD, DUMMY, GPIO, DUMMY, DUMMY, DUMMY} );
 
     // 2:  GPIO2    HSPIWP   GPIO2  HS2_DATA0 SD_DATA0  ----
     m_espPad[2]->setIoMuxFuncs( { GPIO, DUMMY, GPIO, DUMMY, DUMMY, DUMMY} );
@@ -248,7 +254,7 @@ void Esp32Gpio::createIoMux()
     m_espPad[5]->setIoMuxFuncs( { GPIO, VSPICS0, GPIO, DUMMY, DUMMY, DUMMY} );
 
     // 6:  SD_CLK   SPICLK   GPIO6  HS1_CLK   U1CTS ----
-    m_espPad[6]->setIoMuxFuncs( { DUMMY, SPICLK , GPIO, DUMMY, DUMMY, DUMMY} ); //m_spis[0]->getClkPinPointer()
+    m_espPad[6]->setIoMuxFuncs( { DUMMY, SPICLK , GPIO, DUMMY, DUMMY, DUMMY} );
 
     // 7:  SD_DATA0 SPIQ     GPIO7  HS1_DATA0 U2RTS ----
     m_espPad[7]->setIoMuxFuncs( { DUMMY, SPIQ, GPIO, DUMMY, DUMMY, DUMMY} );

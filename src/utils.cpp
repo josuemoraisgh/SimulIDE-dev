@@ -26,6 +26,7 @@ double getMultiplier( QString mult )
     mult = mult.remove(" ");
     mult = mult.left(1);
     double multiplier = multipliers.value( mult );
+    if( mult == "µ" ) multiplier = 10e-7;
     if( multiplier == 0 ) multiplier = 1;
     return multiplier;
 }

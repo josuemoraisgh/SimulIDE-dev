@@ -69,15 +69,10 @@ class QemuDevice : public Chip
         std::vector<uint32_t>* getIoMem() { return &m_ioMem; }
         volatile qemuArena_t* getArena() { return m_arena; }
 
-        void runToTime( uint64_t time );
-        //void setNexTEvent( uint64_t e ) { m_nextEvent = e; }
-
         void slotLoad();
         void slotReload();
         void slotOpenTerm( int num );
 
-        //void addEvent( uint64_t time, QemuModule* el );
-        //void cancelEvents( QemuModule* el );
         void addModule( QemuModule* m ) { m_modules.append( m ); }
 
  static QemuDevice* self() { return m_pSelf; }
@@ -92,6 +87,8 @@ class QemuDevice : public Chip
         virtual void doAction();
         virtual void updtFrequency(){;}
 
+        void runModuleEvent();
+
         void contextMenu( QGraphicsSceneContextMenuEvent* e, QMenu* m ) override;
 
         QString m_lastFirmDir;  // Last firmware folder used
@@ -101,8 +98,6 @@ class QemuDevice : public Chip
 
         QString m_extraArgs;
 
-        //QemuModule* m_firstEvent;
-
         volatile qemuArena_t* m_arena;
 
         QemuModule* m_dummyModule;
@@ -111,9 +106,6 @@ class QemuDevice : public Chip
         uint64_t m_lastEvent;
 
         uint32_t m_ioMemStart;
-
-        //bool m_fullSynch;
-        //uint64_t m_lastTime;
 
         int m_gpioSize;
         std::vector<IoPin*> m_ioPin;

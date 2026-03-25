@@ -275,7 +275,7 @@ void Stm32Twi::writeCR1( uint16_t newCR1 )
 void Stm32Twi::writeCR2( uint16_t newCR2 )
 {
     //if( m_CR2 == newCR2 ) return;
-    //m_CR2 = newCR2;
+    m_CR2 = newCR2;
 
     double freqMHz = newCR2 & 0b111111;   // Bits 5:0 FREQ[5:0]: Peripheral clock frequency
     if( freqMHz < 2 ) freqMHz = 2;        // Minimum allowed frequency is 2 MHz
