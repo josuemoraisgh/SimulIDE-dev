@@ -130,6 +130,7 @@
         <file alias="voltage.png">../src/icons/components/voltage.png</file>
         <file alias="rail.png">../src/icons/components/rail.png</file>
         <file alias="ic2.png">../src/icons/components/ic2.png</file>
+        <file alias="ic3.png">../src/icons/components/ic3.png</file>
         <file alias="ic_comp.png">../src/icons/components/ic_comp.png</file>
         <file alias="ic2_comp.png">../src/icons/components/ic2_comp.png</file>
         <file alias="script_ico.png">../src/icons/components/script_ico.png</file>
@@ -145,7 +146,9 @@
         <file alias="battery.png">../src/icons/components/battery.png</file>
         <file alias="capacitor.png">../src/icons/components/capacitor.png</file>
         <file alias="elcapacitor.png">../src/icons/components/elcapacitor.png</file>
+        <file alias="varcapacitor.png">../src/icons/components/varcapacitor.png</file>
         <file alias="inductor.png">../src/icons/components/inductor.png</file>
+        <file alias="varinductor.png">../src/icons/components/varinductor.png</file>
         <file alias="transformer.png">../src/icons/components/transformer.png</file>
         <file alias="seven_segment.png">../src/icons/components/seven_segment.png</file>
         <file alias="7segbcd.png">../src/icons/components/7segbcd.png</file>

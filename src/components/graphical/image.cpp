@@ -12,8 +12,11 @@
 #include "image.h"
 #include "circuit.h"
 #include "itemlibrary.h"
+#include "mainwindow.h"
+#include "utils.h"
 
 #include "stringprop.h"
+#include "boolprop.h"
 
 #define tr(str) simulideTr("Image",str)
 
@@ -39,11 +42,19 @@ Image::Image( QString type, QString id )
     m_vSize = 80;
     m_area = QRectF(-40,-40, 80, 80 );
 
+    m_embeedBck = false;
     m_movie = nullptr;
+
+    addProperty( tr("Main"),
+        new BoolProp<Image>("Embeed_bck", tr("Embeed background"),""
+                          , this, &Image::embeedBck, &Image::setEmbeedBck ) );
 
     addPropGroup( {"Hidden", {
         new StrProp<Image>("Image_File", tr("Image File"),""
-                          , this, &Image::background, &Image::setBackground )
+                          , this, &Image::background, &Image::setBackground ),
+
+        new StrProp<Image>("BckGndData", "",""
+                          , this, &Image::bckGndData, &Image::setBckGndData )
     }, groupNoCopy | groupHidden} );
 }
 Image::~Image()
@@ -56,6 +67,10 @@ void Image::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu )
     QAction* loadAction = menu->addAction( QIcon(":/load.svg"),tr("Load Image") );
     QObject::connect( loadAction, &QAction::triggered, [=](){ slotLoad(); } );
 
+    if( !m_bckGndData.isEmpty() ){
+        QAction* saveAction = menu->addAction( QIcon(":/save.svg"),tr("Save Image") );
+        QObject::connect( saveAction, &QAction::triggered, [=](){ slotSave(); } );
+    }
     menu->addSeparator();
     Component::contextMenu( event, menu );
 }
@@ -75,6 +90,15 @@ void Image::slotLoad()
     setBackground( fileName );
     Shape::setHSize( m_image.width() );
     Shape::setVSize( m_image.height() );
+}
+
+void Image::slotSave()
+{
+    QString dir = Circuit::self()->getFilePath();
+    QString fileName = QFileDialog::getSaveFileName( MainWindow::self(), tr("Save Image"), dir, "");
+    if( fileName.isEmpty() ) return;
+
+    m_image.save( fileName );
 }
 
 void Image::updateGif( const QRect &rect )
@@ -106,15 +130,47 @@ void Image::setBackground( QString bck )
         else qDebug() << "Image::setBackground : not a valid Gif animation";
     }
 
-    if( m_image.load( absPath ) )     m_background = absPath;
-    else if( m_background.isEmpty() ) m_image = QPixmap( ":/saveimage.svg" );
-    else                              m_image = QPixmap( m_background );
+    if( bck.isEmpty() ) m_image = QPixmap( ":/saveimage.svg" );
+    else{
+        if( m_image.load( absPath ) ) m_background = absPath;
+        else                          m_image = QPixmap( m_background );
+        if( QFile::exists( m_background ) ){
+            QByteArray ba = fileToByteArray( m_background, "Image::setBackground");
+            QString bckData( ba.toHex() );
+            m_bckGndData = bckData;
+        }
+    }
 }
 
 QString Image::background()
 {
     QDir circuitDir = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
     return circuitDir.relativeFilePath( m_background );
+}
+
+QString Image::bckGndData()
+{
+    if( !m_embeedBck ) return "";
+
+    return m_bckGndData;
+}
+
+void Image::setBckGndData( QString data )
+{
+    m_bckGndData = data;
+
+    if( data.isEmpty() ) return;
+
+    QStringView dataRef{data};
+    QByteArray ba;
+    bool ok;
+    for( int i=0; i<dataRef.size(); i+=2 )
+    {
+        QStringView ch = dataRef.mid( i, 2 );
+        ba.append( ch.toInt( &ok, 16 ) );
+    }
+    m_image.loadFromData( ba );
+    update();
 }
 
 void Image::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )

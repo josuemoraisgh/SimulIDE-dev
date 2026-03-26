@@ -1373,18 +1373,18 @@ Can&apos;t find file:
         <translation type="obsolete">LED Display</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/componentlist.cpp" line="109"/>
-        <location filename="../../src/gui/componentlist/componentlist.cpp" line="186"/>
+        <location filename="../../src/gui/componentlist/componentlist.cpp" line="110"/>
+        <location filename="../../src/gui/componentlist/componentlist.cpp" line="187"/>
         <source>    Loading Component sets at:</source>
         <translation type="unfinished">    geladene Komponente zugewiesen bei:</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/componentlist.cpp" line="297"/>
+        <location filename="../../src/gui/componentlist/componentlist.cpp" line="336"/>
         <source>        Loaded Component set:           </source>
         <translation type="unfinished">        geladene Komponente zugewiesen:           </translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/componentlist.cpp" line="441"/>
+        <location filename="../../src/gui/componentlist/componentlist.cpp" line="480"/>
         <source>Manage Shortcuts</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1883,12 +1883,12 @@ Can&apos;t find file:
 <context>
     <name>Dialed</name>
     <message>
-        <location filename="../../src/gui/circuitwidget/dialed.cpp" line="45"/>
+        <location filename="../../src/gui/circuitwidget/dialed.cpp" line="54"/>
         <source>Slider</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/circuitwidget/dialed.cpp" line="47"/>
+        <location filename="../../src/gui/circuitwidget/dialed.cpp" line="56"/>
         <source>Scale</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2045,67 +2045,67 @@ Can&apos;t find file:
 <context>
     <name>EditDialog</name>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="734"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="736"/>
         <source>Pin Name:</source>
         <translation>Pinname:</translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="770"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="772"/>
         <source>Invert Pin</source>
         <translation>Pin invertieren</translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="772"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="774"/>
         <source>Unused Pin</source>
         <translation>ungenutzter Pin</translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="775"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="777"/>
         <source>Point Pin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="805"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="807"/>
         <source>Edit Pin </source>
         <translation>Pin editieren </translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="742"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="744"/>
         <source>Pin Id:   </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="762"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="764"/>
         <source>Pin Angle:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="764"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="766"/>
         <source>Right</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="764"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="766"/>
         <source>Left</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="764"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="766"/>
         <source>Top</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="764"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="766"/>
         <source>Bottom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="750"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="752"/>
         <source>Space to Label:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="778"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="780"/>
         <source>Bus Pin</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2501,22 +2501,22 @@ Can&apos;t find file:
 <context>
     <name>Esp01</name>
     <message>
-        <location filename="../../src/components/micro/esp01.cpp" line="71"/>
+        <location filename="../../src/components/micro/esp01.cpp" line="70"/>
         <source>Baudrate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/esp01.cpp" line="80"/>
+        <location filename="../../src/components/micro/esp01.cpp" line="79"/>
         <source>Show Debug messages</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/esp01.cpp" line="421"/>
+        <location filename="../../src/components/micro/esp01.cpp" line="420"/>
         <source>Open Serial Monitor.</source>
         <translation type="unfinished">Seriellen Monitor öffnen</translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/esp01.cpp" line="70"/>
+        <location filename="../../src/components/micro/esp01.cpp" line="69"/>
         <source>Main</source>
         <translation type="unfinished">Hauptparameter</translation>
     </message>
@@ -2981,17 +2981,17 @@ Can&apos;t find file:
         <translation>nicht löschbar</translation>
     </message>
     <message>
-        <location filename="../../src/components/logic/i2cram.cpp" line="186"/>
+        <location filename="../../src/components/logic/i2cram.cpp" line="188"/>
         <source>Load data</source>
         <translation>Daten laden</translation>
     </message>
     <message>
-        <location filename="../../src/components/logic/i2cram.cpp" line="189"/>
+        <location filename="../../src/components/logic/i2cram.cpp" line="191"/>
         <source>Save data</source>
         <translation>Daten speichern</translation>
     </message>
     <message>
-        <location filename="../../src/components/logic/i2cram.cpp" line="192"/>
+        <location filename="../../src/components/logic/i2cram.cpp" line="194"/>
         <source>Show Memory Table</source>
         <translation>Speicher Tabelle anzeigen</translation>
     </message>
@@ -3027,23 +3027,39 @@ Can&apos;t find file:
 <context>
     <name>Image</name>
     <message>
-        <location filename="../../src/components/graphical/image.cpp" line="26"/>
+        <location filename="../../src/components/graphical/image.cpp" line="29"/>
         <source>Image</source>
         <translation>Bild</translation>
     </message>
     <message>
-        <location filename="../../src/components/graphical/image.cpp" line="45"/>
+        <location filename="../../src/components/graphical/image.cpp" line="48"/>
+        <source>Main</source>
+        <translation type="unfinished">Hauptparameter</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/graphical/image.cpp" line="49"/>
+        <source>Embeed background</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/graphical/image.cpp" line="53"/>
         <source>Image File</source>
         <translation>Bilddatei</translation>
     </message>
     <message>
-        <location filename="../../src/components/graphical/image.cpp" line="56"/>
-        <location filename="../../src/components/graphical/image.cpp" line="70"/>
+        <location filename="../../src/components/graphical/image.cpp" line="67"/>
+        <location filename="../../src/components/graphical/image.cpp" line="85"/>
         <source>Load Image</source>
         <translation>Bild laden</translation>
     </message>
     <message>
         <location filename="../../src/components/graphical/image.cpp" line="71"/>
+        <location filename="../../src/components/graphical/image.cpp" line="98"/>
+        <source>Save Image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/graphical/image.cpp" line="86"/>
         <source>All files (*.*)</source>
         <translation>Alle Dateien (*.*)</translation>
     </message>
@@ -3123,22 +3139,22 @@ Can&apos;t find file:
 <context>
     <name>InstallItem</name>
     <message>
-        <location filename="../../src/gui/componentlist/installitem.cpp" line="46"/>
+        <location filename="../../src/gui/componentlist/installitem.cpp" line="49"/>
         <source>Information</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/installitem.cpp" line="53"/>
+        <location filename="../../src/gui/componentlist/installitem.cpp" line="56"/>
         <source>Update</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/installitem.cpp" line="172"/>
+        <location filename="../../src/gui/componentlist/installitem.cpp" line="175"/>
         <source>Uninstall</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/installitem.cpp" line="178"/>
+        <location filename="../../src/gui/componentlist/installitem.cpp" line="181"/>
         <source>Install</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4002,49 +4018,49 @@ Can&apos;t find file:
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="97"/>
+        <location filename="../../src/mainwindow.cpp" line="102"/>
         <source>Looks like SimulIDE crashed...</source>
         <translation>Es scheint als wäre SimulIDE gechrasht 😢...</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="98"/>
+        <location filename="../../src/mainwindow.cpp" line="103"/>
         <source>There is an auto-saved copy of the Circuit
 </source>
         <translation>Es gibt eine automatisch gespeicherte Kopie der Schaltung
 </translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="99"/>
+        <location filename="../../src/mainwindow.cpp" line="104"/>
         <source>You must save it with any other name if you want to keep it</source>
         <translation>Bitte unter einem anderen Namen abspeichern, wenn Sie diese behalten wollen</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="100"/>
+        <location filename="../../src/mainwindow.cpp" line="105"/>
         <source>This file will be auto-deleted!!</source>
         <translation>Die Datei wird automatisch gelöscht!!</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="101"/>
+        <location filename="../../src/mainwindow.cpp" line="106"/>
         <source>Do you want to open the auto-saved copy of the Circuit?</source>
         <translation>Wollen Sie die automatisch gespeicherte Kopie der Schaltung öffnen?</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="266"/>
+        <location filename="../../src/mainwindow.cpp" line="271"/>
         <source>Search Components</source>
         <translation>Komponenten suchen</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="293"/>
+        <location filename="../../src/mainwindow.cpp" line="298"/>
         <source>Components</source>
         <translation>Komponenten</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="294"/>
+        <location filename="../../src/mainwindow.cpp" line="299"/>
         <source>Libraries</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="295"/>
+        <location filename="../../src/mainwindow.cpp" line="300"/>
         <source>Files</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4053,17 +4069,17 @@ Can&apos;t find file:
         <translation type="vanished">Datei Explorer</translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="325"/>
+        <location filename="../../src/mainwindow.cpp" line="330"/>
         <source>No help available</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="360"/>
+        <location filename="../../src/mainwindow.cpp" line="383"/>
         <source>Select User data directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/mainwindow.cpp" line="274"/>
+        <location filename="../../src/mainwindow.cpp" line="279"/>
         <source>Clear search</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4192,8 +4208,12 @@ Can&apos;t find file:
     </message>
     <message>
         <location filename="../../src/microsim/mcu.cpp" line="582"/>
+        <source>Open Monitor.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Open Serial Monitor.</source>
-        <translation>Seriellen Monitor öffnen</translation>
+        <translation type="vanished">Seriellen Monitor öffnen</translation>
     </message>
     <message>
         <location filename="../../src/microsim/mcu.cpp" line="494"/>
@@ -4780,77 +4800,77 @@ Can&apos;t find file:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="159"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="161"/>
         <source>Sources</source>
         <translation>Eingänge und Quellen</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="276"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="280"/>
         <source>Logic</source>
         <translation>Logikkomponenten</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="259"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="263"/>
         <source>Sensors</source>
         <translation>Sensoren</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="266"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="270"/>
         <source>Peripherals</source>
         <translation>Peripherie</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="151"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="153"/>
         <source>Meters</source>
         <translation>Messgeräte</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="323"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="327"/>
         <source>Graphical</source>
         <translation>Grafikelemente</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="215"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="219"/>
         <source>Outputs</source>
         <translation>Ausgänge</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="225"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="229"/>
         <source>Displays</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="216"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="220"/>
         <source>Leds</source>
         <translation>LEDs</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="238"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="242"/>
         <source>Motors</source>
         <translation>Motoren</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="190"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="192"/>
         <source>Reactive</source>
         <translation>Impedanzen</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="184"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="186"/>
         <source>Resistive Sensors</source>
         <translation>Widerstandssensoren</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="178"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="180"/>
         <source>Resistors</source>
         <translation>Widerstände</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="177"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="179"/>
         <source>Passive</source>
         <translation>Passive Bauteile</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="247"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="251"/>
         <source>Micro</source>
         <translation>Mikrocontroller</translation>
     </message>
@@ -4859,27 +4879,27 @@ Can&apos;t find file:
         <translation type="vanished">Arduino</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="277"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="281"/>
         <source>Gates</source>
         <translation>Gatter</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="283"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="287"/>
         <source>Arithmetic</source>
         <translation>Arithmetik</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="291"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="295"/>
         <source>Memory</source>
         <translation>Speicher</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="301"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="305"/>
         <source>Converters</source>
         <translation>Wandler</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="309"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="313"/>
         <source>Other Logic</source>
         <translation>weitere Logikkomponenten</translation>
     </message>
@@ -4889,12 +4909,12 @@ Can&apos;t find file:
         <translation>Warnung: elf Datei nicht gefunden:</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="197"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="201"/>
         <source>Rectifiers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="196"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="200"/>
         <source>Active</source>
         <translation type="unfinished">Aktive Bauteile</translation>
     </message>
@@ -4929,32 +4949,32 @@ Can&apos;t find file:
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="170"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="172"/>
         <source>Switches</source>
         <translation type="unfinished">Schalter</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="317"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="321"/>
         <source>Connectors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="330"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="334"/>
         <source>Other</source>
         <translation type="unfinished">sonstige Komponenten</translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="204"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="208"/>
         <source>Transistors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="209"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="213"/>
         <source>Other Active</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="243"/>
+        <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="247"/>
         <source>Other Outputs</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4993,47 +5013,47 @@ Can&apos;t find file:
 <context>
     <name>QemuDevice</name>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="122"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="120"/>
         <source>Main</source>
         <translation type="unfinished">Hauptparameter</translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="123"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="121"/>
         <source>Firmware</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="126"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="124"/>
         <source>Extra arguments</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="438"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="342"/>
         <source>Load Firmware</source>
         <translation type="unfinished">Firmware laden</translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="439"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="343"/>
         <source>All files (*.*);;Hex Files (*.hex)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="449"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="353"/>
         <source>No File to reload </source>
         <translation type="unfinished">keine Firmware zum wiederholten Laden </translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="484"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="388"/>
         <source>Load firmware</source>
         <translation type="unfinished">Firmware laden</translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="487"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="391"/>
         <source>Reload firmware</source>
         <translation type="unfinished">Firmware wiederholt laden</translation>
     </message>
     <message>
-        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="498"/>
+        <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="402"/>
         <source>Open Serial Monitor.</source>
         <translation type="unfinished">Seriellen Monitor öffnen</translation>
     </message>
@@ -5470,42 +5490,49 @@ Can&apos;t find file:
 <context>
     <name>SerialTerm</name>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="34"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="35"/>
         <source>Serial Terminal</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="86"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="92"/>
         <source>Main</source>
         <translation type="unfinished">Hauptparameter</translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="91"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="97"/>
         <source>Baudrate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="94"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="100"/>
         <source>Data Bits</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="97"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="103"/>
         <source>Stop Bits</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="198"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="179"/>
+        <source>Close</source>
+        <translation type="unfinished">Schließen</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/micro/serialterm.cpp" line="225"/>
         <source>Open Serial Monitor.</source>
         <translation type="unfinished">Seriellen Monitor öffnen</translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="70"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="71"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="182"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="213"/>
         <source>Open</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/micro/serialterm.cpp" line="90"/>
+        <location filename="../../src/components/micro/serialterm.cpp" line="96"/>
         <source>Config</source>
         <translation type="unfinished">Konfiguration</translation>
     </message>
@@ -5622,32 +5649,37 @@ Can&apos;t find file:
 <context>
     <name>Sh1107</name>
     <message>
-        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="37"/>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="43"/>
         <source>Main</source>
         <translation type="unfinished">Hauptparameter</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="38"/>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="44"/>
         <source>Width</source>
         <translation type="unfinished">Breite</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="41"/>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="47"/>
         <source>Height</source>
         <translation type="unfinished">Höhe</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="45"/>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="50"/>
+        <source>X Offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="54"/>
         <source>I2C</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="46"/>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="55"/>
         <source>I2C Address</source>
         <translation type="unfinished">I2C Adresse</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="49"/>
+        <location filename="../../src/components/outputs/displays/sh1107.cpp" line="58"/>
         <source>I2C Frequency</source>
         <translation type="unfinished">I2C Frequenz</translation>
     </message>
@@ -5794,52 +5826,57 @@ Can&apos;t find file:
 <context>
     <name>Ssd1306</name>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="41"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="44"/>
         <source>White</source>
         <translation>weiß</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="41"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="44"/>
         <source>Blue</source>
         <translation>blau</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="41"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="44"/>
         <source>Yellow</source>
         <translation>gelb</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="40"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="43"/>
         <source>Main</source>
         <translation>Hauptparameter</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="41"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="44"/>
         <source>Color</source>
         <translation>Farbe</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="52"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="53"/>
+        <source>Rotate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="58"/>
         <source>I2C Address</source>
         <translation>I2C Adresse</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="55"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="61"/>
         <source>I2C Frequency</source>
         <translation>I2C Frequenz</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="44"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="47"/>
         <source>Width</source>
         <translation type="unfinished">Breite</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="47"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="50"/>
         <source>Height</source>
         <translation type="unfinished">Höhe</translation>
     </message>
     <message>
-        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="51"/>
+        <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="57"/>
         <source>I2C</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5951,23 +5988,23 @@ Can&apos;t find file:
 <context>
     <name>SubCircuit</name>
     <message>
-        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="154"/>
+        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="158"/>
         <source>Subcircuit</source>
         <translation>Sub-Schaltung</translation>
     </message>
     <message>
-        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="127"/>
-        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="164"/>
+        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="131"/>
+        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="168"/>
         <source>Main</source>
         <translation>Hauptparameter</translation>
     </message>
     <message>
-        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="128"/>
+        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="132"/>
         <source>Package</source>
         <translation type="unfinished">Package</translation>
     </message>
     <message>
-        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="446"/>
+        <location filename="../../src/components/subcircuits/subcircuit.cpp" line="450"/>
         <source>Open Subcircuit</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6050,23 +6087,23 @@ Can&apos;t find file:
     </message>
     <message>
         <location filename="../../src/components/other/subpackage.cpp" line="266"/>
-        <location filename="../../src/components/other/subpackage.cpp" line="570"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="572"/>
         <source>Save Package</source>
         <translation>Package speichern</translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="571"/>
-        <location filename="../../src/components/other/subpackage.cpp" line="590"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="573"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="592"/>
         <source>Packages (*.package);;All files (*.*)</source>
         <translation>Packages (*.package);;Alle Dateien (*.*)</translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="589"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="591"/>
         <source>Load Package File</source>
         <translation>Package Datei laden</translation>
     </message>
     <message>
-        <location filename="../../src/components/other/subpackage.cpp" line="611"/>
+        <location filename="../../src/components/other/subpackage.cpp" line="613"/>
         <source>Cannot write file %1:
 %2.</source>
         <translation>Datei &quot;%1&quot; kann nicht gespeichert werden:
@@ -6161,6 +6198,71 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/switches/switchdip.cpp" line="62"/>
         <source>Common Pin</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>Terminal</name>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="14"/>
+        <source>Dialog</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="37"/>
+        <source>save Log</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="44"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="355"/>
+        <source>Clear</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="70"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="401"/>
+        <source>Format:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="78"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="409"/>
+        <source>ASCII</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="83"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="414"/>
+        <source>HEX</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="88"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="419"/>
+        <source>DEC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="93"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="424"/>
+        <source>OCT</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="98"/>
+        <location filename="../../src/gui/serial/terminal.ui" line="429"/>
+        <source>BIN</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="348"/>
+        <source>Load File</source>
+        <translation type="unfinished">Datei laden</translation>
+    </message>
+    <message>
+        <location filename="../../src/gui/serial/terminal.ui" line="375"/>
+        <source>Send</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6502,6 +6604,102 @@ Can&apos;t find file:
     </message>
 </context>
 <context>
+    <name>VarCapacitor</name>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="26"/>
+        <source>Variable Capacitor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="61"/>
+        <source>Main</source>
+        <translation type="unfinished">Hauptparameter</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="62"/>
+        <source>Minimum Capacitance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="65"/>
+        <source>Maximum Capacitance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="68"/>
+        <source>Current Value</source>
+        <translation type="unfinished">aktueller Wert</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="71"/>
+        <source>Resistance</source>
+        <translation type="unfinished">Widerstand</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="74"/>
+        <source>Initial Voltage</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="77"/>
+        <source>Dial Step</source>
+        <translation type="unfinished">Schrittweite</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varcapacitor.cpp" line="81"/>
+        <source>Dial</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>VarInductor</name>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="26"/>
+        <source>Variable Inductor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="61"/>
+        <source>Main</source>
+        <translation type="unfinished">Hauptparameter</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="62"/>
+        <source>Minimum Inductance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="65"/>
+        <source>Maximum Inductance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="68"/>
+        <source>Current Value</source>
+        <translation type="unfinished">aktueller Wert</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="71"/>
+        <source>Resistance</source>
+        <translation type="unfinished">Widerstand</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="74"/>
+        <source>Initial Voltage</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="77"/>
+        <source>Dial Step</source>
+        <translation type="unfinished">Schrittweite</translation>
+    </message>
+    <message>
+        <location filename="../../src/components/passive/reactive/varinductor.cpp" line="81"/>
+        <source>Dial</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>VarResistor</name>
     <message>
         <location filename="../../src/components/passive/resistors/varresistor.cpp" line="24"/>
@@ -6729,17 +6927,17 @@ Can&apos;t find file:
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/sources/wavegen.cpp" line="376"/>
+        <location filename="../../src/components/sources/wavegen.cpp" line="380"/>
         <source>Load Wav File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/components/sources/wavegen.cpp" line="391"/>
+        <location filename="../../src/components/sources/wavegen.cpp" line="395"/>
         <source>Load Image</source>
         <translation type="unfinished">Bild laden</translation>
     </message>
     <message>
-        <location filename="../../src/components/sources/wavegen.cpp" line="392"/>
+        <location filename="../../src/components/sources/wavegen.cpp" line="396"/>
         <source>Wav files (*.wav);;All files (*.*)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6881,42 +7079,42 @@ Can&apos;t find file:
 <context>
     <name>infoWidget</name>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="142"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="51"/>
         <source>Simulation Time:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="366"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="238"/>
         <source>Target Speed:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="417"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="252"/>
         <source>Main MCU:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="753"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="514"/>
         <source>Engine Load:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="918"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="605"/>
         <source>Update Load:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="861"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="585"/>
         <source>Real FPS:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="582"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="380"/>
         <source>GUI overload:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/gui/appdialogs/infowidget.ui" line="988"/>
+        <location filename="../../src/gui/appdialogs/infowidget.ui" line="638"/>
         <source>Real Speed:</source>
         <translation type="unfinished"></translation>
     </message>

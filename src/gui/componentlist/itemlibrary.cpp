@@ -122,6 +122,8 @@
 #include "transformer.h"
 #include "triac.h"
 #include "tunnel.h"
+#include "varcapacitor.h"
+#include "varinductor.h"
 #include "varresistor.h"
 #include "voltmeter.h"
 #include "volt_reg.h"
@@ -190,7 +192,9 @@ void ItemLibrary::loadItems()
     addItem( new LibraryItem( QObject::tr("Reactive"), "Passive", "reactive.png","Reactive", nullptr ) );
     addItem( Capacitor::libraryItem() );
     addItem( elCapacitor::libraryItem() );
+    addItem( VarCapacitor::libraryItem() );
     addItem( Inductor::libraryItem() );
+    addItem( VarInductor::libraryItem() );
     addItem( Transformer::libraryItem() );
     // Active
     addItem( new LibraryItem( QObject::tr("Active"), "", "","Active", nullptr ) );

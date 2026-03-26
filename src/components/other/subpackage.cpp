@@ -475,10 +475,12 @@ void SubPackage::embeedBackground( QString pixmapPath )
 
 void SubPackage::setBackground( QString bck )
 {
-    m_background = bck;
+    QDir circuitDir = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
+
+    m_background = circuitDir.relativeFilePath( bck );
 
     if( bck.isEmpty() ) setBckGndData("");
-    else                Chip::setBackground( bck );
+    else                Chip::setBackground( m_background );
     update();
 }
 

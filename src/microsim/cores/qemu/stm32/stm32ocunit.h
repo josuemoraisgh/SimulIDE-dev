@@ -8,6 +8,7 @@
 #include "e-element.h"
 
 class Stm32Timer;
+class Stm32Pin;
 
 class Stm32OcUnit : public eElement // QemuOcUnit
 {
@@ -39,4 +40,6 @@ class Stm32OcUnit : public eElement // QemuOcUnit
         int m_number;
 
         Stm32Timer* m_timer;
+
+        Stm32Pin* m_pin;
 };

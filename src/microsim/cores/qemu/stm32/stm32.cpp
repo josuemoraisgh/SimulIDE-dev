@@ -12,17 +12,10 @@
 #include "stm32port.h"
 #include "stm32usart.h"
 #include "stm32twi.h"
-//#include "stm32spi.h"
+#include "stm32spi.h"
+#include "stm32timer.h"
 
 #define tr(str) simulideTr("Stm32",str)
-
-//enum armActions{
-//    STM32_GPIO_OUT = 1,
-//    STM32_GPIO_CRx,
-//    STM32_GPIO_IN,
-//    STM32_ALT_OUT,
-//    STM32_REMAP
-//};
 
 #define IOMEM_BASE 0x40000000
 #define IOMEM_SIZE 0x00023400
@@ -41,13 +34,13 @@ Stm32::Stm32( QString type, QString id, QString device )
     QStringList pkgs = { "T", "C", "R", "V", "Z" };
     uint32_t pkg = pkgs.indexOf( model.mid(1,1) );
     switch( pkg ){
-    case 0: m_packageFile = "stm32_dip36.package";  break; // T
-    case 1: m_packageFile = "stm32_dip48.package";  break; // C
-    case 2: m_packageFile = "stm32_dip64.package";  break; // R
-    case 3: m_packageFile = "stm32_dip100.package"; break; // V
-    //case 4: m_packageFile = "stm32_dip144.package"; break; // Z
+        case 0: m_packageFile = "stm32_dip36.package";  break; // T
+        case 1: m_packageFile = "stm32_dip48.package";  break; // C
+        case 2: m_packageFile = "stm32_dip64.package";  break; // R
+        case 3: m_packageFile = "stm32_dip100.package"; break; // V
+        //case 4: m_packageFile = "stm32_dip144.package"; break; // Z
 
-    default: m_packageFile = "stm32_dip64.package";  break;
+        default: m_packageFile = "stm32_dip64.package";  break;
     }
 
     QStringList vars = { "4", "6", "8", "B", "C", "D", "E", "F", "G" };
@@ -99,7 +92,7 @@ Stm32::Stm32( QString type, QString id, QString device )
 
     m_model = fam << 16 | pkg << 8 | var;
     qDebug() << "Stm32::Stm32 model" << device << m_model;
-    m_executable = "./data/STM32/qemu-system-arm";
+    m_executable = "./data/bin/qemu-system-arm";
 
     m_firmware ="";
 
@@ -109,11 +102,13 @@ Stm32::Stm32( QString type, QString id, QString device )
     createPorts();
 
     m_i2cs.resize( m_i2cN );
-    if( m_i2cN > 0 ) m_i2cs[0] = new Stm32Twi( this, "I2C1", 0, &m_apb1, 0x00005400, 0x000057FF);
-    if( m_i2cN > 1 ) m_i2cs[1] = new Stm32Twi( this, "I2C2", 1, &m_apb1, 0x00005800, 0x00005BFF);
+    if( m_i2cN > 0 ) m_i2cs[0] = new Stm32Twi( this, "I2C1", 0, &m_apb1, 0x00005400, 0x000057FF );
+    if( m_i2cN > 1 ) m_i2cs[1] = new Stm32Twi( this, "I2C2", 1, &m_apb1, 0x00005800, 0x00005BFF );
 
-    //m_spis.resize( m_spiN );
-    //for( int i=0; i<m_spiN; ++i ) m_spis[i] = new Stm32Spi( this, "I2C"+QString::number(i), i );
+    m_spis.resize( m_spiN );
+    if( m_spiN > 0 ) m_spis[0] = new Stm32Spi( this, "I2C1", 0, &m_apb1, 0x00013000, 0x000133FF );
+    if( m_spiN > 1 ) m_spis[1] = new Stm32Spi( this, "I2C2", 1, &m_apb1, 0x00003800, 0x00003BFF );
+    if( m_spiN > 2 ) m_spis[2] = new Stm32Spi( this, "I2C3", 2, &m_apb1, 0x00003C00, 0x00003FFF );
 
     m_usarts.resize( m_usartN );
     if( m_usartN > 0 ) m_usarts[0] = new Stm32Usart( this, "Usart1", 0, &m_apb2, 0x00013800, 0x00013BFF );
@@ -122,8 +117,13 @@ Stm32::Stm32( QString type, QString id, QString device )
     if( m_usartN > 3 ) m_usarts[3] = new Stm32Usart( this, "Uart4" , 3, &m_apb1, 0x00004C00, 0x00004FFF );
     if( m_usartN > 4 ) m_usarts[4] = new Stm32Usart( this, "Uart5" , 4, &m_apb1, 0x00005000, 0x000053FF );
 
-    //m_timers.resize( m_timerN );
-    //for( int i=0; i<m_timerN; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
+    m_timerN = 4;
+    m_timers.resize( m_timerN );
+    m_timers[0] = new Stm32Timer( this, "Timer1", 0, &m_apb2, 0x00012C00, 0x00012FFF );
+    m_timers[1] = new Stm32Timer( this, "Timer2", 1, &m_apb2, 0x00000000, 0x000003FF );
+    m_timers[2] = new Stm32Timer( this, "Timer3", 2, &m_apb2, 0x00000400, 0x000007FF );
+    m_timers[3] = new Stm32Timer( this, "Timer4", 3, &m_apb2, 0x00000800, 0x00000BFF );
+    for( int i=0; i<m_timerN; ++i ) timerRemap( i, 0 );
 
     m_dummyModule = new QemuModule( this, "UnMapped", 0, nullptr, 0, IOMEM_SIZE );
 }
@@ -186,9 +186,9 @@ void Stm32::stamp()
     if( m_i2cN > 0 ) m_i2cs[0]->setPins( m_ports[1]->getPin(6) , m_ports[1]->getPin(7)  );
     if( m_i2cN > 1 ) m_i2cs[1]->setPins( m_ports[1]->getPin(10), m_ports[1]->getPin(11) );
 
-    //if( m_spiN > 0 ) m_spis[0]->setPins( m_ports[0].at(7) , m_ports[0].at(6) , m_ports[0].at(5) , m_ports[0].at(4)  );
-    //if( m_spiN > 1 ) m_spis[1]->setPins( m_ports[1].at(15), m_ports[1].at(14), m_ports[1].at(13), m_ports[1].at(12) );
-    //if( m_spiN > 2 ) m_spis[2]->setPins( m_ports[1].at(5) , m_ports[1].at(4) , m_ports[1].at(3) , m_ports[0].at(15) );
+    if( m_spiN > 0 ) m_spis[0]->setPins( m_ports[0]->getPin(7) , m_ports[0]->getPin(6) , m_ports[0]->getPin(5) , m_ports[0]->getPin(4)  );
+    if( m_spiN > 1 ) m_spis[1]->setPins( m_ports[1]->getPin(15), m_ports[1]->getPin(14), m_ports[1]->getPin(13), m_ports[1]->getPin(12) );
+    if( m_spiN > 2 ) m_spis[2]->setPins( m_ports[1]->getPin(5) , m_ports[1]->getPin(4) , m_ports[1]->getPin(3) , m_ports[0]->getPin(15) );
 
     if( m_usartN > 0 ) m_usarts[0]->setPins({m_ports[0]->getPin(9) , m_ports[0]->getPin(10)}); // No Remap (TX/PB6, RX/PB7)
     if( m_usartN > 1 ) m_usarts[1]->setPins({m_ports[0]->getPin(2) , m_ports[0]->getPin(3) }); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
@@ -235,106 +235,6 @@ void Stm32::updtFrequency()
 
     for( QemuModule* module : m_modules ) module->freqChanged();
 }
-
-//void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pId, uint8_t n )
-//{
-//    for( int i=0; i<n; ++i )
-//    {
-//        //qDebug() << "Stm32::createPort" << m_id+"-P"+pId+QString::number(i);
-//        Stm32Pin* pin = new Stm32Pin( number, i, m_id+"-P"+pId+QString::number(i), this );
-//        port->emplace_back( pin );
-//        pin->setVisible( false );
-//    }
-//}
-
-//void Stm32::doAction()
-//{
-//
-//}
-
-//uint16_t Stm32::readInputs( uint8_t port )
-//{
-//    Stm32Port ioPort = m_ports[port-1]; //getPort( port );
-//
-//    uint16_t state = 0;
-//    for( uint8_t i=0; i<ioPort.size(); ++i )
-//    {
-//        Stm32Pin* ioPin = ioPort.at( i );
-//        if( ioPin->getInpState() ) state |= 1<<i;
-//    }
-//    //qDebug() << "Stm32::doAction GPIO_IN"<< port << state;
-//    return state;
-//}
-
-//void Stm32::setPortState( uint8_t port, uint16_t state )
-//{
-//    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
-//
-//    for( uint8_t i=0; i<ioPort.size(); ++i )
-//    {
-//        Stm32Pin* ioPin = ioPort.at( i );
-//        ioPin->setPortState( state & (1<<i) );
-//    }
-//}
-
-//void Stm32::setPinState( uint8_t port, uint8_t pin, bool state )
-//{
-//    std::vector<Stm32Pin*> ioPort = m_ports[port]; //getPort( port );
-//
-//    //qDebug() << "Stm32::setPinState" << port << pin << state;
-//
-//    Stm32Pin* ioPin = ioPort.at( pin );
-//    ioPin->setOutState( state );
-//}
-
-//void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
-//{
-//    std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
-//
-//    //qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << m_direction;
-//
-//    for( uint8_t i=shift; i<shift+8; ++i )
-//    {
-//        Stm32Pin*  ioPin = ioPort.at( i );
-//        uint8_t cfgShift = i*4;
-//        uint32_t cfgMask = 0b1111 << cfgShift;
-//        uint32_t cfgBits = (config & cfgMask) >> cfgShift;
-//
-//        uint8_t isOutput = cfgBits & 0b0011;  // 0 = Input
-//
-//        if( isOutput ) // Output
-//        {
-//            uint8_t   open = cfgBits & 0b0100;
-//            pinMode_t pinMode = open ? openCo : output;
-//            ioPin->setPinMode( pinMode );
-//        }
-//        else          // Input
-//        {
-//            ioPin->setPinMode( input );
-//            uint8_t pull = cfgBits & 0b1000;
-//            ioPin->setPull( pull>0 );
-//        }
-//
-//        uint8_t mode = cfgBits & 0b1100; // Analog if CNF0[1:0] == 0
-//        ioPin->setAnalog( mode==0 );
-//        /// TODO: if changing to Not Analog // Restore Port State
-//
-//        uint8_t alternate = cfgBits & 0b1000;
-//        if( !ioPin->setAlternate( alternate>0 ) )              // If changing to No Alternate
-//            ioPin->setPortState( (m_state[port] & 1<<i) > 0 ); // Restore Port state
-//    }
-//}
-      // CNF
-        // Input mode:
-        //     00: Analog mode
-        //     01: Input Floating (reset state)
-        //     10: Input with pull-up / pull-down
-        //     11: Reserved
-        // Output mode:
-        // CNF0 0 push-pull
-        //      1 Open-drain
-        // CNF1 0 General purpose output
-        //      1 Alternate function output
 
 Pin* Stm32::addPin( QString id, QString type, QString label,
                    int n, int x, int y, int angle, int length, int space )
@@ -383,4 +283,71 @@ Pin* Stm32::addPin( QString id, QString type, QString label,
     pin->setLabelColor( color );
     pin->setFlag( QGraphicsItem::ItemStacksBehindParent, true );
     return pin;
+}
+
+void Stm32::timerRemap( int number, uint8_t value )
+{
+    //printf("stm32_timer_remap %i %i\n", number, value ); fflush( stdout );
+    if( number >= m_timerN ) return;
+
+    Stm32Timer* timer = (Stm32Timer*)m_timers[number];
+    if( !timer ) return;
+
+    switch( number )
+    {
+    case 0:{
+        switch ( value ) {
+        case 0:{       //00: No remap (ETR/PA12, CH1/PA8, CH2/PA9, CH3/PA10, CH4/PA11, BKIN/PB12, CH1N/PB13, CH2N/PB14, CH3N/PB15)
+            timer->setOcPins( m_ports[0]->getPin(8), m_ports[0]->getPin(9), m_ports[0]->getPin(10), m_ports[0]->getPin(11) );
+        }break;
+        case 1:{       //01: Partial remap (ETR/PA12, CH1/PA8, CH2/PA9, CH3/PA10, CH4/PA11, BKIN/PA6, CH1N/PA7, CH2N/PB0, CH3N/PB1)
+            timer->setOcPins( m_ports[1]->getPin(8), m_ports[1]->getPin(9), m_ports[1]->getPin(10), m_ports[1]->getPin(11) );
+        }break;
+        case 2: break; //10: not used
+        case 3:{       //11: Full remap (ETR/PE7, CH1/PE9, CH2/PE11, CH3/PE13, CH4/PE14, BKIN/PE15, CH1N/PE8, CH2N/PE10, CH3N/PE12)
+            timer->setOcPins( m_ports[5]->getPin(9), m_ports[5]->getPin(11), m_ports[5]->getPin(13), m_ports[5]->getPin(14) );
+        }break;
+        }
+    }break;
+    case 1:{
+        switch ( value ) {
+        case 0:{       //00: No remap (CH1/ETR/PA0, CH2/PA1, CH3/PA2, CH4/PA3)
+            timer->setOcPins( m_ports[0]->getPin(0), m_ports[0]->getPin(1), m_ports[0]->getPin(2), m_ports[0]->getPin(3) );
+        }break;
+        case 1:{       //01: Partial remap (CH1/ETR/PA15, CH2/PB3, CH3/PA2, CH4/PA3)
+            timer->setOcPins( m_ports[0]->getPin(15), m_ports[1]->getPin(3), m_ports[0]->getPin(2), m_ports[0]->getPin(3) );
+        }break;
+        case 2:{       //10: Partial remap (CH1/ETR/PA0, CH2/PA1, CH3/PB10, CH4/PB11)
+            timer->setOcPins( m_ports[0]->getPin(0), m_ports[0]->getPin(1), m_ports[1]->getPin(10), m_ports[1]->getPin(11) );
+        }break;
+        case 3:{       //11: Full remap (CH1/ETR/PA15, CH2/PB3, CH3/PB10, CH4/PB11)
+            timer->setOcPins( m_ports[0]->getPin(15), m_ports[1]->getPin(3), m_ports[1]->getPin(10), m_ports[1]->getPin(11) );
+        }break;
+        }
+    }break;
+    case 2:{
+        switch ( value ) {
+        case 0:{       //00: No remap (CH1/PA6, CH2/PA7, CH3/PB0, CH4/PB1)
+            timer->setOcPins( m_ports[0]->getPin(6), m_ports[0]->getPin(7), m_ports[1]->getPin(0), m_ports[1]->getPin(1) );
+        }break;
+        case 1: break; //01: Not used
+        case 2:{       //10: Partial remap (CH1/PB4, CH2/PB5, CH3/PB0, CH4/PB1)
+            timer->setOcPins( m_ports[1]->getPin(4), m_ports[1]->getPin(5), m_ports[1]->getPin(0), m_ports[1]->getPin(1) );
+        }break;
+        case 3:{       //11: Full remap (CH1/PC6, CH2/PC7, CH3/PC8, CH4/PC9)
+            timer->setOcPins( m_ports[2]->getPin(6), m_ports[2]->getPin(7), m_ports[2]->getPin(8), m_ports[2]->getPin(9) );
+        }break;
+        }
+    }break;
+    case 3:{
+        switch ( value ) {
+        case 0:{       // No remap (CH1/PB6, CH2/PB7, CH3/PB8, CH4/PB9)
+            timer->setOcPins( m_ports[1]->getPin(6), m_ports[1]->getPin(7), m_ports[1]->getPin(8), m_ports[1]->getPin(9) );
+        }break;
+        case 1:{       // Full remap (CH1/PD12, CH2/PD13, CH3/PD14, CH4/PD15)
+            timer->setOcPins( m_ports[3]->getPin(12), m_ports[3]->getPin(13), m_ports[3]->getPin(14), m_ports[3]->getPin(15) );
+        }break;
+        }
+    }break;
+    }
 }

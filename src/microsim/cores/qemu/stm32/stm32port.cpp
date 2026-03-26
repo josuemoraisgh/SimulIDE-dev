@@ -6,6 +6,7 @@
 #include <QDebug>
 
 #include "stm32port.h"
+//#include "simulator.h"
 
 #define CRL_OFFSET  0x00
 #define CRH_OFFSET  0x04
@@ -32,108 +33,6 @@ void Stm32Port::reset()
     writeMem( m_memStart+ODR_OFFSET, 0 );
 }
 
-//void Stm32Port::doAction() //addEvent( uint64_t address, uint64_t value )
-//{
-    //qDebug() <<"Stm32Port::writeRegister"<< m_name << address << value;
-
-    //// FIXME m_device->waitEvent( this );
-
-    //uint64_t offset = address - m_memStart;
-
-    //switch( offset )
-    //{
-    //case CRL_OFFSET:
-    //    if( value == m_CRL ) break;
-    //    m_CRL = value;
-    //    cofigPort( value, 0 );
-    //    break;
-    //case CRH_OFFSET:
-    //    if( value == m_CRH ) break;
-    //    m_CRH = value;
-    //    cofigPort( value, 8 ); // shift Pin number by 8
-    //    break;
-    //case IDR_OFFSET:
-    //    /// STM32_RO_REG( offset );
-    //    break;
-    //case ODR_OFFSET:
-    //    if( value == m_ODR ) break;
-    //    m_ODR = value;
-    //    setPortState( value );
-    //    break;
-    //case BSRR_OFFSET:{
-    //    uint32_t set_mask = value & 0x0000FFFF;
-    //    uint32_t reset_mask = ~(value >> 16) & 0x0000FFFF;
-    //    value = (m_ODR & reset_mask) | set_mask; // Sets take priority over resets, so we do
-    //    if( value == m_ODR ) break;
-    //    m_ODR = value;
-    //    setPortState( value );
-    //} break;
-    //case BRR_OFFSET:{
-    //    uint32_t reset_mask = ~value & 0x0000FFFF;
-    //    value = m_ODR & reset_mask;
-    //    if( value == m_ODR ) break;
-    //    m_ODR = value;
-    //    setPortState( value );
-    //} break;
-    //case LCKR_OFFSET:
-    //    /// TODO: Locking is not implemented
-    //    break;
-    //default: break;
-    //}
-
-    //uint64_t value   = m_arena->data32;
-    //uint64_t address = m_arena->mask32;
-    //uint64_t offset  = address - m_memStart;
-
-    //if( m_arena->simuAction != SIM_WRITE )
-    //{
-    //    return;
-    //}
-
-    ////qDebug() <<"Stm32Port::writeRegister"<< m_name << address << value;
-
-    //switch( offset )  // We add events only if there is Circuit action
-    //{
-    //case CRL_OFFSET:
-    //    if( value == m_CRL ) break;
-    //    m_CRL = value;
-    //    QemuModule::addEvent( address, value );
-    //    break;
-    //case CRH_OFFSET:
-    //    if( value == m_CRH ) break;
-    //    m_CRH = value;
-    //    QemuModule::addEvent( address, value );
-    //    break;
-    //case IDR_OFFSET:
-    //    /// STM32_RO_REG( offset );
-    //    break;
-    //case ODR_OFFSET:
-    //    if( value == m_ODR ) break;
-    //    m_ODR = value;
-    //    QemuModule::addEvent( address, value );
-    //    break;
-    //case BSRR_OFFSET:{
-    //    uint32_t set_mask = value & 0x0000FFFF;
-    //    uint32_t reset_mask = ~(value >> 16) & 0x0000FFFF;
-    //    value = (m_ODR & reset_mask) | set_mask; // Sets take priority over resets, so we do
-    //    if( value == m_ODR ) break;
-    //    m_ODR = value;
-    //    QemuModule::addEvent( address, value );
-    //} break;
-    //case BRR_OFFSET:{
-    //    uint32_t reset_mask = ~value & 0x0000FFFF;
-    //    value = m_ODR & reset_mask;
-    //    if( value == m_ODR ) break;
-    //    m_ODR = value;
-    //    QemuModule::addEvent( address, value );
-    //} break;
-    //case LCKR_OFFSET:
-    //    /// TODO: Locking is not implemented
-    //    break;
-    //default: break;
-    //}
-//}
-
 void Stm32Port::readRegister()
 {
     //qDebug() <<"Stm32Port::readRegister"<< m_name << m_eventAddress << m_eventValue;
@@ -154,6 +53,7 @@ void Stm32Port::readRegister()
     m_arena->regData = val;
     m_arena->qemuAction = SIM_READ;
 }
+
 void Stm32Port::writeRegister()
 {
     uint64_t offset = m_eventAddress - m_memStart;
@@ -236,7 +136,18 @@ void Stm32Port::cofigPort( uint32_t config, uint8_t shift )
             ioPin->setPortState( (m_pinState & 1<<i) > 0 );  // Restore Port state
     }
 }
-#include "simulator.h"
+    // CNF
+    // Input mode:
+    //     00: Analog mode
+    //     01: Input Floating (reset state)
+    //     10: Input with pull-up / pull-down
+    //     11: Reserved
+    // Output mode:
+    // CNF0 0 push-pull
+    //      1 Open-drain
+    // CNF1 0 General purpose output
+    //      1 Alternate function output
+
 void Stm32Port::setPortState( uint16_t state )
 {
     //qDebug() << "   Stm32Port::setPortState:               " << m_name << state<< Simulator::self()->circTime();

@@ -21,15 +21,15 @@ Installer::Installer( QWidget* parent )
 
     m_checkUpdates = true; //false;
     m_updated = false;
+    m_changed = false;
 
     m_installItem = nullptr;
 
     installTable->horizontalHeader()->setStretchLastSection( true );
 
     m_compsUrl = "https://simulide.com/p/direct_downloads/components/";
-    //m_compsUrl = "http://localhost/simulide/components/";
 
-    m_compsDir = MainWindow::self()->getConfigPath("components");
+    m_compsDir.setPath( MainWindow::self()->getConfigPath("components") );
     if( !m_compsDir.exists() ) m_compsDir.mkpath(".");
 
     loadList();
@@ -66,6 +66,7 @@ void Installer::loadList()
 
     QStringList setList = replyStr.split("\n"); // List of Component Sets
 
+    m_changed = false;
     int row = 0;
     for( QString itemStr : setList )
     {
@@ -76,7 +77,7 @@ void Installer::loadList()
 
         QStringList list = itemStr.split(";");
         QString name = list.first();
-        //qDebug() << "Installer::addInstallItem" << name <<itemStr;
+
         if( m_installed.contains( name ) )
         {
             item = m_items.value( name );
@@ -86,7 +87,7 @@ void Installer::loadList()
                 v.remove(0,1);
                 //qDebug() << "Installer::loadList updated" << name << v << item->m_version;
 
-                item->shouldUpdate( v.toLongLong() );
+                if( item->shouldUpdate( v.toLongLong() ) ) m_changed = true;
             }
         }
         else if( m_items.contains( name ) )
@@ -103,6 +104,8 @@ void Installer::loadList()
 
             installTable->insertRow( row );
             installTable->setCellWidget( row, 0, item );
+
+            m_changed = true;
         }
         float scale = MainWindow::self()->fontScale();
 
@@ -162,12 +165,15 @@ void Installer::updtReady()
             file.close();
 
             loadList();
+
+            if( m_changed ) qDebug() << "Installer: Updates available";
+            else            qDebug() << "Installer: Up to date";
         }else{
             qDebug() << "Installer::updtReady ERROR: can't write file" << compFile ;
             m_installItem = nullptr;
         }
     }
-    else qDebug() << "Installer::updtReady ERROR"; // There was a network error
+    else qDebug() << "Installer::updtReady ERROR:" << m_reply->errorString(); // There was a network error
 
     m_reply->close();
 }

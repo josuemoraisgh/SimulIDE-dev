@@ -9,8 +9,6 @@
 
 class Stm32Twi : public QemuTwi
 {
-    friend class I2cRunner;
-
     public:
         Stm32Twi( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd );
         ~Stm32Twi();

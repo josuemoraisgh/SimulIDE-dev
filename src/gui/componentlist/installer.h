@@ -38,6 +38,7 @@ class Installer : public QWidget, private Ui::installer
 
         bool m_checkUpdates;
         bool m_updated;
+        bool m_changed;
 
         QDir m_compsDir;
         QString m_compsUrl;

@@ -18,6 +18,8 @@ class Stm32 : public QemuDevice
 
         void stamp() override;
 
+        void timerRemap( int number, uint8_t value );
+
     protected:
         bool createArgs() override;
 

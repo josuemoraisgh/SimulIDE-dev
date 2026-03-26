@@ -14,9 +14,9 @@ class Reactive : public Comp2Pin, public eReactive
         Reactive( QString type, QString id );
         ~Reactive();
 
-        virtual void initialize() override;
-        virtual void stamp() override;
-        virtual void updateStep() override;
+        void initialize() override;
+        void stamp() override;
+        void updateStep() override;
 
         double value() { return m_value; }
         void setValue( double c );

@@ -68,24 +68,22 @@ void Switch::stamp()
 
 void Switch::setLinkedValue( double v, int i )
 {
-    int vInt = v;
-    bool checked = Switch::checked();
+    bool newState = (v != 0);
+    if( m_button->isChecked() == newState ) return;
 
-    bool new_state = vInt == 0;
-    if (checked != new_state) {
-        Switch::setChecked(new_state);
-    }
+    m_button->setChecked( newState );
+    if( m_nClose ) newState = !newState;
+    MechContact::setSwitch( newState );     // Close switch inmediately instead of waiting for updateStep()
 }
 
 void Switch::keyEvent( QString key, bool pressed )
 {
-    if( key == m_key )
-    {
-        if( !pressed )
-        {
-            m_button->setChecked( !m_button->isChecked() );
-            SwitchBase::onbuttonclicked();
-}   }   }
+    if( key != m_key ) return;
+    if( pressed ) return;       // Act at key release
+
+    m_button->setChecked( !m_button->isChecked() );
+    SwitchBase::onbuttonclicked();
+}
 
 bool Switch::checked()
 {

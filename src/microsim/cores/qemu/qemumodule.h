@@ -7,6 +7,7 @@
 
 #include "qemudevice.h"
 
+
 class QemuModule
 {
     friend class  QemuDevice;
@@ -30,9 +31,6 @@ class QemuModule
         inline uint32_t read() { return (*m_ioMem)[m_eventAddress]; }
 
         virtual void freqChanged(){;}
-
-        //QemuModule* nextEvent;
-        //uint64_t eventTime;
 
     protected:
         virtual void writeRegister();

@@ -21,11 +21,17 @@ class Image : public Shape
         void setBackground( QString bck ) override;
         QString background() override;
 
+        bool embeedBck() { return m_embeedBck; }
+        void setEmbeedBck( bool e )  { m_embeedBck = e; }
+
+        QString bckGndData();
+        void setBckGndData( QString data );
+
         void paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w ) override;
 
-    public slots:
         void updateGif( const QRect &rect );
         void slotLoad();
+        void slotSave();
 
     protected:
         void contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu ) override;
@@ -33,4 +39,7 @@ class Image : public Shape
     private:
         QPixmap m_image;
         QMovie* m_movie;
+
+        bool m_embeedBck;
+        QString m_bckGndData;   // Embedded background image data
 };

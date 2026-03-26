@@ -3,12 +3,15 @@
  *                                                                         *
  ***( see copyright.txt file at root folder )*******************************/
 
+#include <math.h>
+
 #include <QAbstractSlider>
 #include <QGraphicsProxyWidget>
 #include <QCoreApplication>
 
 #include "dialed.h"
 #include "dialwidget.h"
+#include "propdialog.h"
 #include "simulator.h"
 #include "circuit.h"
 
@@ -33,6 +36,12 @@ Dialed::Dialed( QString type, QString id )
     m_proxy->setPos( QPoint(-m_dialW.width()/2, 7) );
     m_slider = false;
 
+    m_minVal = 0;
+    m_maxVal = 1000;
+    m_step = 0;
+
+    m_blocked = false;
+
     QObject::connect( m_dialW.dial(), &QAbstractSlider::valueChanged, [=](int v){ dialChanged(v); } );
 
     Simulator::self()->addToUpdateList( this );
@@ -49,15 +58,57 @@ QList<ComProperty*> Dialed::dialProps()
     };
 }
 
-void Dialed::dialChanged( int ) // Called when dial is rotated
+void Dialed::setMinVal( double min )
 {
+    if( min < 1e-12    ) min = 1e-12;
+    if( min > m_maxVal ) min = m_maxVal;
+    m_minVal = min;
+
+    updtValue();
+}
+
+void Dialed::setMaxVal( double max )
+{
+    if( max < 1e-12    ) max = 1e-12;
+    if( max < m_minVal ) max = m_minVal;
+    m_maxVal = max;
+
+    updtValue();
+}
+
+void Dialed::setVal( double val )
+{
+    m_value = val;
+    updtValue();
+}
+
+void Dialed::dialChanged( int val ) // Called when dial is rotated
+{
+    if( m_blocked ) return;
+    m_value = m_minVal+val*( m_maxVal-m_minVal)/1000;
+    if( m_step > 0 ) m_value = round( m_value/m_step )*m_step;
+
     m_needUpdate = true;
     if( !Simulator::self()->isRunning() ) updateStep();
 }
 
-void Dialed::setLinkedValue( double v, int )
+void Dialed::updtValue()
 {
-    m_dialW.setValue( v );
+    if     ( m_value > m_maxVal ) m_value = m_maxVal;
+    else if( m_value < m_minVal ) m_value = m_minVal;
+
+    m_blocked = true;
+    double dialV = (m_value-m_minVal)*1000/(m_maxVal-m_minVal);
+    m_dialW.setValue( dialV );
+    m_blocked = false;
+
+    if( m_propDialog ) m_propDialog->updtValues();
+}
+
+void Dialed::setLinkedValue( double v, int i )
+{
+    if( i == 0 ) m_dialW.setValue( v );
+    else         setVal( v );
 }
 
 void Dialed::setSlider( bool s )
@@ -89,4 +140,3 @@ void Dialed::setHidden( bool hide, bool hidArea, bool hidLabel )
 
     m_proxy->setFlag( QGraphicsItem::ItemStacksBehindParent, hide && !hidArea );
 }
-

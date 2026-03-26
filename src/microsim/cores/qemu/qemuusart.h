@@ -34,8 +34,8 @@ class QemuUsart : public QemuModule, public UsartModule
         void setTxPin( IoPin* pin );
         void setRxPin( IoPin* pin );
 
-        IoPin** getTxPinPointer();
-        IoPin** getRxPinPointer();
+        IoPin** getTxPinPtr();
+        IoPin** getRxPinPtr();
 
         virtual void doAction() override;
 

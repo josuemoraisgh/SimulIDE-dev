@@ -10,7 +10,7 @@
 #include "iopin.h"
 #include "simulator.h"
 
-QemuSpi::QemuSpi(QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
+QemuSpi::QemuSpi( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
        : QemuModule( mcu, name, n, clk, memStart, memEnd )
        , SpiModule( name )
 {
