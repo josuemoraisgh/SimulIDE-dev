@@ -147,13 +147,19 @@ void Probe::setSmall( bool s )
 {
     m_small = s;
 
+    QFont font = m_idLabel->font();
+
     if( s ){
         m_inputPin->setLength( 6 );
         m_area = QRect(-16, -4, 8, 8 );
+        font.setPixelSize( 7 );
     }else{
         m_inputPin->setLength( 14 );
         m_area = QRect(-12,-8, 20, 16 );
+        font.setPixelSize( 8 );
     }
+    m_idLabel->setFont( font );
+
     Circuit::self()->update();
 }
 
