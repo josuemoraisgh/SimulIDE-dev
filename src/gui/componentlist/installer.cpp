@@ -136,6 +136,7 @@ void Installer::checkForUpdates( QString url )
 
     //QString version = MainWindow::self()->settings()->value("library/version").toString();
     //qDebug() << "version" << version;
+    qDebug() << "Checking for Updates...";
 
     if( url.isEmpty() ) url = m_compsUrl+"dloadset.php?file=components.txt";
     QNetworkRequest request( url );
@@ -269,6 +270,11 @@ void Installer::itemDataReady()
     if( !m_nextItem.isEmpty() ) installItem( m_nextItem );
 }
 
+void Installer::on_updtButton_clicked()
+{
+    checkForUpdates();
+}
+
 void Installer::writeSettings()
 {
     QString installed; // = "Arduino,AVR,PIC,MCS51,MCS65,Z80,Analog,74,Digipot,Tools";
@@ -281,3 +287,4 @@ void Installer::writeSettings()
     QSettings* settings = MainWindow::self()->settings();
     settings->setValue("library/installed", installed );
 }
+//#include moc_installer.cpp
