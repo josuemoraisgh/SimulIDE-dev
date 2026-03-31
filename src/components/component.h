@@ -161,8 +161,8 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
  static bool m_boardMode;
 
         virtual void contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu );
-        void rotateCW();
-        void rotateCCW();
+        virtual void rotateCW();
+        virtual void rotateCCW();
         void slotH_flip();
         void slotV_flip();
 

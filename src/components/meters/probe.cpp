@@ -136,24 +136,54 @@ void Probe::setVolt( double volt )
     setValLabelText( QString("%1 V").arg(v) );
 }
 
+void Probe::rotateCW()  { rotateAngle( 45 ); }
+void Probe::rotateCCW() { rotateAngle(-45 );}
+
 void Probe::rotateAngle( double a )
 {
     Component::rotateAngle( a );
     m_idLabel->rotateAngle(-a );
     m_valLabel->rotateAngle(-a );
+    updtPinSize();
+}
+
+void Probe::setAngle( double angle )
+{
+    Component::setAngle( angle );
+    updtPinSize();
 }
 
 void Probe::setSmall( bool s )
 {
     m_small = s;
 
+    QFont font = m_idLabel->font();
+
     if( s ){
-        m_inputPin->setLength( 6 );
         m_area = QRect(-16, -4, 8, 8 );
+        font.setPixelSize( 7 );
     }else{
-        m_inputPin->setLength( 14 );
         m_area = QRect(-12,-8, 20, 16 );
+        font.setPixelSize( 8 );
     }
+    m_idLabel->setFont( font );
+
+    updtPinSize();
+}
+
+void Probe::updtPinSize()
+{
+    int length = 0;
+    int an = (int)rotation()%90;
+
+    if( m_small ) length = an ? 6 : 8;
+    else          length = an ? 14 : 16;
+    m_inputPin->setLength( length );
+
+    int xPos = an? -22 : -24;
+    m_inputPin->setPos( xPos, 0 );
+    m_inputPin->isMoved();
+
     Circuit::self()->update();
 }
 

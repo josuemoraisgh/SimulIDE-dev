@@ -35,6 +35,10 @@ class Probe : public Component, public eElement
         bool pauseState() { return m_pauseState; }
         void setPauseState( bool s ) { m_pauseState = s; }
 
+        void rotateCW() override;
+        void rotateCCW() override;
+        void setAngle( double angle ) override;
+
         void rotateAngle( double a ) override;
 
         QPainterPath shape() const override;
@@ -44,7 +48,9 @@ class Probe : public Component, public eElement
         void contextMenu( QGraphicsSceneContextMenuEvent* e, QMenu* m ) override;
         void slotBreakpoint();
 
-    private: 
+    private:
+        void updtPinSize();
+
         double m_voltIn;
         double m_voltTrig;
 
