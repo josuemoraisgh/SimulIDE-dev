@@ -53,27 +53,67 @@ jobs:
           host: "windows"
           target: "desktop"
           arch: "win64_mingw81"
-          tools: "tools_mingw90"
+          tools: "tools_mingw810"
           cache: true
 
       - name: Adicionar MinGW ao PATH
         shell: powershell
         run: |
-          # install-qt-action instala MinGW em Tools; localizar a pasta bin
-          $mingwDir = Get-ChildItem "$env:RUNNER_TOOL_CACHE/Qt/Tools" -Filter "mingw*" -Directory -Recurse -ErrorAction SilentlyContinue |
-                      Where-Object { Test-Path "$($_.FullName)\bin\g++.exe" } |
-                      Select-Object -First 1
-          if (-not $mingwDir) {
-            # Fallback: procurar em IQTA_TOOLS
-            $mingwDir = Get-ChildItem "$env:Qt5_DIR/../../Tools" -Filter "mingw*" -Directory -Recurse -ErrorAction SilentlyContinue |
-                        Where-Object { Test-Path "$($_.FullName)\bin\g++.exe" } |
-                        Select-Object -First 1
+          # Listar o que foi instalado para debug
+          Write-Output "=== IQTA_TOOLS=$env:IQTA_TOOLS ==="
+          Write-Output "=== Qt5_DIR=$env:Qt5_DIR ==="
+
+          $searchPaths = @()
+
+          # 1. IQTA_TOOLS (definido pela install-qt-action)
+          if ($env:IQTA_TOOLS -and (Test-Path $env:IQTA_TOOLS)) {
+            $searchPaths += $env:IQTA_TOOLS
           }
-          if (-not $mingwDir) {
+
+          # 2. Relativo ao Qt5_DIR: ../../Tools
+          if ($env:Qt5_DIR) {
+            $toolsFromQt = Join-Path (Split-Path (Split-Path $env:Qt5_DIR)) "Tools"
+            if (Test-Path $toolsFromQt) { $searchPaths += $toolsFromQt }
+          }
+
+          # 3. RUNNER_TOOL_CACHE/Qt/Tools
+          $rtcTools = "$env:RUNNER_TOOL_CACHE\Qt\Tools"
+          if (Test-Path $rtcTools) { $searchPaths += $rtcTools }
+
+          # 4. D:\a\_temp (onde a action frequentemente instala)
+          if (Test-Path "D:\a\_temp") { $searchPaths += "D:\a\_temp" }
+
+          $mingwBin = $null
+          foreach ($base in $searchPaths) {
+            Write-Output "Procurando MinGW em: $base"
+            $found = Get-ChildItem $base -Filter "mingw*" -Directory -ErrorAction SilentlyContinue |
+                     Where-Object { Test-Path "$($_.FullName)\bin\g++.exe" } |
+                     Select-Object -First 1
+            if ($found) {
+              $mingwBin = "$($found.FullName)\bin"
+              break
+            }
+            # Buscar um nível mais fundo
+            $found = Get-ChildItem $base -Directory -ErrorAction SilentlyContinue |
+                     ForEach-Object { Get-ChildItem $_.FullName -Filter "mingw*" -Directory -ErrorAction SilentlyContinue } |
+                     Where-Object { Test-Path "$($_.FullName)\bin\g++.exe" } |
+                     Select-Object -First 1
+            if ($found) {
+              $mingwBin = "$($found.FullName)\bin"
+              break
+            }
+          }
+
+          if (-not $mingwBin) {
+            Write-Output "=== Conteúdo dos caminhos pesquisados ==="
+            foreach ($p in $searchPaths) {
+              Write-Output "--- $p ---"
+              Get-ChildItem $p -Depth 2 -ErrorAction SilentlyContinue | Select-Object FullName
+            }
             Write-Error "MinGW não encontrado!"
             exit 1
           }
-          $mingwBin = "$($mingwDir.FullName)\bin"
+
           Write-Output "MinGW encontrado em: $mingwBin"
           "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
