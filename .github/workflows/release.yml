@@ -123,8 +123,32 @@ jobs:
           $env:PATH = "$qtBin;$env:PATH"
           Write-Output "Qt bin adicionado ao PATH: $qtBin"
 
-          # Rodar windeployqt
+          # Rodar windeployqt (pode falhar ao não encontrar o plugin de plataforma)
           & "$qtBin\windeployqt.exe" --release --no-translations --no-opengl-sw "$exeDir\simulide.exe"
+          $wdqtExitCode = $LASTEXITCODE
+
+          # Garantir que o plugin de plataforma (qwindows.dll) está no diretório de destino.
+          # windeployqt às vezes não consegue localizá-lo e sai com código 1; copiamos
+          # manualmente e só ignoramos o código de erro quando a cópia for bem-sucedida.
+          $platformsSrc = Join-Path $env:QT_ROOT_DIR "plugins\platforms"
+          $platformsDst = Join-Path $exeDir "platforms"
+          New-Item -ItemType Directory -Force -Path $platformsDst | Out-Null
+          $pluginSrc = Join-Path $platformsSrc "qwindows.dll"
+          $pluginDst = Join-Path $platformsDst "qwindows.dll"
+          if (Test-Path $pluginSrc) {
+            Copy-Item $pluginSrc $platformsDst -Force
+            if (-not (Test-Path $pluginDst)) {
+              Write-Error "Falha ao copiar qwindows.dll para $platformsDst"
+              exit 1
+            }
+            Write-Output "Plugin de plataforma copiado: qwindows.dll"
+            # qwindows.dll foi copiado com sucesso: o erro do windeployqt é recuperável
+            $global:LASTEXITCODE = 0
+          } elseif ($wdqtExitCode -ne 0) {
+            # Plugin não foi encontrado na instalação do Qt e windeployqt falhou
+            Write-Error "qwindows.dll não encontrado em $platformsSrc e windeployqt falhou (código $wdqtExitCode)"
+            exit $wdqtExitCode
+          }
 
           # Copiar zlib DLL se existir
           $zlibDll = "C:\msys64\mingw64\bin\zlib1.dll"
