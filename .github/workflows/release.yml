@@ -125,6 +125,18 @@ jobs:
 
           # Rodar windeployqt
           & "$qtBin\windeployqt.exe" --release --no-translations --no-opengl-sw "$exeDir\simulide.exe"
+          # Resetar LASTEXITCODE: windeployqt pode sair com código 1 ao não localizar
+          # o plugin de plataforma (qwindows.dll) — copiamos manualmente abaixo.
+          $global:LASTEXITCODE = 0
+
+          # Copiar plugin de plataforma manualmente (caso windeployqt não o tenha copiado)
+          $platformsSrc = Join-Path $env:QT_ROOT_DIR "plugins\platforms"
+          $platformsDst = Join-Path $exeDir "platforms"
+          New-Item -ItemType Directory -Force -Path $platformsDst | Out-Null
+          if (Test-Path "$platformsSrc\qwindows.dll") {
+            Copy-Item "$platformsSrc\qwindows.dll" $platformsDst -Force
+            Write-Output "Plugin de plataforma copiado: qwindows.dll"
+          }
 
           # Copiar zlib DLL se existir
           $zlibDll = "C:\msys64\mingw64\bin\zlib1.dll"
