@@ -53,67 +53,22 @@ jobs:
           host: "windows"
           target: "desktop"
           arch: "win64_mingw81"
-          tools: "tools_mingw810"
           cache: true
 
-      - name: Adicionar MinGW ao PATH
+      - name: Instalar MinGW 8.1 via MSYS2
         shell: powershell
         run: |
-          # Listar o que foi instalado para debug
-          Write-Output "=== IQTA_TOOLS=$env:IQTA_TOOLS ==="
-          Write-Output "=== Qt5_DIR=$env:Qt5_DIR ==="
+          # Usar o MSYS2 pré-instalado no runner para obter MinGW 8.1 toolchain
+          # O runner windows-latest já tem MSYS2 em C:\msys64
+          # Instalar mingw-w64-x86_64-gcc (que inclui g++, mingw32-make, etc.)
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain"
 
-          $searchPaths = @()
-
-          # 1. IQTA_TOOLS (definido pela install-qt-action)
-          if ($env:IQTA_TOOLS -and (Test-Path $env:IQTA_TOOLS)) {
-            $searchPaths += $env:IQTA_TOOLS
-          }
-
-          # 2. Relativo ao Qt5_DIR: ../../Tools
-          if ($env:Qt5_DIR) {
-            $toolsFromQt = Join-Path (Split-Path (Split-Path $env:Qt5_DIR)) "Tools"
-            if (Test-Path $toolsFromQt) { $searchPaths += $toolsFromQt }
-          }
-
-          # 3. RUNNER_TOOL_CACHE/Qt/Tools
-          $rtcTools = "$env:RUNNER_TOOL_CACHE\Qt\Tools"
-          if (Test-Path $rtcTools) { $searchPaths += $rtcTools }
-
-          # 4. D:\a\_temp (onde a action frequentemente instala)
-          if (Test-Path "D:\a\_temp") { $searchPaths += "D:\a\_temp" }
-
-          $mingwBin = $null
-          foreach ($base in $searchPaths) {
-            Write-Output "Procurando MinGW em: $base"
-            $found = Get-ChildItem $base -Filter "mingw*" -Directory -ErrorAction SilentlyContinue |
-                     Where-Object { Test-Path "$($_.FullName)\bin\g++.exe" } |
-                     Select-Object -First 1
-            if ($found) {
-              $mingwBin = "$($found.FullName)\bin"
-              break
-            }
-            # Buscar um nível mais fundo
-            $found = Get-ChildItem $base -Directory -ErrorAction SilentlyContinue |
-                     ForEach-Object { Get-ChildItem $_.FullName -Filter "mingw*" -Directory -ErrorAction SilentlyContinue } |
-                     Where-Object { Test-Path "$($_.FullName)\bin\g++.exe" } |
-                     Select-Object -First 1
-            if ($found) {
-              $mingwBin = "$($found.FullName)\bin"
-              break
-            }
-          }
-
-          if (-not $mingwBin) {
-            Write-Output "=== Conteúdo dos caminhos pesquisados ==="
-            foreach ($p in $searchPaths) {
-              Write-Output "--- $p ---"
-              Get-ChildItem $p -Depth 2 -ErrorAction SilentlyContinue | Select-Object FullName
-            }
-            Write-Error "MinGW não encontrado!"
+          # Adicionar ao PATH
+          $mingwBin = "C:\msys64\mingw64\bin"
+          if (-not (Test-Path "$mingwBin\g++.exe")) {
+            Write-Error "g++.exe não encontrado em $mingwBin"
             exit 1
           }
-
           Write-Output "MinGW encontrado em: $mingwBin"
           "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
@@ -130,29 +85,9 @@ jobs:
       - name: Instalar zlib (dependência)
         shell: powershell
         run: |
-          # Baixar zlib pré-compilado para MinGW
-          $zlibUrl = "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-zlib-1.3.1-1-any.pkg.tar.zst"
-          $zlibPkg = "$env:TEMP\zlib.pkg.tar.zst"
-
-          # Tentar instalar via pacman do MSYS2 que já vem no runner
-          if (Test-Path "C:\msys64\usr\bin\pacman.exe") {
-            Write-Output "Instalando zlib via MSYS2 pacman..."
-            C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-zlib"
-            # Copiar headers e libs para o MinGW do Qt
-            $msysMinGW = "C:\msys64\mingw64"
-            $qtMinGW = (Split-Path (Get-Command g++).Source)
-            $qtMinGWRoot = Split-Path $qtMinGW
-            if (Test-Path "$msysMinGW\include\zlib.h") {
-              Copy-Item "$msysMinGW\include\zlib.h" "$qtMinGWRoot\include\" -Force -ErrorAction SilentlyContinue
-              Copy-Item "$msysMinGW\include\zconf.h" "$qtMinGWRoot\include\" -Force -ErrorAction SilentlyContinue
-              Copy-Item "$msysMinGW\lib\libz.a"      "$qtMinGWRoot\lib\"     -Force -ErrorAction SilentlyContinue
-              Copy-Item "$msysMinGW\lib\libz.dll.a"  "$qtMinGWRoot\lib\"     -Force -ErrorAction SilentlyContinue
-              Copy-Item "$msysMinGW\bin\zlib1.dll"   "$qtMinGWRoot\bin\"     -Force -ErrorAction SilentlyContinue
-              Write-Output "zlib copiado para MinGW do Qt"
-            }
-          } else {
-            Write-Warning "MSYS2 não encontrado; zlib pode já estar incluído no MinGW"
-          }
+          # zlib via MSYS2 (mesmo MinGW que usamos para compilar)
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-zlib"
+          Write-Output "zlib instalado em C:\msys64\mingw64"
 
       - name: Compilar SimulIDE (qmake + mingw32-make)
         shell: powershell
