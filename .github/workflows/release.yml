@@ -117,14 +117,45 @@ jobs:
             Copy-Item "resources\qm" "$exeDir\translations" -Recurse -Force
           }
 
-          # Garantir que o diretório bin do Qt está no PATH (windeployqt precisa
-          # encontrar os plugins de plataforma para funcionar corretamente)
-          $qtBin = Join-Path $env:QT_ROOT_DIR "bin"
+          # Configurar ambiente Qt para windeployqt encontrar plugins corretamente
+          $qtRoot    = $env:QT_ROOT_DIR
+          $qtBin     = Join-Path $qtRoot "bin"
+          $qtPlugins = Join-Path $qtRoot "plugins"
+
+          $env:QTDIR                       = $qtRoot
+          $env:QT_PLUGIN_PATH             = $qtPlugins
+          $env:QT_QPA_PLATFORM_PLUGIN_PATH = Join-Path $qtPlugins "platforms"
+          # Qt bin ANTES do MSYS2 MinGW para evitar conflitos de DLLs
           $env:PATH = "$qtBin;$env:PATH"
-          Write-Output "Qt bin adicionado ao PATH: $qtBin"
+          Write-Output "QTDIR=$qtRoot"
+          Write-Output "QT_PLUGIN_PATH=$qtPlugins"
 
           # Rodar windeployqt
           & "$qtBin\windeployqt.exe" --release --no-translations --no-opengl-sw "$exeDir\simulide.exe"
+          $wdqExit = $LASTEXITCODE
+
+          # Fallback: se windeployqt não copiou o plugin de plataforma, copiar manualmente
+          $platformsDir = Join-Path $exeDir "platforms"
+          if (-not (Test-Path (Join-Path $platformsDir "qwindows.dll"))) {
+            Write-Output "Copiando plugin de plataforma manualmente..."
+            New-Item -ItemType Directory -Force -Path $platformsDir | Out-Null
+            Copy-Item (Join-Path $qtPlugins "platforms\qwindows.dll") "$platformsDir\" -Force
+            Copy-Item (Join-Path $qtPlugins "platforms\qminimal.dll") "$platformsDir\" -Force -ErrorAction SilentlyContinue
+          }
+
+          # Copiar DLLs do Qt caso windeployqt tenha falhado parcialmente
+          if ($wdqExit -ne 0) {
+            Write-Warning "windeployqt retornou exit code $wdqExit — verificando DLLs..."
+            $requiredDlls = @("Qt5Core","Qt5Gui","Qt5Widgets","Qt5Svg","Qt5Xml",
+                              "Qt5Network","Qt5SerialPort","Qt5Multimedia")
+            foreach ($dll in $requiredDlls) {
+              $src = Join-Path $qtBin "$dll.dll"
+              $dst = Join-Path $exeDir "$dll.dll"
+              if ((Test-Path $src) -and -not (Test-Path $dst)) {
+                Copy-Item $src $dst -Force
+              }
+            }
+          }
 
           # Copiar zlib DLL se existir
           $zlibDll = "C:\msys64\mingw64\bin\zlib1.dll"
