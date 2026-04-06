@@ -15,6 +15,8 @@ jobs:
   build-windows:
     name: Build & Release (Windows)
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -44,23 +46,30 @@ jobs:
           qmake
           mingw32-make -j%NUMBER_OF_PROCESSORS%
 
+      - name: Find build output directory
+        id: outdir
+        shell: pwsh
+        run: |
+          # The build system names the output folder SimulIDE_<VERSION>[-<RELEASE>]
+          # When RELEASE is empty the folder ends with a trailing hyphen (e.g. SimulIDE_2.0.0-)
+          $dir = Get-ChildItem -Path "build_XX\executables" -Directory | Select-Object -First 1
+          echo "DIR=$($dir.FullName)" >> $env:GITHUB_OUTPUT
+          echo "DIRNAME=$($dir.Name)" >> $env:GITHUB_OUTPUT
+
       - name: Deploy Qt dependencies (windeployqt)
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          $exeDir = "build_XX\executables\SimulIDE_$version-"
-          $exe = "$exeDir\simulide.exe"
+          $exe = "${{ steps.outdir.outputs.DIR }}\simulide.exe"
           windeployqt --release --no-translations "$exe"
 
       - name: Package build output as zip
+        id: package
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          $srcDir = "build_XX\executables\SimulIDE_$version-"
           $zipName = "SimulIDE_$version-Windows_x86_64.zip"
-          Compress-Archive -Path "$srcDir\*" -DestinationPath "$zipName"
+          Compress-Archive -Path "${{ steps.outdir.outputs.DIR }}\*" -DestinationPath "$zipName"
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_OUTPUT
-        id: package
 
       - name: Determine release tag
         id: tag
