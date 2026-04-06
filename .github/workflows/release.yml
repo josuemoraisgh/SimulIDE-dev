@@ -117,8 +117,14 @@ jobs:
             Copy-Item "resources\qm" "$exeDir\translations" -Recurse -Force
           }
 
+          # Garantir que o diretório bin do Qt está no PATH (windeployqt precisa
+          # encontrar os plugins de plataforma para funcionar corretamente)
+          $qtBin = Join-Path $env:QT_ROOT_DIR "bin"
+          $env:PATH = "$qtBin;$env:PATH"
+          Write-Output "Qt bin adicionado ao PATH: $qtBin"
+
           # Rodar windeployqt
-          windeployqt --release --no-translations --no-opengl-sw "$exeDir\simulide.exe"
+          & "$qtBin\windeployqt.exe" --release --no-translations --no-opengl-sw "$exeDir\simulide.exe"
 
           # Copiar zlib DLL se existir
           $zlibDll = "C:\msys64\mingw64\bin\zlib1.dll"
