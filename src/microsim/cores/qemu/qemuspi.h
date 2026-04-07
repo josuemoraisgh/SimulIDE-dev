@@ -13,7 +13,7 @@ class QemuSpi : public QemuModule, public SpiModule
 {
     public:
         QemuSpi( QemuDevice* mcu, QString name, int n, uint32_t* clk=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
-        ~QemuSpi();
+        virtual ~QemuSpi();
 
         //void setMode( spiMode_t mode ) override;
         //void endTransaction() override;

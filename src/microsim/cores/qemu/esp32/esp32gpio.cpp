@@ -13,7 +13,7 @@ Esp32Gpio::Esp32Gpio( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint6
 {
     // 0x3FF44000
 
-    m_dummyPin = new Esp32Pin( 0, name+"-dummy", mcu, nullptr );
+    m_dummyPin = new Esp32Pin( 0, "dummy", mcu, nullptr );
     m_dummyPin->setVisible( false );
 
     m_pins.resize( 40, m_dummyPin ); // 20,24,28,29,30,31=NULL

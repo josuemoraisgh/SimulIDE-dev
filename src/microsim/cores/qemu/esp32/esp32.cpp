@@ -7,9 +7,11 @@
 #include <QPainter>
 #include <QFile>
 #include <QFileInfo>
+#include <QDir>
 
 #include "esp32.h"
 #include "itemlibrary.h"
+#include "circuit.h"
 #include "esp32gpio.h"
 #include "esp32iomux.h"
 #include "esp32twi.h"
@@ -78,17 +80,17 @@ Esp32::~Esp32(){}
 
 bool Esp32::createArgs()
 {
-    QFileInfo fi = QFileInfo( m_firmware );
+    QFileInfo fi = QFileInfo( m_firmPath );
 
     if( fi.size() != 4194304 )
     {
         qDebug() << "Error firmware file size:" << fi.size() << "must be 4194304";
-        qDebug() << m_firmware;
+        qDebug() << m_firmPath;
         return false;
     }
 
-    int index = m_firmware.lastIndexOf(".");
-    QString firmware = m_firmware.left( index );
+    int index = m_firmPath.lastIndexOf(".");
+    QString firmware = m_firmPath.left( index );
     QString efuses = firmware+".efuse";
 
     if( !QFileInfo::exists( efuses ) )
@@ -141,6 +143,8 @@ bool Esp32::createArgs()
 
 void Esp32::stamp()
 {
+    m_cpuFreq = 40000000; // 40 MHz ?????
+    m_apbFreq = 40000000;
     QemuDevice::stamp();
 }
 

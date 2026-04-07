@@ -23,6 +23,9 @@
 #include "qemudevice.h"
 #include "itemlibrary.h"
 #include "qemuusart.h"
+#include "qemuspi.h"
+#include "qemutimer.h"
+#include "qemutwi.h"
 #include "circuitwidget.h"
 #include "iopin.h"
 
@@ -137,6 +140,12 @@ QemuDevice::~QemuDevice()
         CloseHandle( (HANDLE)m_wHandle );
     }
 #endif
+
+    for( QemuTwi*   twi : m_i2cs   ) delete twi;
+    for( QemuSpi*   spi : m_spis   ) delete spi;
+    for( QemuUsart* uar : m_usarts ) delete uar;
+    for( QemuTimer* tim : m_timers ) delete tim;
+
     m_pSelf = nullptr;
 }
 
@@ -357,10 +366,9 @@ void QemuDevice::setFirmware( QString file )
 {
     if( Simulator::self()->isRunning() ) CircuitWidget::self()->powerCircOff();
 
-    //QDir    circuitDir   = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
-    //QString fileNameAbs  = circuitDir.absoluteFilePath( file );
-    //QString cleanPathAbs = circuitDir.cleanPath( fileNameAbs );
-    m_firmware = file;//cleanPathAbs;
+    QDir circuitDir  = QFileInfo( Circuit::self()->getFilePath() ).absoluteDir();
+    m_firmware = circuitDir.relativeFilePath( file );
+    m_firmPath = circuitDir.absoluteFilePath( file );
 }
 
 void QemuDevice::setPackageFile( QString package )

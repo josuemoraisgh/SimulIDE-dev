@@ -15,7 +15,7 @@ class QemuTwi : public QemuModule, public TwiModule
 
     public:
         QemuTwi( QemuDevice* mcu, QString name, int n, uint32_t* clk=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
-        ~QemuTwi();
+        virtual ~QemuTwi();
 
         void setMode( twiMode_t mode ) override;
 

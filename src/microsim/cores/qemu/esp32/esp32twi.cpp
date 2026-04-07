@@ -177,6 +177,6 @@ void Esp32Twi::setTwiState( twiState_t state )
     default: break;
     }
 
-    //qDebug() << "Esp32Twi::setTwiState" << state << ackT << ackR << Simulator::self()->circTime();
+    //if( state != TWI_START ) qDebug() << "Esp32Twi::setTwiState" << state << Simulator::self()->circTime();
 }
 

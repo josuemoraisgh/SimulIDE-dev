@@ -11,7 +11,7 @@ class QemuOcUnit : public QemuModule
 {
     public:
         QemuOcUnit( QemuDevice* mcu, QString name, int number, uint32_t* frequency=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
-        ~QemuOcUnit();
+        virtual ~QemuOcUnit();
 
         //void doAction( uint32_t action, uint32_t data );
 
