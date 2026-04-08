@@ -88,6 +88,7 @@ void Esp32Led::writeRegister()
             uint32_t freq = m_eventValue;
             uint32_t period_ps = 1e12/freq;
             m_timers[timer]->setPeriod( period_ps );
+            //qDebug() << "LedPwm Timer freq" << timer << freq;
         }break;
     }
 }
@@ -126,6 +127,7 @@ LedPwm::~LedPwm(){}
 void LedPwm::initialize()
 {
     m_duty = 0;
+    m_timer = nullptr;
 }
 
 void LedPwm::runEvent()
@@ -145,13 +147,15 @@ void LedPwm::ovf( uint64_t p )
         return;
     }
     if( m_pin ) m_pin->setOutState( true );
-    m_matchTime = p*m_duty/100;
-    //qDebug() << "LedPwm::ovf" << m_matchTime;
+    m_matchTime = p*m_duty/411205;
+    //qDebug() << "LedPwm::ovf" << m_matchTime << p << m_duty;
     if( m_matchTime < p ) scheduleEvents();
 }
 
 void LedPwm::setTimer( LedTimer* t )
 {
+    if( m_timer == t ) return;
+
     if( m_timer ) m_timer->remLedPwm( this );
     m_timer = t;
     m_timer->addLedPwm( this );
@@ -168,13 +172,14 @@ LedTimer::~LedTimer(){}
 void LedTimer::initialize()
 {
     m_period = 0;
+    m_leds.clear();
 }
 
 void LedTimer::runEvent()
 {
     for( LedPwm* pwm : m_leds ) pwm->ovf( m_period );
 
-    Simulator::self()->addEvent( m_period, this );
+    if( m_period ) Simulator::self()->addEvent( m_period, this );
 }
 
 void LedTimer::setPeriod( uint64_t p )

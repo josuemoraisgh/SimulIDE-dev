@@ -14,7 +14,7 @@
 
 #include "simulator.h"
 
-QemuUsart::QemuUsart(QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
+QemuUsart::QemuUsart( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd )
          : QemuModule( mcu, name, n, clk, memStart, memEnd )
          , UsartModule( nullptr, mcu->getId()+"-"+name )
 {
@@ -22,7 +22,7 @@ QemuUsart::QemuUsart(QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64
 
     this->setBaudRate( 9600 );
 }
-QemuUsart::~QemuUsart( ){}
+QemuUsart::~QemuUsart(){}
 
 void QemuUsart::enable( bool e )
 {

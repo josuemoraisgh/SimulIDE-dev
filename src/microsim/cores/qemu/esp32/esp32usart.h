@@ -34,7 +34,7 @@ class Esp32Usart : public QemuUsart
 
         //void updateIrq();
 
-        uint64_t m_divider;
+        uint32_t m_divider;
 
         uint8_t m_apbClock;
         //uint8_t m_rxFullThrhd;

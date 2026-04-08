@@ -93,6 +93,7 @@ class QemuDevice : public Chip
 
         QString m_lastFirmDir;  // Last firmware folder used
         QString m_firmware;
+        QString m_firmPath;
         QString m_executable;
         QString m_packageFile;
 

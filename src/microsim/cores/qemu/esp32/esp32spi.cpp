@@ -16,19 +16,27 @@ Esp32Spi::Esp32Spi( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_
 }
 Esp32Spi::~Esp32Spi(){}
 
+void Esp32Spi::connected( bool c )
+{
+    if( c && m_mode == SPI_MASTER ){
+        m_dataOutPin = m_MOSI;
+        m_dataInPin  = m_MISO;
+    }
+}
+
 void Esp32Spi::writeRegister()
 {
     uint64_t offset = m_eventAddress - m_memStart;
 
     switch( offset ) {
         case 0x18:{             //SPI_CLOCK_REG
-        m_clockPeriod = m_eventValue;
+            m_clockPeriod = m_eventValue/2;
             //qDebug() <<"Esp32Spi::writeRegister Period"<< m_number << m_eventValue ;
         }break;
         case 0x38:{             //SPI_SLAVE_REG
             uint32_t slave = m_eventValue & 1<<30;
             setMode( slave ? SPI_SLAVE : SPI_MASTER );
-            //qDebug() <<"Esp32Spi::writeRegister Slave"<< m_number<< slave ;
+            //qDebug() <<"Esp32Spi::writeRegister Slave"<< m_number<< slave<< m_MOSI->pinId() ;
         }break;
         case 0x80:{            //SPI Data buffer
             //qDebug() <<"Esp32Spi::writeRegister Send"<< m_number<< m_mode << m_eventValue ;

@@ -33,6 +33,7 @@ void Esp32Usart::reset()
     m_rxFifo.clear();
 
     m_divider = 0;
+    m_baudRate = 115200;
 
     m_apbClock = 1; /// TODO: implement REF_TICK
 }
@@ -80,8 +81,13 @@ void Esp32Usart::writeRegister()
         //    uint64_t freq = m_apbClock ? *m_frequency : 1000000; // m_frequency = APB Clock
         //    baudRate = (freq << 4) / m_divider;
         //}
-        if( m_baudRate != (int)data ) setBaudRate( data );
-//qDebug() << "Esp32Usart::freqChanged baudRate" << m_baudRate<<m_apbClock<<*m_frequency;
+        int br = 1e9/data;
+        if( m_baudRate != br )
+        {
+            m_baudRate = br;
+            setPeriod( data*1000 );
+        }
+        //qDebug() << "Esp32Usart::writeRegister baudRate" << m_baudRate;// << data*1000; //<<m_apbClock<<*m_frequency;
         //freqChanged();
     }break;
     //case 0x18:                                        // UART_AUTOBAUD:
@@ -171,7 +177,7 @@ void Esp32Usart::writeCR0()
     case 2: m_stopBits = 1; break;
     case 3: m_stopBits = 2; break;
     }
-
+    //qDebug() << "writeCR0"<< data << 5 + dataBits << m_stopBits;
     uint8_t txFifoRst = data & 1<<18;
     if( txFifoRst ) m_txFifo.clear();
 
@@ -203,7 +209,7 @@ void Esp32Usart::frameSent( uint8_t data )
     m_txFifo.dequeue();
     if( m_txFifo.size() ) UsartModule::sendByte( m_txFifo.head() );
 
-    //qDebug() << "Esp32Usart::frameSent"<< m_number<<m_txFifo.size();
+    //qDebug() << "Esp32Usart::frameSent"<< m_number<< m_sender->m_framesize<<m_txFifo.size()<< Simulator::self()->circTime();
 }
 
 //void Esp32Usart::updateIrq()

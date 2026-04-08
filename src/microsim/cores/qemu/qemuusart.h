@@ -12,7 +12,7 @@ class QemuUsart : public QemuModule, public UsartModule
 {
     public:
         QemuUsart( QemuDevice* mcu, QString name, int n, uint32_t* clk=nullptr, uint64_t memStart=0, uint64_t memEnd=0 );
-        ~QemuUsart();
+        virtual ~QemuUsart();
 
         enum qemuUsartAction_t{
             QEMU_USART_RECEIVE=1,

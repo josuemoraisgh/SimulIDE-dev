@@ -14,6 +14,8 @@ class Esp32Spi : public QemuSpi
         Esp32Spi( QemuDevice* mcu, QString name, int n, uint32_t* clk, uint64_t memStart, uint64_t memEnd );
         ~Esp32Spi();
 
+        void connected( bool c ) override;
+
         void endTransaction() override;
 
     private:
