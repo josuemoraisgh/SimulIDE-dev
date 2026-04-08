@@ -63,7 +63,7 @@ AudioOut::AudioOut( QString type, QString id )
     m_buzzer = false;
     m_audioOutput = nullptr;
 
-    QAudioDeviceInfo::defaultOutputDevice();
+    m_deviceinfo = QAudioDeviceInfo::defaultOutputDevice();
     if( m_deviceinfo.isNull() )
     {
         const auto deviceInfos = QAudioDeviceInfo::availableDevices( QAudio::AudioOutput );
@@ -138,7 +138,7 @@ void AudioOut::stamp()
     if( m_deviceinfo.isNull() ) return;
 
     m_audioBuffer = m_audioOutput->start();
-    m_audioOutput->periodSize();
+    m_dataSize    = m_audioOutput->periodSize();
     m_dataBuffer.reserve( m_dataSize );
 
     if( m_ePin[0]->isConnected() && m_ePin[1]->isConnected() )
