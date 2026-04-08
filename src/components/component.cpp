@@ -226,13 +226,13 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
     QPointF delta = toGrid(event->scenePos()) - toGrid(event->lastScenePos());
 
     QList<QGraphicsItem*> itemList = Circuit::self()->selectedItems();
-    QList<ConnectorLine*> lineList;
 
     if( !m_moving )         // Get lists of elements to move and save Undo state
     {
         m_moveFree = true;
         m_conMoveList.clear();
         m_compMoveList.clear();
+        m_lineMoveList.clear();
 
         bool ctrlMod = event->modifiers() == Qt::ControlModifier;
 
@@ -241,8 +241,8 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
             if( item->type() == UserType+2 )          // ConnectorLine selected
             {
                 m_moveFree = false;
-                ConnectorLine* line =  qgraphicsitem_cast<ConnectorLine*>( item );
-                lineList.append( line );
+                ConnectorLine* line = qgraphicsitem_cast<ConnectorLine*>( item );
+                m_lineMoveList.append( line );
                 Connector* con = line->connector();
                 if( !m_conMoveList.contains( con ) ) m_conMoveList.append( con ); // Connectors selected
             }
@@ -259,14 +259,14 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
                     if( !pin ) continue;
                     Connector* con = pin->connector();
                     if( con && !m_conMoveList.contains( con ) ) m_conMoveList.append( con );
-        }   }   }
+                }   }   }
         if( !m_moveFree && delta == QPointF(0, 0) ) return;
 
         Circuit::self()->beginCircuitBatch();
         for( Component* comp : m_compMoveList )    // Undo step
             Circuit::self()->addCompChange( comp->getUid(), "Pos", comp->getPropStr("Pos") );
 
-        for( Connector* con  : m_conMoveList )    // Undo step
+        for( Connector* con : m_conMoveList )    // Undo step
             Circuit::self()->addCompChange( con->getUid(), "pointList", con->pListStr() );
 
         m_moving = true;
@@ -276,7 +276,7 @@ void Component::mouseMoveEvent( QGraphicsSceneMouseEvent* event )
 
     if( delta == QPointF(0, 0) ) return;
 
-    for( ConnectorLine* line : lineList   ) line->moveSimple( delta ); // Move ConnectorLine
+    for( ConnectorLine* line : m_lineMoveList ) line->moveSimple( delta ); // Move ConnectorLine
     for( Component* comp : m_compMoveList ) comp->move( delta );    // Move Components selected
     for( Connector* con  : m_conMoveList  ) con->isMoved();         // Update Connectors
 }

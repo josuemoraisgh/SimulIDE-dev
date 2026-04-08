@@ -230,6 +230,7 @@ class Component : public CompBase, public QGraphicsItem, public Updatable
 
         QList<Connector*> m_conMoveList;
         QList<Component*> m_compMoveList;
+        QList<ConnectorLine*> m_lineMoveList;
 
         std::vector<Pin*> m_pin;
         QList<Pin*> m_signalPin;
