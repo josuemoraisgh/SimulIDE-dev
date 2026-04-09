@@ -24,7 +24,7 @@ LibraryItem* Ili9341::libraryItem()
 Ili9341::Ili9341( QString type, QString id )
        : St77xx( type, id )
 {
-    m_isILI = true;
+    m_bgrInverted = true;
 
     m_pinRS.setId( id+"-PinRst");  // Compatibility with older versions
     m_pinDI.setId( id+"-PinMosi"); // Compatibility with older versions

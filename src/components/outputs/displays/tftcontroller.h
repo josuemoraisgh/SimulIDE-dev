@@ -43,7 +43,7 @@ class TftController : public Component
 
         uint32_t getPixel( int row , int col );
 
-        uint8_t m_isILI; // ILI9341 weirdness
+        uint8_t m_bgrInverted;
 
         uint16_t m_width;
         uint16_t m_height;

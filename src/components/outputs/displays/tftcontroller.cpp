@@ -14,7 +14,7 @@ TftController::TftController( QString type, QString id )
              : Component( type, id )
 {
     m_graphical = true;
-    m_isILI = false;
+    m_bgrInverted = false;
 
     m_maxX = 0;
     m_maxY = 0;
@@ -227,29 +227,29 @@ void TftController::dataReceived()
         }break;
         case 0x3A: setPixelMode(); break; // COLMOD: Pixel Format Set
         case 0x36:{                       // MADCTL: Memory Access Control
-            m_BGR     = buffer & 1<<3;
+            //m_BGR     = buffer & 1<<3;
             m_swapXY  = buffer & 1<<5;
             m_mirrorX = buffer & 1<<6;
             m_mirrorY = buffer & 1<<7;
             //qDebug() << "MX"<<m_mirrorX<<"MY"<<m_mirrorY<<"MV"<<m_swapXY;
 
-            if(  m_isILI )  // ILI9341 seems to work this way
-            {
-                m_BGR     = (buffer & 1<<3) == 0;
+            //if( m_bgrInverted )
+            //{
+            //    m_BGR = (buffer & 1<<3) == 0;
 
-                // m_dataBytes == 2
-                //if( m_swapXY ) m_mirrorY = (buffer & 1<<7) == 0;
-                //m_mirrorX = (buffer & 1<<6) == 0;
-            }
+            //    // m_dataBytes == 2
+            //    //if( m_swapXY ) m_mirrorY = (buffer & 1<<7) == 0;
+            //    //m_mirrorX = (buffer & 1<<6) == 0;
+            //}
         }break;
         case 0xF6:   // Interface Control m_readBytes = 3;
         {
-            if(  m_isILI ) // value of MADCTL is derived as exclusive OR
-            {
-                if( m_readBytes == 3 ){
-                    m_icEor = buffer;
-                }
-            }
+            //if(  m_isILI ) // value of MADCTL is derived as exclusive OR
+            //{
+            //    if( m_readBytes == 3 ){
+            //        m_icEor = buffer;
+            //    }
+            //}
 
         }break;
     }

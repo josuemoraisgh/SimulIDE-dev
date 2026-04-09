@@ -18,6 +18,8 @@ St77xx::St77xx( QString type, QString id )
 {
     m_graphical = true;
 
+    m_pixelMode = 6;
+
     m_pin.resize( 6 );
     m_pin[0] = &m_pinDC;
     m_pin[1] = &m_pinCS;
