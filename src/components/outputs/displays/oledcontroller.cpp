@@ -17,8 +17,8 @@
 #include "intprop.h"
 
 OledController::OledController( QString type, QString id )
-       : Component( type, id )
-       , TwiModule( id )
+              : Component( type, id )
+              , TwiModule( id )
 {
     m_graphical = true;
 
@@ -140,6 +140,7 @@ void OledController::reset()
     m_scrollStep   = 5;
     m_vScrollOffset = 0;
 
+    m_dispOffset = 0;
     m_ramOffset = 0;
     m_readBytes = 0;
 

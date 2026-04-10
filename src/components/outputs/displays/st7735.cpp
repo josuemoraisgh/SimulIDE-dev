@@ -28,5 +28,7 @@ St7735::St7735( QString type, QString id )
     m_maxHeight = 162;
     setDisplaySize( m_maxWidth, m_maxHeight );
     setScale( 1 );
+
+    m_addrBytes = 2;
 }
 St7735::~St7735(){}
