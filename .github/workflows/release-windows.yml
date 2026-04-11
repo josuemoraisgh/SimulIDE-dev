@@ -1,0 +1,104 @@
+name: Release Windows
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name (e.g. v2.0.0)'
+        required: false
+        default: 'v2.0.0'
+
+jobs:
+  build-windows:
+    name: Build & Release (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt 5.15.2 (MinGW 64-bit)
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '5.15.2'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw81'
+          modules: 'qtserialport qtmultimedia'
+          cache: true
+
+      - name: Read version from SimulIDE.pri
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path SimulIDE.pri -Pattern '^VERSION\s*=\s*"(.+)"').Matches[0].Groups[1].Value
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build with qmake
+        shell: cmd
+        run: |
+          cd build_XX
+          qmake
+          mingw32-make -j%NUMBER_OF_PROCESSORS%
+
+      - name: Find build output directory
+        id: outdir
+        shell: pwsh
+        run: |
+          # The build system names the output folder SimulIDE_<VERSION>[-<RELEASE>]
+          # When RELEASE is empty the folder ends with a trailing hyphen (e.g. SimulIDE_2.0.0-)
+          $dir = Get-ChildItem -Path "build_XX\executables" -Directory | Select-Object -First 1
+          echo "DIR=$($dir.FullName)" >> $env:GITHUB_OUTPUT
+          echo "DIRNAME=$($dir.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Deploy Qt dependencies (windeployqt)
+        shell: pwsh
+        run: |
+          $exe = "${{ steps.outdir.outputs.DIR }}\simulide.exe"
+          windeployqt --release --no-translations "$exe"
+
+      - name: Package build output as zip
+        id: package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $zipName = "SimulIDE_$version-Windows_x86_64.zip"
+          Compress-Archive -Path "${{ steps.outdir.outputs.DIR }}\*" -DestinationPath "$zipName"
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_OUTPUT
+
+      - name: Determine release tag
+        id: tag
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            echo "TAG=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "TAG=${{ github.event.inputs.tag_name }}" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG }}
+          name: SimulIDE ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: ${{ steps.package.outputs.ZIP_NAME }}
+          body: |
+            ## SimulIDE ${{ steps.version.outputs.VERSION }} – Windows Release
+
+            ### Download
+            - **SimulIDE_${{ steps.version.outputs.VERSION }}-Windows_x86_64.zip** – Portable Windows build (64-bit)
+
+            ### Installation
+            1. Extract the zip file to any folder.
+            2. Run `simulide.exe`.
+
+            No installation required – all required Qt libraries are bundled.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
